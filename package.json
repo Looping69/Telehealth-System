@@ -1,0 +1,44 @@
+{
+  "name": "telehealth-system",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.tsx",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@mantine/core": "^7.17.8",
+    "@mantine/dates": "^7.17.8",
+    "@mantine/form": "^7.17.8",
+    "@mantine/hooks": "^7.17.8",
+    "@mantine/modals": "^7.17.8",
+    "@mantine/notifications": "^7.17.8",
+    "@medplum/core": "^4.4.2",
+    "@medplum/fhirtypes": "^4.4.2",
+    "@medplum/react": "^4.4.2",
+    "@tabler/icons-react": "^3.35.0",
+    "@tanstack/react-query": "^5.90.2",
+    "@types/node": "^24.7.2",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.1",
+    "lucide-react": "^0.545.0",
+    "node-fetch": "^3.3.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.4",
+    "typescript": "^5.9.3",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "vite": "^7.1.9"
+  }
+}
