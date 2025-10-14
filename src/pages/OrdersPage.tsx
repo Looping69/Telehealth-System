@@ -382,6 +382,7 @@ export const OrdersPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
@@ -418,6 +419,182 @@ export const OrdersPage: React.FC = () => {
 
   const filteredOrders = orders ? filterOrdersByTab(orders, activeTab || 'all') : [];
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'yellow';
+      case 'approved':
+        return 'green';
+      case 'completed':
+        return 'blue';
+      case 'cancelled':
+        return 'red';
+      default:
+        return 'gray';
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'prescription':
+        return <Pill size={16} />;
+      case 'lab':
+        return <TestTube size={16} />;
+      case 'imaging':
+        return <Stethoscope size={16} />;
+      default:
+        return <FileText size={16} />;
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent':
+        return 'red';
+      case 'high':
+        return 'orange';
+      case 'normal':
+        return 'blue';
+      case 'low':
+        return 'gray';
+      default:
+        return 'blue';
+    }
+  };
+
+  const renderOrdersContent = (orders: Order[]) => {
+    if (isLoading) {
+      return (
+        <Center py="xl">
+          <Loader size="lg" />
+        </Center>
+      );
+    }
+
+    if (viewMode === 'cards') {
+      return (
+        <Grid>
+          {orders.map((order) => (
+            <Grid.Col key={order.id} span={{ base: 12, sm: 6, lg: 4 }}>
+              <OrderCard
+                order={order}
+                onView={handleViewOrder}
+                onEdit={handleEditOrder}
+              />
+            </Grid.Col>
+          ))}
+        </Grid>
+      );
+    }
+
+    return (
+      <Card shadow="sm" padding="lg" radius="md" withBorder>
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Order ID</Table.Th>
+              <Table.Th>Patient</Table.Th>
+              <Table.Th>Type</Table.Th>
+              <Table.Th>Status</Table.Th>
+              <Table.Th>Priority</Table.Th>
+              <Table.Th>Order Date</Table.Th>
+              <Table.Th>Due Date</Table.Th>
+              <Table.Th>Actions</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {orders.map((order) => (
+              <Table.Tr key={order.id}>
+                <Table.Td>
+                  <Group gap="sm">
+                    <ActionIcon variant="light" color="blue" size="sm">
+                      {getTypeIcon(order.type)}
+                    </ActionIcon>
+                    <div>
+                      <Text fw={500} size="sm">
+                        #{order.id}
+                      </Text>
+                      <Text size="xs" c="dimmed" truncate>
+                        {order.description}
+                      </Text>
+                    </div>
+                  </Group>
+                </Table.Td>
+                <Table.Td>
+                  <Text fw={500} size="sm">
+                    {order.patientName}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Badge
+                    variant="light"
+                    color={
+                      order.type === 'prescription' ? 'blue' :
+                      order.type === 'lab' ? 'green' :
+                      order.type === 'imaging' ? 'purple' :
+                      'gray'
+                    }
+                    size="sm"
+                  >
+                    {order.type.charAt(0).toUpperCase() + order.type.slice(1)}
+                  </Badge>
+                </Table.Td>
+                <Table.Td>
+                  <Badge
+                    variant="light"
+                    color={getStatusColor(order.status)}
+                    size="sm"
+                  >
+                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  </Badge>
+                </Table.Td>
+                <Table.Td>
+                  <Badge
+                    variant="light"
+                    color={getPriorityColor(order.priority)}
+                    size="sm"
+                  >
+                    {order.priority.charAt(0).toUpperCase() + order.priority.slice(1)}
+                  </Badge>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm">
+                    {order.orderDate}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm">
+                    {order.dueDate || 'Not specified'}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Group gap="xs">
+                    <ActionIcon
+                      variant="light"
+                      color="blue"
+                      size="sm"
+                      onClick={() => handleViewOrder(order)}
+                    >
+                      <Eye size={14} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="light"
+                      color="orange"
+                      size="sm"
+                      onClick={() => handleEditOrder(order)}
+                    >
+                      <Edit size={14} />
+                    </ActionIcon>
+                  </Group>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Card>
+    );
+  };
+
   if (error) {
     return (
       <Container size="xl" py="md">
@@ -443,7 +620,7 @@ export const OrdersPage: React.FC = () => {
         {/* Filters */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Grid align="end">
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
               <TextInput
                 placeholder="Search orders..."
                 leftSection={<Search size={16} />}
@@ -466,6 +643,24 @@ export const OrdersPage: React.FC = () => {
                 clearable
               />
             </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+              <Button.Group>
+                <Button
+                  variant={viewMode === 'cards' ? 'filled' : 'light'}
+                  onClick={() => setViewMode('cards')}
+                  size="sm"
+                >
+                  Cards
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'filled' : 'light'}
+                  onClick={() => setViewMode('table')}
+                  size="sm"
+                >
+                  Table
+                </Button>
+              </Button.Group>
+            </Grid.Col>
           </Grid>
         </Card>
 
@@ -487,83 +682,19 @@ export const OrdersPage: React.FC = () => {
           </Tabs.List>
 
           <Tabs.Panel value="all" pt="md">
-            {isLoading ? (
-              <Center py="xl">
-                <Loader size="lg" />
-              </Center>
-            ) : (
-              <Grid>
-                {filteredOrders.map((order) => (
-                  <Grid.Col key={order.id} span={{ base: 12, sm: 6, lg: 4 }}>
-                    <OrderCard
-                      order={order}
-                      onView={handleViewOrder}
-                      onEdit={handleEditOrder}
-                    />
-                  </Grid.Col>
-                ))}
-              </Grid>
-            )}
+            {renderOrdersContent(filteredOrders)}
           </Tabs.Panel>
 
           <Tabs.Panel value="pending" pt="md">
-            {isLoading ? (
-              <Center py="xl">
-                <Loader size="lg" />
-              </Center>
-            ) : (
-              <Grid>
-                {filteredOrders.map((order) => (
-                  <Grid.Col key={order.id} span={{ base: 12, sm: 6, lg: 4 }}>
-                    <OrderCard
-                      order={order}
-                      onView={handleViewOrder}
-                      onEdit={handleEditOrder}
-                    />
-                  </Grid.Col>
-                ))}
-              </Grid>
-            )}
+            {renderOrdersContent(filteredOrders)}
           </Tabs.Panel>
 
           <Tabs.Panel value="approved" pt="md">
-            {isLoading ? (
-              <Center py="xl">
-                <Loader size="lg" />
-              </Center>
-            ) : (
-              <Grid>
-                {filteredOrders.map((order) => (
-                  <Grid.Col key={order.id} span={{ base: 12, sm: 6, lg: 4 }}>
-                    <OrderCard
-                      order={order}
-                      onView={handleViewOrder}
-                      onEdit={handleEditOrder}
-                    />
-                  </Grid.Col>
-                ))}
-              </Grid>
-            )}
+            {renderOrdersContent(filteredOrders)}
           </Tabs.Panel>
 
           <Tabs.Panel value="urgent" pt="md">
-            {isLoading ? (
-              <Center py="xl">
-                <Loader size="lg" />
-              </Center>
-            ) : (
-              <Grid>
-                {filteredOrders.map((order) => (
-                  <Grid.Col key={order.id} span={{ base: 12, sm: 6, lg: 4 }}>
-                    <OrderCard
-                      order={order}
-                      onView={handleViewOrder}
-                      onEdit={handleEditOrder}
-                    />
-                  </Grid.Col>
-                ))}
-              </Grid>
-            )}
+            {renderOrdersContent(filteredOrders)}
           </Tabs.Panel>
         </Tabs>
 

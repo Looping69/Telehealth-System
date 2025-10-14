@@ -646,6 +646,7 @@ export const ProvidersPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
@@ -797,26 +798,139 @@ export const ProvidersPage: React.FC = () => {
                 clearable
               />
             </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 3 }}>
+              <Group justify="flex-end">
+                <Button.Group>
+                  <Button
+                    variant={viewMode === 'cards' ? 'filled' : 'light'}
+                    onClick={() => setViewMode('cards')}
+                  >
+                    Cards
+                  </Button>
+                  <Button
+                    variant={viewMode === 'table' ? 'filled' : 'light'}
+                    onClick={() => setViewMode('table')}
+                  >
+                    Table
+                  </Button>
+                </Button.Group>
+              </Group>
+            </Grid.Col>
           </Grid>
         </Card>
 
-        {/* Providers Grid */}
+        {/* Providers Display */}
         {isLoading ? (
           <Center py="xl">
             <Loader size="lg" />
           </Center>
         ) : (
-          <Grid>
-            {filteredProviders.map((provider) => (
-              <Grid.Col key={provider.id} span={{ base: 12, sm: 6, lg: 4 }}>
-                <ProviderCard
-                  provider={provider}
-                  onView={handleViewProvider}
-                  onEdit={handleEditProvider}
-                />
-              </Grid.Col>
-            ))}
-          </Grid>
+          <>
+            {viewMode === 'cards' ? (
+              <Grid>
+                {filteredProviders.map((provider) => (
+                  <Grid.Col key={provider.id} span={{ base: 12, sm: 6, lg: 4 }}>
+                    <ProviderCard
+                      provider={provider}
+                      onView={handleViewProvider}
+                      onEdit={handleEditProvider}
+                    />
+                  </Grid.Col>
+                ))}
+              </Grid>
+            ) : (
+              <Card shadow="sm" padding="lg" radius="md" withBorder>
+                <Table striped highlightOnHover>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Name</Table.Th>
+                      <Table.Th>Department</Table.Th>
+                      <Table.Th>Specialties</Table.Th>
+                      <Table.Th>Status</Table.Th>
+                      <Table.Th>Rating</Table.Th>
+                      <Table.Th>Patients</Table.Th>
+                      <Table.Th>Actions</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {filteredProviders.map((provider) => (
+                      <Table.Tr key={provider.id}>
+                        <Table.Td>
+                          <Group gap="sm">
+                            <Avatar size="sm" radius="xl" color="blue">
+                              <User size={16} />
+                            </Avatar>
+                            <Stack gap={2}>
+                              <Text size="sm" fw={500}>
+                                Dr. {provider.firstName} {provider.lastName}
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                {provider.title}
+                              </Text>
+                            </Stack>
+                          </Group>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm">{provider.department}</Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm">
+                            {provider.specialties.length > 2 
+                              ? `${provider.specialties.slice(0, 2).join(', ')}...`
+                              : provider.specialties.join(', ')
+                            }
+                          </Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Badge 
+                            color={
+                              provider.status === 'active' ? 'green' : 
+                              provider.status === 'inactive' ? 'red' : 
+                              'yellow'
+                            } 
+                            size="sm"
+                          >
+                            {provider.status}
+                          </Badge>
+                        </Table.Td>
+                        <Table.Td>
+                          <Group gap="xs">
+                            <Star size={14} fill="gold" color="gold" />
+                            <Text size="sm" fw={500}>
+                              {provider.rating}
+                            </Text>
+                          </Group>
+                        </Table.Td>
+                        <Table.Td>
+                          <Text size="sm">{provider.totalPatients}</Text>
+                        </Table.Td>
+                        <Table.Td>
+                          <Group gap="xs">
+                            <ActionIcon
+                              variant="light"
+                              color="blue"
+                              size="sm"
+                              onClick={() => handleViewProvider(provider)}
+                            >
+                              <Eye size={14} />
+                            </ActionIcon>
+                            <ActionIcon
+                              variant="light"
+                              color="orange"
+                              size="sm"
+                              onClick={() => handleEditProvider(provider)}
+                            >
+                              <Edit size={14} />
+                            </ActionIcon>
+                          </Group>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Card>
+            )}
+          </>
         )}
 
         {/* Empty State */}

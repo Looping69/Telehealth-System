@@ -668,6 +668,7 @@ export const ProductsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [formOpened, { open: openForm, close: closeForm }] = useDisclosure(false);
@@ -801,7 +802,7 @@ export const ProductsPage: React.FC = () => {
         {/* Filters */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Grid align="end">
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
               <TextInput
                 placeholder="Search products..."
                 leftSection={<Search size={16} />}
@@ -809,7 +810,7 @@ export const ProductsPage: React.FC = () => {
                 onChange={(event) => setSearchQuery(event.currentTarget.value)}
               />
             </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
               <Select
                 placeholder="Filter by category"
                 leftSection={<Filter size={16} />}
@@ -826,7 +827,7 @@ export const ProductsPage: React.FC = () => {
                 clearable
               />
             </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
               <Select
                 placeholder="Filter by status"
                 leftSection={<TrendingUp size={16} />}
@@ -840,15 +841,33 @@ export const ProductsPage: React.FC = () => {
                 clearable
               />
             </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+              <Button.Group>
+                <Button
+                  variant={viewMode === 'cards' ? 'filled' : 'light'}
+                  onClick={() => setViewMode('cards')}
+                  size="sm"
+                >
+                  Cards
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'filled' : 'light'}
+                  onClick={() => setViewMode('table')}
+                  size="sm"
+                >
+                  Table
+                </Button>
+              </Button.Group>
+            </Grid.Col>
           </Grid>
         </Card>
 
-        {/* Products Grid */}
+        {/* Products Display */}
         {isLoading ? (
           <Center py="xl">
             <Loader size="lg" />
           </Center>
-        ) : (
+        ) : viewMode === 'cards' ? (
           <Grid>
             {filteredProducts.map((product) => (
               <Grid.Col key={product.id} span={{ base: 12, sm: 6, lg: 4 }}>
@@ -861,6 +880,141 @@ export const ProductsPage: React.FC = () => {
               </Grid.Col>
             ))}
           </Grid>
+        ) : (
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Table striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Name</Table.Th>
+                  <Table.Th>Category</Table.Th>
+                  <Table.Th>Price</Table.Th>
+                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Rating</Table.Th>
+                  <Table.Th>Bookings</Table.Th>
+                  <Table.Th>Actions</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {filteredProducts.map((product) => (
+                  <Table.Tr key={product.id}>
+                    <Table.Td>
+                      <Group gap="sm">
+                        {product.imageUrl && (
+                          <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            width={40}
+                            height={40}
+                            radius="sm"
+                          />
+                        )}
+                        <div>
+                          <Text fw={500} size="sm">
+                            {product.name}
+                          </Text>
+                          <Text size="xs" c="dimmed" truncate>
+                            {product.description}
+                          </Text>
+                        </div>
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge
+                        variant="light"
+                        color={
+                          product.category === 'consultation' ? 'blue' :
+                          product.category === 'screening' ? 'green' :
+                          product.category === 'therapy' ? 'purple' :
+                          product.category === 'medication' ? 'orange' :
+                          product.category === 'equipment' ? 'gray' :
+                          'teal'
+                        }
+                        size="sm"
+                      >
+                        {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text fw={500} size="sm">
+                        ${product.price}
+                      </Text>
+                      {product.duration && (
+                        <Text size="xs" c="dimmed">
+                          {product.duration} min
+                        </Text>
+                      )}
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        <Badge
+                          variant="light"
+                          color={product.isActive ? 'green' : 'red'}
+                          size="sm"
+                        >
+                          {product.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                        {product.isPopular && (
+                          <Badge variant="light" color="yellow" size="sm">
+                            Popular
+                          </Badge>
+                        )}
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        <Star size={14} fill="currentColor" color="orange" />
+                        <Text size="sm" fw={500}>
+                          {product.rating}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          ({product.reviewCount})
+                        </Text>
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" fw={500}>
+                        {product.bookingCount}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        <Tooltip label="View Details">
+                          <ActionIcon
+                            variant="light"
+                            color="blue"
+                            size="sm"
+                            onClick={() => handleViewProduct(product)}
+                          >
+                            <Eye size={14} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Edit Product">
+                          <ActionIcon
+                            variant="light"
+                            color="orange"
+                            size="sm"
+                            onClick={() => handleEditProduct(product)}
+                          >
+                            <Edit size={14} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label={product.isActive ? 'Deactivate' : 'Activate'}>
+                          <ActionIcon
+                            variant="light"
+                            color={product.isActive ? 'red' : 'green'}
+                            size="sm"
+                            onClick={() => handleToggleStatus(product)}
+                          >
+                            {product.isActive ? <Trash2 size={14} /> : <Plus size={14} />}
+                          </ActionIcon>
+                        </Tooltip>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Card>
         )}
 
         {/* Empty State */}
