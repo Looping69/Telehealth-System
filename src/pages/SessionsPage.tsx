@@ -287,9 +287,10 @@ export const SessionsPage: React.FC = () => {
           apt?.date && apt.date > now && apt.status !== 'cancelled'
         );
       case 'today':
-        return appointments.filter(apt => 
-          apt?.date && apt.date.toISOString().split('T')[0] === today
-        );
+        return appointments.filter(apt => {
+          const aptDateString = apt?.date ? apt.date.toISOString().split('T')[0] : null;
+          return apt?.date && aptDateString === today;
+        });
       case 'past':
         return appointments.filter(apt => 
           apt?.date && (apt.date < now || apt.status === 'completed')

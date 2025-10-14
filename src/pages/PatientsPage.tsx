@@ -113,7 +113,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onView, onEdit }) =>
           </Group>
           <Group gap="xs">
             <Calendar size={14} />
-            <Text size="sm">Last visit: {patient.lastVisit || 'Never'}</Text>
+            <Text size="sm">Last visit: {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'Never'}</Text>
           </Group>
         </Stack>
 
@@ -249,7 +249,7 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
             <strong>Emergency Contact:</strong> {patient.emergencyContact}
           </Text>
           <Text size="sm">
-            <strong>Last Visit:</strong> {patient.lastVisit || 'Never'}
+            <strong>Last Visit:</strong> {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'Never'}
           </Text>
         </Stack>
 
@@ -281,6 +281,11 @@ export const PatientsPage: React.FC = () => {
     page: currentPage,
     limit: 12,
   });
+
+  // Debug logging
+  console.log('PatientsPage - patients data:', patients);
+  console.log('PatientsPage - isLoading:', isLoading);
+  console.log('PatientsPage - error:', error);
 
   const handleViewPatient = (patient: Patient) => {
     setSelectedPatient(patient);
@@ -428,7 +433,7 @@ export const PatientsPage: React.FC = () => {
                           </Badge>
                         </Table.Td>
                         <Table.Td>
-                          <Text size="sm">{patient.lastVisit || 'Never'}</Text>
+                          <Text size="sm">{patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'Never'}</Text>
                         </Table.Td>
                         <Table.Td>
                           <Group gap="xs">

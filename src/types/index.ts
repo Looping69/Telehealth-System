@@ -91,14 +91,18 @@ export interface Appointment {
 export interface Order {
   id: string;
   patientId: string;
+  patientName: string;
   providerId: string;
+  provider: string;
   type: 'lab' | 'prescription' | 'referral' | 'imaging';
   title: string;
   description: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'approved';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   createdAt: Date;
-  dueDate?: Date;
+  orderDate: string;
+  dueDate?: Date | string;
+  notes?: string;
 }
 
 export interface Invoice {

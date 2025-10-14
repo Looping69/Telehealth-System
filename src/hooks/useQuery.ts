@@ -199,14 +199,22 @@ export function usePatients(searchQuery?: string | { search?: string; status?: s
           },
         ];
         
+        let filteredPatients = mockPatients;
+        
         if (searchQuery && typeof searchQuery === 'string') {
-          return mockPatients.filter(patient => 
+          filteredPatients = mockPatients.filter(patient => 
             patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             patient.email?.toLowerCase().includes(searchQuery.toLowerCase())
           );
         }
         
-        return mockPatients;
+        // Return data in the expected format with pagination info
+        return {
+          data: filteredPatients,
+          total: filteredPatients.length,
+          page: 1,
+          limit: 12
+        };
     },
   });
 }
@@ -272,6 +280,18 @@ export function useAppointments(date?: Date) {
       console.log('Using mock appointment data (Medplum server not available)');
         
         // Comprehensive mock data - always returned
+        // Generate dates relative to current date for realistic testing
+        const now = new Date();
+        const today = new Date(now);
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        const nextWeek = new Date(now);
+        nextWeek.setDate(now.getDate() + 7);
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        const lastWeek = new Date(now);
+        lastWeek.setDate(now.getDate() - 7);
+
         const mockAppointments: Appointment[] = [
           {
             id: '1',
@@ -279,13 +299,13 @@ export function useAppointments(date?: Date) {
             patientName: 'John Doe',
             providerId: '1',
             providerName: 'Dr. Sarah Johnson',
-            date: new Date('2024-01-25T10:00:00'),
+            date: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 10, 0, 0),
             duration: 30,
             type: 'consultation',
             status: 'scheduled',
             notes: 'Regular checkup - patient reports feeling well',
-            createdAt: new Date('2024-01-20'),
-            updatedAt: new Date('2024-01-20'),
+            createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
             sessionType: 'video',
             meetingLink: 'https://meet.telehealth.com/session/abc123',
             symptoms: ['General wellness check'],
@@ -299,13 +319,13 @@ export function useAppointments(date?: Date) {
             patientName: 'Jane Smith',
             providerId: '1',
             providerName: 'Dr. Sarah Johnson',
-            date: new Date('2024-01-25T14:30:00'),
+            date: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 30, 0),
             duration: 45,
             type: 'follow-up',
             status: 'scheduled',
             notes: 'Follow-up on asthma treatment - patient reports improvement',
-            createdAt: new Date('2024-01-20'),
-            updatedAt: new Date('2024-01-20'),
+            createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
             sessionType: 'video',
             meetingLink: 'https://meet.telehealth.com/session/def456',
             symptoms: ['Shortness of breath', 'Wheezing'],
@@ -319,13 +339,13 @@ export function useAppointments(date?: Date) {
             patientName: 'Michael Johnson',
             providerId: '2',
             providerName: 'Dr. Robert Chen',
-            date: new Date('2024-01-26T09:15:00'),
+            date: new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 9, 15, 0),
             duration: 60,
             type: 'consultation',
             status: 'completed',
             notes: 'Initial consultation for joint pain - comprehensive examination completed',
-            createdAt: new Date('2024-01-21'),
-            updatedAt: new Date('2024-01-26'),
+            createdAt: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(yesterday.getTime()),
             sessionType: 'in-person',
             meetingLink: null,
             symptoms: ['Joint pain', 'Morning stiffness', 'Reduced mobility'],
@@ -339,13 +359,13 @@ export function useAppointments(date?: Date) {
             patientName: 'Sarah Wilson',
             providerId: '3',
             providerName: 'Dr. Emily Rodriguez',
-            date: new Date('2024-01-24T16:00:00'),
+            date: new Date(lastWeek.getFullYear(), lastWeek.getMonth(), lastWeek.getDate(), 16, 0, 0),
             duration: 30,
             type: 'mental-health',
             status: 'completed',
             notes: 'Anxiety management session - patient showing good progress',
-            createdAt: new Date('2024-01-19'),
-            updatedAt: new Date('2024-01-24'),
+            createdAt: new Date(now.getTime() - 12 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(lastWeek.getTime()),
             sessionType: 'video',
             meetingLink: 'https://meet.telehealth.com/session/ghi789',
             symptoms: ['Anxiety', 'Sleep disturbances', 'Concentration issues'],
@@ -359,13 +379,13 @@ export function useAppointments(date?: Date) {
             patientName: 'Robert Brown',
             providerId: '1',
             providerName: 'Dr. Sarah Johnson',
-            date: new Date('2024-01-27T11:30:00'),
+            date: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 11, 30, 0),
             duration: 45,
             type: 'chronic-care',
             status: 'scheduled',
             notes: 'Diabetes management and blood pressure monitoring',
-            createdAt: new Date('2024-01-22'),
-            updatedAt: new Date('2024-01-22'),
+            createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
             sessionType: 'video',
             meetingLink: 'https://meet.telehealth.com/session/jkl012',
             symptoms: ['Elevated blood sugar', 'Fatigue', 'Frequent urination'],
@@ -379,13 +399,13 @@ export function useAppointments(date?: Date) {
             patientName: 'Emily Davis',
             providerId: '4',
             providerName: 'Dr. Michael Thompson',
-            date: new Date('2024-01-23T13:45:00'),
+            date: new Date(lastWeek.getFullYear(), lastWeek.getMonth(), lastWeek.getDate() + 1, 13, 45, 0),
             duration: 30,
             type: 'specialist',
             status: 'completed',
             notes: 'Endocrinology consultation for thyroid disorder',
-            createdAt: new Date('2024-01-18'),
-            updatedAt: new Date('2024-01-23'),
+            createdAt: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(lastWeek.getTime() + 24 * 60 * 60 * 1000),
             sessionType: 'in-person',
             meetingLink: null,
             symptoms: ['Fatigue', 'Weight changes', 'Hair loss'],
@@ -399,13 +419,13 @@ export function useAppointments(date?: Date) {
             patientName: 'Christopher Lee',
             providerId: '5',
             providerName: 'Dr. Lisa Park',
-            date: new Date('2024-01-28T15:20:00'),
+            date: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate() + 1, 15, 20, 0),
             duration: 40,
             type: 'sports-medicine',
             status: 'scheduled',
             notes: 'Sports injury assessment and rehabilitation planning',
-            createdAt: new Date('2024-01-23'),
-            updatedAt: new Date('2024-01-23'),
+            createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
             sessionType: 'in-person',
             meetingLink: null,
             symptoms: ['Knee pain', 'Swelling', 'Limited range of motion'],
@@ -419,13 +439,13 @@ export function useAppointments(date?: Date) {
             patientName: 'Amanda Garcia',
             providerId: '3',
             providerName: 'Dr. Emily Rodriguez',
-            date: new Date('2024-01-22T10:30:00'),
+            date: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate() + 1, 10, 30, 0),
             duration: 50,
             type: 'pain-management',
             status: 'cancelled',
             notes: 'Fibromyalgia pain management - patient cancelled due to flare-up',
-            createdAt: new Date('2024-01-17'),
-            updatedAt: new Date('2024-01-22'),
+            createdAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
             sessionType: 'video',
             meetingLink: 'https://meet.telehealth.com/session/mno345',
             symptoms: ['Widespread pain', 'Fatigue', 'Sleep issues'],
@@ -449,9 +469,9 @@ export function useAppointments(date?: Date) {
 /**
  * Fetch orders with optional filters
  */
-export function useOrders(status?: string) {
+export function useOrders(params?: { search?: string; status?: string }) {
   return useQuery({
-    queryKey: ['orders', status],
+    queryKey: ['orders', params?.search, params?.status],
     queryFn: async () => {
       // Always use mock data for now since Medplum server is not available
       console.log('Using mock orders data (Medplum server not available)');
@@ -461,32 +481,84 @@ export function useOrders(status?: string) {
         {
           id: '1',
           patientId: '1',
+          patientName: 'John Doe',
           providerId: '1',
+          provider: 'Dr. Sarah Wilson',
           type: 'lab',
           title: 'Blood Work Panel',
           description: 'Complete blood count and metabolic panel',
           status: 'pending',
           priority: 'medium',
           createdAt: new Date('2024-01-20'),
+          orderDate: '2024-01-20',
+          dueDate: '2024-01-25',
+          notes: 'Patient should fast for 12 hours before blood draw',
         },
         {
           id: '2',
           patientId: '2',
+          patientName: 'Jane Smith',
           providerId: '1',
+          provider: 'Dr. Sarah Wilson',
           type: 'prescription',
           title: 'Medication Refill',
           description: 'Lisinopril 10mg daily',
           status: 'completed',
           priority: 'low',
           createdAt: new Date('2024-01-18'),
+          orderDate: '2024-01-18',
+          dueDate: '2024-01-22',
+          notes: 'Patient has been on this medication for 6 months with good tolerance',
+        },
+        {
+          id: '3',
+          patientId: '3',
+          patientName: 'Michael Johnson',
+          providerId: '2',
+          provider: 'Dr. Michael Chen',
+          type: 'imaging',
+          title: 'Chest X-Ray',
+          description: 'Chest X-ray to rule out pneumonia',
+          status: 'approved',
+          priority: 'high',
+          createdAt: new Date('2024-01-21'),
+          orderDate: '2024-01-21',
+          dueDate: '2024-01-23',
+          notes: 'Patient has persistent cough and fever',
+        },
+        {
+          id: '4',
+          patientId: '1',
+          patientName: 'John Doe',
+          providerId: '1',
+          provider: 'Dr. Sarah Wilson',
+          type: 'prescription',
+          title: 'Antibiotic Course',
+          description: 'Amoxicillin 500mg three times daily for 7 days',
+          status: 'pending',
+          priority: 'urgent',
+          createdAt: new Date('2024-01-22'),
+          orderDate: '2024-01-22',
+          dueDate: '2024-01-22',
+          notes: 'For treatment of bacterial infection',
         },
       ];
       
-      if (status) {
-        return mockOrders.filter(order => order.status === status);
+      let filteredOrders = mockOrders;
+      
+      if (params?.status) {
+        filteredOrders = filteredOrders.filter(order => order.status === params.status);
       }
       
-      return mockOrders;
+      if (params?.search) {
+        filteredOrders = filteredOrders.filter(order => 
+          order.title.toLowerCase().includes(params.search!.toLowerCase()) ||
+          order.patientName.toLowerCase().includes(params.search!.toLowerCase()) ||
+          order.provider.toLowerCase().includes(params.search!.toLowerCase())
+        );
+      }
+      
+      return filteredOrders;
     },
   });
 }
