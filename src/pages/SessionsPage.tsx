@@ -3,7 +3,7 @@
  * Manages appointments and telehealth sessions
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Container,
   Grid,
@@ -41,6 +41,8 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { useAppointments } from '../hooks/useQuery';
 import { Appointment } from '../types';
+import CreateAppointmentModal from '../components/CreateAppointmentModal';
+import EditAppointmentModal from '../components/EditAppointmentModal';
 
 /**
  * Appointment Card Component
@@ -60,14 +62,14 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed':
-        return 'green';
-      case 'pending':
+      case 'scheduled':
+        return 'blue';
+      case 'in_progress':
         return 'yellow';
       case 'cancelled':
         return 'red';
       case 'completed':
-        return 'blue';
+        return 'green';
       default:
         return 'gray';
     }
@@ -258,6 +260,8 @@ export const SessionsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
+  const [createModalOpened, { open: openCreateModal, close: closeCreateModal }] = useDisclosure(false);
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   const { data: appointments, isLoading, error } = useAppointments();
@@ -268,14 +272,38 @@ export const SessionsPage: React.FC = () => {
   };
 
   const handleEditAppointment = (appointment: Appointment) => {
-    // TODO: Implement edit functionality
-    console.log('Edit appointment:', appointment);
+    setSelectedAppointment(appointment);
+    openEditModal();
   };
 
   const handleJoinSession = (appointment: Appointment) => {
     // TODO: Implement video session joining
     console.log('Join session:', appointment);
   };
+
+  // Filter appointments based on search query and status filter
+  const filteredAppointments = useMemo(() => {
+    if (!appointments) return [];
+    
+    let filtered = [...appointments];
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(apt => 
+        apt.patientName?.toLowerCase().includes(query) ||
+        apt.providerName?.toLowerCase().includes(query) ||
+        apt.type?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Apply status filter
+    if (statusFilter) {
+      filtered = filtered.filter(apt => apt.status === statusFilter);
+    }
+    
+    return filtered;
+  }, [appointments, searchQuery, statusFilter]);
 
   const filterAppointmentsByTab = (appointments: Appointment[], tab: string) => {
     const now = new Date();
@@ -302,10 +330,10 @@ export const SessionsPage: React.FC = () => {
     }
   };
 
-  const upcomingAppointments = appointments ? filterAppointmentsByTab(appointments, 'upcoming') : [];
-  const todayAppointments = appointments ? filterAppointmentsByTab(appointments, 'today') : [];
-  const pastAppointments = appointments ? filterAppointmentsByTab(appointments, 'past') : [];
-  const cancelledAppointments = appointments ? filterAppointmentsByTab(appointments, 'cancelled') : [];
+  const upcomingAppointments = filteredAppointments ? filterAppointmentsByTab(filteredAppointments, 'upcoming') : [];
+  const todayAppointments = filteredAppointments ? filterAppointmentsByTab(filteredAppointments, 'today') : [];
+  const pastAppointments = filteredAppointments ? filterAppointmentsByTab(filteredAppointments, 'past') : [];
+  const cancelledAppointments = filteredAppointments ? filterAppointmentsByTab(filteredAppointments, 'cancelled') : [];
 
   if (error) {
     return (
@@ -324,7 +352,7 @@ export const SessionsPage: React.FC = () => {
             <Title order={2}>Sessions & Appointments</Title>
             <Text c="dimmed">Manage patient appointments and telehealth sessions</Text>
           </div>
-          <Button leftSection={<Plus size={16} />}>
+          <Button leftSection={<Plus size={16} />} onClick={openCreateModal}>
             Schedule Appointment
           </Button>
         </Group>
@@ -345,8 +373,8 @@ export const SessionsPage: React.FC = () => {
                 placeholder="Filter by status"
                 leftSection={<Filter size={16} />}
                 data={[
-                  { value: 'confirmed', label: 'Confirmed' },
-                  { value: 'pending', label: 'Pending' },
+                  { value: 'scheduled', label: 'Scheduled' },
+                  { value: 'in_progress', label: 'In Progress' },
                   { value: 'completed', label: 'Completed' },
                   { value: 'cancelled', label: 'Cancelled' },
                 ]}
@@ -456,7 +484,7 @@ export const SessionsPage: React.FC = () => {
                         <Text size="sm">{appointment.providerName || 'Unknown Provider'}</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Badge color={appointment.status === 'confirmed' ? 'green' : appointment.status === 'pending' ? 'yellow' : appointment.status === 'cancelled' ? 'red' : 'blue'}>
+                        <Badge color={appointment.status === 'scheduled' ? 'blue' : appointment.status === 'in_progress' ? 'yellow' : appointment.status === 'cancelled' ? 'red' : 'green'}>
                           {appointment.status}
                         </Badge>
                       </Table.Td>
@@ -559,7 +587,7 @@ export const SessionsPage: React.FC = () => {
                         <Text size="sm">{appointment.providerName || 'Unknown Provider'}</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Badge color={appointment.status === 'confirmed' ? 'green' : appointment.status === 'pending' ? 'yellow' : appointment.status === 'cancelled' ? 'red' : 'blue'}>
+                        <Badge color={appointment.status === 'scheduled' ? 'green' : appointment.status === 'in_progress' ? 'yellow' : appointment.status === 'cancelled' ? 'red' : 'blue'}>
                           {appointment.status}
                         </Badge>
                       </Table.Td>
@@ -661,7 +689,7 @@ export const SessionsPage: React.FC = () => {
                         <Text size="sm">{appointment.providerName || 'Unknown Provider'}</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Badge color={appointment.status === 'confirmed' ? 'green' : appointment.status === 'pending' ? 'yellow' : appointment.status === 'cancelled' ? 'red' : 'blue'}>
+                        <Badge color={appointment.status === 'scheduled' ? 'green' : appointment.status === 'in_progress' ? 'yellow' : appointment.status === 'cancelled' ? 'red' : 'blue'}>
                           {appointment.status}
                         </Badge>
                       </Table.Td>
@@ -754,7 +782,7 @@ export const SessionsPage: React.FC = () => {
                         <Text size="sm">{appointment.providerName || 'Unknown Provider'}</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Badge color={appointment.status === 'confirmed' ? 'green' : appointment.status === 'pending' ? 'yellow' : appointment.status === 'cancelled' ? 'red' : 'blue'}>
+                        <Badge color={appointment.status === 'scheduled' ? 'blue' : appointment.status === 'in_progress' ? 'yellow' : appointment.status === 'cancelled' ? 'red' : 'green'}>
                           {appointment.status}
                         </Badge>
                       </Table.Td>
@@ -847,7 +875,7 @@ export const SessionsPage: React.FC = () => {
                         <Text size="sm">{appointment.providerName || 'Unknown Provider'}</Text>
                       </Table.Td>
                       <Table.Td>
-                        <Badge color={appointment.status === 'confirmed' ? 'green' : appointment.status === 'pending' ? 'yellow' : appointment.status === 'cancelled' ? 'red' : 'blue'}>
+                        <Badge color={appointment.status === 'scheduled' ? 'green' : appointment.status === 'in_progress' ? 'yellow' : appointment.status === 'cancelled' ? 'red' : 'blue'}>
                           {appointment.status}
                         </Badge>
                       </Table.Td>
@@ -897,7 +925,7 @@ export const SessionsPage: React.FC = () => {
                   ? 'Try adjusting your search criteria'
                   : 'Get started by scheduling your first appointment'}
               </Text>
-              <Button leftSection={<Plus size={16} />}>
+              <Button leftSection={<Plus size={16} />} onClick={openCreateModal}>
                 Schedule Appointment
               </Button>
             </Stack>
@@ -910,6 +938,19 @@ export const SessionsPage: React.FC = () => {
         appointment={selectedAppointment}
         opened={detailsOpened}
         onClose={closeDetails}
+      />
+
+      {/* Create Appointment Modal */}
+      <CreateAppointmentModal
+        opened={createModalOpened}
+        onClose={closeCreateModal}
+      />
+
+      {/* Edit Appointment Modal */}
+      <EditAppointmentModal
+        opened={editModalOpened}
+        onClose={closeEditModal}
+        appointment={selectedAppointment}
       />
     </Container>
   );

@@ -43,6 +43,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
 import { Insurance } from '../types';
 
 /**
@@ -240,6 +241,556 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onView, onEdit })
         </Group>
       </Stack>
     </Card>
+  );
+};
+
+/**
+ * Provider Details Modal Component
+ * Displays comprehensive provider information including contact details and available plans
+ */
+interface ProviderDetailsModalProps {
+  provider: any;
+  opened: boolean;
+  onClose: () => void;
+  onEdit: () => void;
+}
+
+const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({ 
+  provider, 
+  opened, 
+  onClose, 
+  onEdit 
+}) => {
+  if (!provider) return null;
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={`Provider Details - ${provider.name}`}
+      size="lg"
+    >
+      <Stack gap="md">
+        <Grid>
+          <Grid.Col span={6}>
+            <Stack gap="xs">
+              <Text fw={500}>Provider Information</Text>
+              <Text size="sm">
+                <strong>Name:</strong> {provider.name}
+              </Text>
+              <Text size="sm">
+                <strong>Provider ID:</strong> {provider.id}
+              </Text>
+              <Text size="sm">
+                <strong>Type:</strong> {provider.type}
+              </Text>
+              <Badge color={provider.status === 'active' ? 'green' : 'red'}>
+                {provider.status}
+              </Badge>
+            </Stack>
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <Stack gap="xs">
+              <Text fw={500}>Contact Information</Text>
+              <Group gap="xs">
+                <Phone size={16} />
+                <Text size="sm">{provider.phone}</Text>
+              </Group>
+              <Group gap="xs">
+                <Mail size={16} />
+                <Text size="sm">{provider.email}</Text>
+              </Group>
+              <Group gap="xs">
+                <MapPin size={16} />
+                <Text size="sm">{provider.address}</Text>
+              </Group>
+              {provider.website && (
+                <Group gap="xs">
+                  <Building size={16} />
+                  <Text size="sm" component="a" href={provider.website} target="_blank">
+                    {provider.website}
+                  </Text>
+                </Group>
+              )}
+            </Stack>
+          </Grid.Col>
+        </Grid>
+
+        {provider.plans && provider.plans.length > 0 && (
+          <div>
+            <Text fw={500} mb="sm">Available Plans</Text>
+            <Stack gap="sm">
+              {provider.plans.map((plan: any) => (
+                <Card key={plan.id} withBorder padding="sm">
+                  <Group justify="space-between" mb="xs">
+                    <Text fw={500}>{plan.name}</Text>
+                    <Badge variant="light">{plan.type}</Badge>
+                  </Group>
+                  <Grid>
+                    <Grid.Col span={6}>
+                      <Text size="sm">Deductible: ${plan.deductible}</Text>
+                      <Text size="sm">Copay: ${plan.copay}</Text>
+                    </Grid.Col>
+                    <Grid.Col span={6}>
+                      <Text size="sm">Coinsurance: {plan.coinsurance}%</Text>
+                      <Text size="sm">Out-of-Pocket Max: ${plan.outOfPocketMax}</Text>
+                    </Grid.Col>
+                  </Grid>
+                </Card>
+              ))}
+            </Stack>
+          </div>
+        )}
+
+        <Group justify="flex-end" mt="md">
+          <Button variant="light" onClick={onClose}>
+            Close
+          </Button>
+          <Button leftSection={<Edit size={16} />} onClick={onEdit}>
+            Edit Provider
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+};
+
+/**
+ * Edit Provider Modal Component
+ * Allows editing of existing provider information with pre-populated data
+ */
+interface EditProviderModalProps {
+  provider: any;
+  opened: boolean;
+  onClose: () => void;
+  onSubmit: (providerData: any) => void;
+}
+
+const EditProviderModal: React.FC<EditProviderModalProps> = ({ 
+  provider, 
+  opened, 
+  onClose, 
+  onSubmit 
+}) => {
+  const [formData, setFormData] = useState({
+    id: '',
+    name: '',
+    type: '',
+    status: '',
+    phone: '',
+    email: '',
+    address: '',
+    website: '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update form data when provider changes
+  React.useEffect(() => {
+    if (provider) {
+      setFormData({
+        id: provider.id || '',
+        name: provider.name || '',
+        type: provider.type || '',
+        status: provider.status || '',
+        phone: provider.phone || '',
+        email: provider.email || '',
+        address: provider.address || '',
+        website: provider.website || '',
+      });
+    }
+  }, [provider]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Provider name is required';
+    }
+    if (!formData.type) {
+      newErrors.type = 'Provider type is required';
+    }
+    if (!formData.status) {
+      newErrors.status = 'Status is required';
+    }
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+    if (!formData.address.trim()) {
+      newErrors.address = 'Address is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      onSubmit(formData);
+      onClose();
+      
+      // Reset form
+      setFormData({
+        id: '',
+        name: '',
+        type: '',
+        status: '',
+        phone: '',
+        email: '',
+        address: '',
+        website: '',
+      });
+      setErrors({});
+    } catch (error) {
+      showNotification({
+        title: 'Error',
+        message: 'Failed to update provider. Please try again.',
+        color: 'red',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setErrors({});
+    onClose();
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={handleClose}
+      title="Edit Provider"
+      size="lg"
+    >
+      <form onSubmit={handleSubmit}>
+        <Stack gap="md">
+          <Grid>
+            <Grid.Col span={6}>
+              <TextInput
+                label="Provider Name"
+                placeholder="Enter provider name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                error={errors.name}
+                required
+              />
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <Select
+                label="Provider Type"
+                placeholder="Select type"
+                value={formData.type}
+                onChange={(value) => setFormData({ ...formData, type: value || '' })}
+                data={[
+                  { value: 'health', label: 'Health Insurance' },
+                  { value: 'dental', label: 'Dental Insurance' },
+                  { value: 'vision', label: 'Vision Insurance' },
+                  { value: 'life', label: 'Life Insurance' },
+                ]}
+                error={errors.type}
+                required
+              />
+            </Grid.Col>
+          </Grid>
+
+          <Grid>
+            <Grid.Col span={6}>
+              <Select
+                label="Status"
+                placeholder="Select status"
+                value={formData.status}
+                onChange={(value) => setFormData({ ...formData, status: value || '' })}
+                data={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'pending', label: 'Pending' },
+                ]}
+                error={errors.status}
+                required
+              />
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <TextInput
+                label="Phone Number"
+                placeholder="Enter phone number"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                error={errors.phone}
+                required
+              />
+            </Grid.Col>
+          </Grid>
+
+          <TextInput
+            label="Email"
+            placeholder="Enter email address"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            error={errors.email}
+            required
+          />
+
+          <Textarea
+            label="Address"
+            placeholder="Enter provider address"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            error={errors.address}
+            required
+            minRows={2}
+          />
+
+          <TextInput
+            label="Website (Optional)"
+            placeholder="Enter website URL"
+            value={formData.website}
+            onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+          />
+
+          <Group justify="flex-end" mt="md">
+            <Button variant="light" onClick={handleClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={isSubmitting}>
+              Update Provider
+            </Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
+  );
+};
+
+/**
+ * Add Provider Modal Component
+ * Allows adding new insurance providers with comprehensive form validation
+ */
+interface AddProviderModalProps {
+  opened: boolean;
+  onClose: () => void;
+  onSubmit: (providerData: any) => void;
+}
+
+const AddProviderModal: React.FC<AddProviderModalProps> = ({ 
+  opened, 
+  onClose, 
+  onSubmit 
+}) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    type: '',
+    status: 'active',
+    phone: '',
+    email: '',
+    address: '',
+    website: '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Provider name is required';
+    }
+    if (!formData.type) {
+      newErrors.type = 'Provider type is required';
+    }
+    if (!formData.status) {
+      newErrors.status = 'Status is required';
+    }
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+    if (!formData.address.trim()) {
+      newErrors.address = 'Address is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      onSubmit(formData);
+      onClose();
+      
+      // Reset form
+      setFormData({
+        name: '',
+        type: '',
+        status: 'active',
+        phone: '',
+        email: '',
+        address: '',
+        website: '',
+      });
+      setErrors({});
+    } catch (error) {
+      showNotification({
+        title: 'Error',
+        message: 'Failed to add provider. Please try again.',
+        color: 'red',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({
+      name: '',
+      type: '',
+      status: 'active',
+      phone: '',
+      email: '',
+      address: '',
+      website: '',
+    });
+    setErrors({});
+    onClose();
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={handleClose}
+      title="Add New Provider"
+      size="lg"
+    >
+      <form onSubmit={handleSubmit}>
+        <Stack gap="md">
+          <Grid>
+            <Grid.Col span={6}>
+              <TextInput
+                label="Provider Name"
+                placeholder="Enter provider name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                error={errors.name}
+                required
+              />
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <Select
+                label="Provider Type"
+                placeholder="Select type"
+                value={formData.type}
+                onChange={(value) => setFormData({ ...formData, type: value || '' })}
+                data={[
+                  { value: 'health', label: 'Health Insurance' },
+                  { value: 'dental', label: 'Dental Insurance' },
+                  { value: 'vision', label: 'Vision Insurance' },
+                  { value: 'life', label: 'Life Insurance' },
+                ]}
+                error={errors.type}
+                required
+              />
+            </Grid.Col>
+          </Grid>
+
+          <Grid>
+            <Grid.Col span={6}>
+              <Select
+                label="Status"
+                placeholder="Select status"
+                value={formData.status}
+                onChange={(value) => setFormData({ ...formData, status: value || 'active' })}
+                data={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'pending', label: 'Pending' },
+                ]}
+                error={errors.status}
+                required
+              />
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <TextInput
+                label="Phone Number"
+                placeholder="Enter phone number"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                error={errors.phone}
+                required
+              />
+            </Grid.Col>
+          </Grid>
+
+          <TextInput
+            label="Email"
+            placeholder="Enter email address"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            error={errors.email}
+            required
+          />
+
+          <Textarea
+            label="Address"
+            placeholder="Enter provider address"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            error={errors.address}
+            required
+            minRows={2}
+          />
+
+          <TextInput
+            label="Website (Optional)"
+            placeholder="Enter website URL"
+            value={formData.website}
+            onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+          />
+
+          <Group justify="flex-end" mt="md">
+            <Button variant="light" onClick={handleClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={isSubmitting}>
+              Add Provider
+            </Button>
+          </Group>
+        </Stack>
+      </form>
+    </Modal>
   );
 };
 
@@ -505,11 +1056,18 @@ export const InsurancePage: React.FC = () => {
   const [selectedInsurance, setSelectedInsurance] = useState<Insurance | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-
-  // Using mock data for now
-  const providers = mockInsuranceProviders;
-  const patientInsurance = mockPatientInsurance;
-  const isLoading = false;
+  
+  // State management for data
+  const [patientInsurance, setPatientInsurance] = useState<Insurance[]>(mockPatientInsurance);
+  const [providers, setProviders] = useState(mockInsuranceProviders);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Modal states
+  const [addInsuranceOpened, { open: openAddInsurance, close: closeAddInsurance }] = useDisclosure(false);
+  const [addProviderOpened, { open: openAddProvider, close: closeAddProvider }] = useDisclosure(false);
+  const [providerDetailsOpened, { open: openProviderDetails, close: closeProviderDetails }] = useDisclosure(false);
+  const [editProviderOpened, { open: openEditProvider, close: closeEditProvider }] = useDisclosure(false);
+  const [selectedProvider, setSelectedProvider] = useState<any>(null);
 
   const handleViewInsurance = (insurance: Insurance) => {
     setSelectedInsurance(insurance);
@@ -517,18 +1075,78 @@ export const InsurancePage: React.FC = () => {
   };
 
   const handleVerifyInsurance = (insurance: Insurance) => {
-    // TODO: Implement insurance verification
-    console.log('Verify insurance:', insurance);
+    setIsLoading(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setPatientInsurance(prev => 
+        prev.map(ins => 
+          ins.id === insurance.id 
+            ? { 
+                ...ins, 
+                verificationStatus: 'verified', 
+                lastVerified: new Date().toISOString().split('T')[0] 
+              }
+            : ins
+        )
+      );
+      
+      showNotification({
+        title: 'Insurance Verified',
+        message: `Insurance for ${insurance.patientName} has been successfully verified.`,
+        color: 'green',
+      });
+      
+      setIsLoading(false);
+    }, 1500);
   };
 
   const handleViewProvider = (provider: any) => {
-    // TODO: Implement provider view
-    console.log('View provider:', provider);
+    setSelectedProvider(provider);
+    openProviderDetails();
   };
 
   const handleEditProvider = (provider: any) => {
-    // TODO: Implement provider edit
-    console.log('Edit provider:', provider);
+    setSelectedProvider(provider);
+    openEditProvider();
+  };
+
+  const handleAddInsurance = () => {
+    openAddInsurance();
+  };
+
+  const handleAddProvider = () => {
+    openAddProvider();
+  };
+
+  const handleAddInsuranceSubmit = (insuranceData: Partial<Insurance>) => {
+    setPatientInsurance(prev => [...prev, insuranceData as Insurance]);
+  };
+
+  const handleEditProviderSubmit = (providerData: any) => {
+    setProviders(prev => 
+      prev.map(provider => 
+        provider.id === providerData.id ? { ...provider, ...providerData } : provider
+      )
+    );
+    showNotification({
+      title: 'Provider Updated',
+      message: `${providerData.name} has been successfully updated.`,
+      color: 'green',
+    });
+  };
+
+  const handleAddProviderSubmit = (providerData: any) => {
+    const newProvider = {
+      ...providerData,
+      id: `INS-${Date.now()}`,
+    };
+    setProviders(prev => [...prev, newProvider]);
+    showNotification({
+      title: 'Provider Added',
+      message: `${providerData.name} has been successfully added.`,
+      color: 'green',
+    });
   };
 
   const filteredPatientInsurance = patientInsurance
@@ -561,8 +1179,8 @@ export const InsurancePage: React.FC = () => {
             <Title order={2}>Insurance Management</Title>
             <Text c="dimmed">Manage insurance providers, plans, and coverage verification</Text>
           </div>
-          <Button leftSection={<Plus size={16} />}>
-            Add Insurance
+          <Button leftSection={<Plus size={16} />} onClick={activeTab === 'patient_insurance' ? handleAddInsurance : handleAddProvider}>
+            Add {activeTab === 'patient_insurance' ? 'Insurance' : 'Provider'}
           </Button>
         </Group>
 
@@ -794,23 +1412,56 @@ export const InsurancePage: React.FC = () => {
                   ? 'Try adjusting your search criteria'
                   : `Get started by adding ${activeTab === 'patient_insurance' ? 'patient insurance' : 'insurance providers'}`}
               </Text>
-              <Button leftSection={<Plus size={16} />}>
-                Add {activeTab === 'patient_insurance' ? 'Insurance' : 'Provider'}
+              <Button leftSection={<Plus size={16} />} onClick={activeTab === 'patient_insurance' ? handleAddInsurance : handleAddProvider}>
+                 Add {activeTab === 'patient_insurance' ? 'Insurance' : 'Provider'}
               </Button>
             </Stack>
           </Center>
         )}
       </Stack>
 
-      {/* Insurance Details Modal */}
-      <InsuranceDetailsModal
-        insurance={selectedInsurance}
-        opened={detailsOpened}
-        onClose={closeDetails}
-      />
-    </Container>
-  );
-};
+       {/* Insurance Details Modal */}
+       <InsuranceDetailsModal
+         insurance={selectedInsurance}
+         opened={detailsOpened}
+         onClose={closeDetails}
+       />
+
+       {/* Add Insurance Modal */}
+        <AddInsuranceModal
+          opened={addInsuranceOpened}
+          onClose={closeAddInsurance}
+          onSubmit={handleAddInsuranceSubmit}
+        />
+
+        {/* Provider Details Modal */}
+        <ProviderDetailsModal
+          provider={selectedProvider}
+          opened={providerDetailsOpened}
+          onClose={closeProviderDetails}
+          onEdit={() => {
+            closeProviderDetails();
+            openEditProvider();
+          }}
+        />
+
+        {/* Edit Provider Modal */}
+        <EditProviderModal
+          provider={selectedProvider}
+          opened={editProviderOpened}
+          onClose={closeEditProvider}
+          onSubmit={handleEditProviderSubmit}
+        />
+
+        {/* Add Provider Modal */}
+        <AddProviderModal
+          opened={addProviderOpened}
+          onClose={closeAddProvider}
+          onSubmit={handleAddProviderSubmit}
+        />
+      </Container>
+    );
+  };
 
 /**
  * Patient Insurance Table Row Component
@@ -973,5 +1624,315 @@ const ProviderTableRow: React.FC<ProviderTableRowProps> = ({ provider, onView, o
         </Group>
       </Table.Td>
     </Table.Tr>
+  );
+};
+
+/**
+ * Add Insurance Modal Component
+ */
+interface AddInsuranceModalProps {
+  opened: boolean;
+  onClose: () => void;
+  onSubmit: (insuranceData: Partial<Insurance>) => void;
+}
+
+const AddInsuranceModal: React.FC<AddInsuranceModalProps> = ({ opened, onClose, onSubmit }) => {
+  const [formData, setFormData] = useState({
+    patientName: '',
+    patientId: '',
+    provider: '',
+    planName: '',
+    policyNumber: '',
+    groupNumber: '',
+    subscriberId: '',
+    subscriberName: '',
+    relationship: 'self',
+    effectiveDate: '',
+    expirationDate: '',
+    copay: 0,
+    deductible: 0,
+    coinsurance: 0,
+    outOfPocketMax: 0,
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.patientName.trim()) newErrors.patientName = 'Patient name is required';
+    if (!formData.patientId.trim()) newErrors.patientId = 'Patient ID is required';
+    if (!formData.provider.trim()) newErrors.provider = 'Insurance provider is required';
+    if (!formData.planName.trim()) newErrors.planName = 'Plan name is required';
+    if (!formData.policyNumber.trim()) newErrors.policyNumber = 'Policy number is required';
+    if (!formData.effectiveDate) newErrors.effectiveDate = 'Effective date is required';
+    if (!formData.expirationDate) newErrors.expirationDate = 'Expiration date is required';
+    if (formData.copay < 0) newErrors.copay = 'Copay must be positive';
+    if (formData.deductible < 0) newErrors.deductible = 'Deductible must be positive';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    
+    try {
+      const newInsurance: Partial<Insurance> = {
+        ...formData,
+        id: `PI-${Date.now()}`,
+        status: 'active',
+        verificationStatus: 'pending',
+        lastVerified: new Date().toISOString().split('T')[0],
+      };
+
+      onSubmit(newInsurance);
+      
+      showNotification({
+        title: 'Insurance Added',
+        message: `Insurance for ${formData.patientName} has been successfully added.`,
+        color: 'green',
+      });
+
+      // Reset form
+      setFormData({
+        patientName: '',
+        patientId: '',
+        provider: '',
+        planName: '',
+        policyNumber: '',
+        groupNumber: '',
+        subscriberId: '',
+        subscriberName: '',
+        relationship: 'self',
+        effectiveDate: '',
+        expirationDate: '',
+        copay: 0,
+        deductible: 0,
+        coinsurance: 0,
+        outOfPocketMax: 0,
+      });
+      
+      onClose();
+    } catch (error) {
+      showNotification({
+        title: 'Error',
+        message: 'Failed to add insurance. Please try again.',
+        color: 'red',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Add Patient Insurance"
+      size="lg"
+    >
+      <Stack gap="md">
+        <Grid>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Patient Name"
+              placeholder="Enter patient name"
+              value={formData.patientName}
+              onChange={(e) => handleInputChange('patientName', e.target.value)}
+              error={errors.patientName}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Patient ID"
+              placeholder="Enter patient ID"
+              value={formData.patientId}
+              onChange={(e) => handleInputChange('patientId', e.target.value)}
+              error={errors.patientId}
+              required
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <Select
+              label="Insurance Provider"
+              placeholder="Select provider"
+              data={[
+                'Blue Cross Blue Shield',
+                'Aetna',
+                'UnitedHealthcare',
+                'Cigna',
+                'Humana',
+                'Kaiser Permanente',
+                'Other'
+              ]}
+              value={formData.provider}
+              onChange={(value) => handleInputChange('provider', value)}
+              error={errors.provider}
+              required
+              searchable
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Plan Name"
+              placeholder="Enter plan name"
+              value={formData.planName}
+              onChange={(e) => handleInputChange('planName', e.target.value)}
+              error={errors.planName}
+              required
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Policy Number"
+              placeholder="Enter policy number"
+              value={formData.policyNumber}
+              onChange={(e) => handleInputChange('policyNumber', e.target.value)}
+              error={errors.policyNumber}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Group Number"
+              placeholder="Enter group number"
+              value={formData.groupNumber}
+              onChange={(e) => handleInputChange('groupNumber', e.target.value)}
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Subscriber ID"
+              placeholder="Enter subscriber ID"
+              value={formData.subscriberId}
+              onChange={(e) => handleInputChange('subscriberId', e.target.value)}
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Subscriber Name"
+              placeholder="Enter subscriber name"
+              value={formData.subscriberName}
+              onChange={(e) => handleInputChange('subscriberName', e.target.value)}
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <Select
+              label="Relationship"
+              data={[
+                { value: 'self', label: 'Self' },
+                { value: 'spouse', label: 'Spouse' },
+                { value: 'child', label: 'Child' },
+                { value: 'parent', label: 'Parent' },
+                { value: 'other', label: 'Other' },
+              ]}
+              value={formData.relationship}
+              onChange={(value) => handleInputChange('relationship', value)}
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Effective Date"
+              type="date"
+              value={formData.effectiveDate}
+              onChange={(e) => handleInputChange('effectiveDate', e.target.value)}
+              error={errors.effectiveDate}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Expiration Date"
+              type="date"
+              value={formData.expirationDate}
+              onChange={(e) => handleInputChange('expirationDate', e.target.value)}
+              error={errors.expirationDate}
+              required
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <NumberInput
+              label="Copay ($)"
+              placeholder="Enter copay amount"
+              value={formData.copay}
+              onChange={(value) => handleInputChange('copay', value || 0)}
+              error={errors.copay}
+              min={0}
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <NumberInput
+              label="Deductible ($)"
+              placeholder="Enter deductible amount"
+              value={formData.deductible}
+              onChange={(value) => handleInputChange('deductible', value || 0)}
+              error={errors.deductible}
+              min={0}
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <NumberInput
+              label="Coinsurance (%)"
+              placeholder="Enter coinsurance percentage"
+              value={formData.coinsurance}
+              onChange={(value) => handleInputChange('coinsurance', value || 0)}
+              min={0}
+              max={100}
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <NumberInput
+              label="Out-of-Pocket Max ($)"
+              placeholder="Enter out-of-pocket maximum"
+              value={formData.outOfPocketMax}
+              onChange={(value) => handleInputChange('outOfPocketMax', value || 0)}
+              min={0}
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Group justify="flex-end" mt="md">
+          <Button variant="light" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} loading={isSubmitting}>
+            Add Insurance
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
   );
 };

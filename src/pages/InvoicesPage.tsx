@@ -43,6 +43,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
 import { Invoice } from '../types';
 
 /**
@@ -88,6 +89,18 @@ const mockInvoices: Invoice[] = [
       { description: 'Imaging Study', quantity: 1, unitPrice: 120.00, total: 120.00 },
     ],
     notes: 'Specialist referral and MRI scan',
+  },
+  {
+    id: 'INV-2024-004',
+    patientName: 'John Smith',
+    amount: 150.00,
+    status: 'draft',
+    dueDate: '2024-02-01',
+    issueDate: '2024-01-15',
+    items: [
+      { description: 'Consultation', quantity: 1, unitPrice: 150.00, total: 150.00 },
+    ],
+    notes: 'Initial consultation - draft',
   },
 ];
 
@@ -455,6 +468,203 @@ interface CreateInvoiceModalProps {
   onClose: () => void;
 }
 
+/**
+ * Edit Invoice Modal Component
+ * Pre-populates with existing invoice data for editing
+ */
+interface EditInvoiceModalProps {
+  invoice: Invoice | null;
+  opened: boolean;
+  onClose: () => void;
+  onSave: (updatedInvoice: Invoice) => void;
+}
+
+const EditInvoiceModal: React.FC<EditInvoiceModalProps> = ({ invoice, opened, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    patientName: '',
+    dueDate: '',
+    notes: '',
+  });
+
+  const [items, setItems] = useState([
+    { description: '', quantity: 1, unitPrice: 0, total: 0 },
+  ]);
+
+  // Pre-populate form when invoice changes
+  React.useEffect(() => {
+    if (invoice) {
+      setFormData({
+        patientName: invoice.patientName,
+        dueDate: invoice.dueDate,
+        notes: invoice.notes || '',
+      });
+      setItems(invoice.items || [{ description: '', quantity: 1, unitPrice: 0, total: 0 }]);
+    }
+  }, [invoice]);
+
+  const addItem = () => {
+    setItems([...items, { description: '', quantity: 1, unitPrice: 0, total: 0 }]);
+  };
+
+  const updateItem = (index: number, field: string, value: any) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    
+    if (field === 'quantity' || field === 'unitPrice') {
+      newItems[index].total = newItems[index].quantity * newItems[index].unitPrice;
+    }
+    
+    setItems(newItems);
+  };
+
+  const removeItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  const calculateTotal = () => {
+    return items.reduce((sum, item) => sum + item.total, 0);
+  };
+
+  const handleSubmit = () => {
+    if (!invoice) return;
+
+    const updatedInvoice: Invoice = {
+      ...invoice,
+      patientName: formData.patientName,
+      dueDate: formData.dueDate,
+      notes: formData.notes,
+      items: items,
+      amount: calculateTotal(),
+    };
+
+    onSave(updatedInvoice);
+    showNotification({
+      title: 'Success',
+      message: 'Invoice updated successfully',
+      color: 'green',
+    });
+    onClose();
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Edit Invoice"
+      size="xl"
+    >
+      <Stack gap="md">
+        <Grid>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Patient Name"
+              placeholder="Enter patient name"
+              value={formData.patientName}
+              onChange={(event) => setFormData({ ...formData, patientName: event.currentTarget.value })}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Due Date"
+              type="date"
+              value={formData.dueDate}
+              onChange={(event) => setFormData({ ...formData, dueDate: event.currentTarget.value })}
+              required
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Stack gap="xs">
+          <Group justify="space-between" align="center">
+            <Text fw={500}>Invoice Items</Text>
+            <Button size="xs" onClick={addItem}>
+              Add Item
+            </Button>
+          </Group>
+          
+          {items.map((item, index) => (
+            <Card key={index} padding="sm" withBorder>
+              <Grid align="end">
+                <Grid.Col span={4}>
+                  <TextInput
+                    label="Description"
+                    placeholder="Item description"
+                    value={item.description}
+                    onChange={(event) => updateItem(index, 'description', event.currentTarget.value)}
+                  />
+                </Grid.Col>
+                <Grid.Col span={2}>
+                  <NumberInput
+                    label="Quantity"
+                    value={item.quantity}
+                    onChange={(value) => updateItem(index, 'quantity', value || 1)}
+                    min={1}
+                  />
+                </Grid.Col>
+                <Grid.Col span={2}>
+                  <NumberInput
+                    label="Unit Price"
+                    value={item.unitPrice}
+                    onChange={(value) => updateItem(index, 'unitPrice', value || 0)}
+                    min={0}
+                    decimalScale={2}
+                    prefix="$"
+                  />
+                </Grid.Col>
+                <Grid.Col span={2}>
+                  <NumberInput
+                    label="Total"
+                    value={item.total}
+                    readOnly
+                    decimalScale={2}
+                    prefix="$"
+                  />
+                </Grid.Col>
+                <Grid.Col span={2}>
+                  <Button
+                    color="red"
+                    variant="light"
+                    size="xs"
+                    onClick={() => removeItem(index)}
+                    disabled={items.length === 1}
+                  >
+                    Remove
+                  </Button>
+                </Grid.Col>
+              </Grid>
+            </Card>
+          ))}
+        </Stack>
+
+        <TextInput
+          label="Notes"
+          placeholder="Additional notes (optional)"
+          value={formData.notes}
+          onChange={(event) => setFormData({ ...formData, notes: event.currentTarget.value })}
+        />
+
+        <Group justify="space-between" mt="md">
+          <Text fw={500} size="lg">
+            Total: ${calculateTotal().toFixed(2)}
+          </Text>
+          <Group>
+            <Button variant="light" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit}>
+              Update Invoice
+            </Button>
+          </Group>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+};
+
+/**
+ * Create Invoice Modal Component
+ */
 const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ opened, onClose }) => {
   const [formData, setFormData] = useState({
     patientName: '',
@@ -613,9 +823,11 @@ export const InvoicesPage: React.FC = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
+  const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
-  // Using mock data for now
-  const invoices = mockInvoices;
+  // Using mock data for now - in real app this would be state managed
+  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
   const isLoading = false;
 
   const handleViewInvoice = (invoice: Invoice) => {
@@ -624,13 +836,42 @@ export const InvoicesPage: React.FC = () => {
   };
 
   const handleEditInvoice = (invoice: Invoice) => {
-    // TODO: Implement edit functionality
-    console.log('Edit invoice:', invoice);
+    setEditingInvoice(invoice);
+    openEdit();
   };
 
   const handleSendInvoice = (invoice: Invoice) => {
-    // TODO: Implement send functionality
-    console.log('Send invoice:', invoice);
+    // Only allow sending draft invoices
+    if (invoice.status !== 'draft') {
+      showNotification({
+        title: 'Error',
+        message: 'Only draft invoices can be sent',
+        color: 'red',
+      });
+      return;
+    }
+
+    // Update invoice status to pending
+    const updatedInvoices = invoices.map(inv => 
+      inv.id === invoice.id 
+        ? { ...inv, status: 'pending' as const }
+        : inv
+    );
+    
+    setInvoices(updatedInvoices);
+    
+    showNotification({
+      title: 'Success',
+      message: 'Invoice sent successfully',
+      color: 'green',
+    });
+  };
+
+  const handleSaveEditedInvoice = (updatedInvoice: Invoice) => {
+    const updatedInvoices = invoices.map(inv => 
+      inv.id === updatedInvoice.id ? updatedInvoice : inv
+    );
+    setInvoices(updatedInvoices);
   };
 
   const filterInvoicesByTab = (invoices: Invoice[], tab: string) => {
@@ -1024,6 +1265,14 @@ export const InvoicesPage: React.FC = () => {
       <CreateInvoiceModal
         opened={createOpened}
         onClose={closeCreate}
+      />
+
+      {/* Edit Invoice Modal */}
+      <EditInvoiceModal
+        invoice={editingInvoice}
+        opened={editOpened}
+        onClose={closeEdit}
+        onSave={handleSaveEditedInvoice}
       />
     </Container>
   );

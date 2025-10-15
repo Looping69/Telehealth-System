@@ -3,7 +3,7 @@
  * Manages patient directory with search, filtering, and patient profiles
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Container,
   Grid,
@@ -39,6 +39,8 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { usePatients } from '../hooks/useQuery';
 import { Patient } from '../types';
+import { CreatePatientModal } from '../components/CreatePatientModal';
+import { EditPatientModal } from '../components/EditPatientModal';
 
 /**
  * Patient Card Component
@@ -108,7 +110,10 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onView, onEdit }) =>
           <Group gap="xs">
             <MapPin size={14} />
             <Text size="sm">
-              {patient.address.city}, {patient.address.state}
+              {typeof patient.address === 'object' 
+                ? `${patient.address.city}, ${patient.address.state}`
+                : patient.address
+              }
             </Text>
           </Group>
           <Group gap="xs">
@@ -206,7 +211,7 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
                 <strong>Date of Birth:</strong> {patient.dateOfBirth}
               </Text>
               <Text size="sm">
-                <strong>SSN:</strong> {patient.ssn}
+                <strong>ID:</strong> {patient.id}
               </Text>
             </Stack>
           </Grid.Col>
@@ -221,8 +226,14 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
               </Text>
               <Text size="sm">
                 <strong>Address:</strong><br />
-                {patient.address.street}<br />
-                {patient.address.city}, {patient.address.state} {patient.address.zipCode}
+                {typeof patient.address === 'object' ? (
+                  <>
+                    {patient.address.street}<br />
+                    {patient.address.city}, {patient.address.state} {patient.address.zipCode}
+                  </>
+                ) : (
+                  patient.address
+                )}
               </Text>
             </Stack>
           </Grid.Col>
@@ -231,15 +242,21 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
         {patient.insurance && (
           <Stack gap="xs">
             <Text fw={500}>Insurance Information</Text>
-            <Text size="sm">
-              <strong>Provider:</strong> {patient.insurance.provider}
-            </Text>
-            <Text size="sm">
-              <strong>Policy Number:</strong> {patient.insurance.policyNumber}
-            </Text>
-            <Text size="sm">
-              <strong>Group Number:</strong> {patient.insurance.groupNumber}
-            </Text>
+            {typeof patient.insurance === 'object' ? (
+              <>
+                <Text size="sm">
+                  <strong>Provider:</strong> {patient.insurance.provider}
+                </Text>
+                <Text size="sm">
+                  <strong>Policy Number:</strong> {patient.insurance.policyNumber}
+                </Text>
+                <Text size="sm">
+                  <strong>Group Number:</strong> {patient.insurance.groupNumber}
+                </Text>
+              </>
+            ) : (
+              <Text size="sm">{patient.insurance}</Text>
+            )}
           </Stack>
         )}
 
@@ -251,6 +268,64 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
           <Text size="sm">
             <strong>Last Visit:</strong> {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString() : 'Never'}
           </Text>
+        </Stack>
+
+        <Stack gap="xs">
+          <Text fw={500}>Products & Subscriptions</Text>
+          {/* Mock subscription data for demonstration */}
+          <Card withBorder p="sm" radius="sm">
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Text size="sm" fw={500}>Semaglutide (Ozempic) - Weekly</Text>
+                <Badge color="green" size="sm">Active</Badge>
+              </Group>
+              <Text size="xs" c="dimmed">
+                <strong>Started:</strong> {new Date('2024-01-15').toLocaleDateString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                <strong>Next Billing:</strong> {new Date('2024-02-15').toLocaleDateString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                <strong>Monthly Cost:</strong> $299/month
+              </Text>
+            </Stack>
+          </Card>
+          
+          <Card withBorder p="sm" radius="sm">
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Text size="sm" fw={500}>Monthly Consultation Plan</Text>
+                <Badge color="blue" size="sm">Active</Badge>
+              </Group>
+              <Text size="xs" c="dimmed">
+                <strong>Started:</strong> {new Date('2024-01-10').toLocaleDateString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                <strong>Next Billing:</strong> {new Date('2024-02-10').toLocaleDateString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                <strong>Monthly Cost:</strong> $149/month
+              </Text>
+            </Stack>
+          </Card>
+
+          <Card withBorder p="sm" radius="sm">
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Text size="sm" fw={500}>Health Monitoring Package</Text>
+                <Badge color="orange" size="sm">Paused</Badge>
+              </Group>
+              <Text size="xs" c="dimmed">
+                <strong>Started:</strong> {new Date('2023-12-01').toLocaleDateString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                <strong>Paused Since:</strong> {new Date('2024-01-20').toLocaleDateString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                <strong>Monthly Cost:</strong> $79/month
+              </Text>
+            </Stack>
+          </Card>
         </Stack>
 
         <Group justify="flex-end" mt="md">
@@ -272,8 +347,11 @@ export const PatientsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [editPatient, setEditPatient] = useState<Patient | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
+  const [createModalOpened, { open: openCreateModal, close: closeCreateModal }] = useDisclosure(false);
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
 
   const { data: patients, isLoading, error } = usePatients({
     search: searchQuery,
@@ -293,10 +371,13 @@ export const PatientsPage: React.FC = () => {
   };
 
   const handleEditPatient = (patient: Patient) => {
-    // TODO: Implement edit functionality
-    console.log('Edit patient:', patient);
+    setEditPatient(patient);
+    openEditModal();
   };
 
+  const handleCreatePatient = () => {
+    openCreateModal();
+  };
   const filteredPatients = patients?.data || [];
   const totalPages = Math.ceil((patients?.total || 0) / 12);
 
@@ -317,7 +398,7 @@ export const PatientsPage: React.FC = () => {
             <Title order={2}>Patients</Title>
             <Text c="dimmed">Manage patient records and information</Text>
           </div>
-          <Button leftSection={<Plus size={16} />}>
+          <Button leftSection={<Plus size={16} />} onClick={handleCreatePatient}>
             Add New Patient
           </Button>
         </Group>
@@ -486,7 +567,7 @@ export const PatientsPage: React.FC = () => {
                       ? 'Try adjusting your search criteria'
                       : 'Get started by adding your first patient'}
                   </Text>
-                  <Button leftSection={<Plus size={16} />}>
+                  <Button leftSection={<Plus size={16} />} onClick={handleCreatePatient}>
                     Add New Patient
                   </Button>
                 </Stack>
@@ -501,6 +582,19 @@ export const PatientsPage: React.FC = () => {
         patient={selectedPatient}
         opened={detailsOpened}
         onClose={closeDetails}
+      />
+
+      {/* Create Patient Modal */}
+      <CreatePatientModal
+        opened={createModalOpened}
+        onClose={closeCreateModal}
+      />
+
+      {/* Edit Patient Modal */}
+      <EditPatientModal
+        opened={editModalOpened}
+        onClose={closeEditModal}
+        patient={editPatient}
       />
     </Container>
   );

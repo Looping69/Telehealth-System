@@ -201,10 +201,23 @@ export function usePatients(searchQuery?: string | { search?: string; status?: s
         
         let filteredPatients = mockPatients;
         
-        if (searchQuery && typeof searchQuery === 'string') {
-          filteredPatients = mockPatients.filter(patient => 
-            patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            patient.email?.toLowerCase().includes(searchQuery.toLowerCase())
+        // Apply search filter
+        if (queryString && queryString.trim()) {
+          const searchTerm = queryString.toLowerCase().trim();
+          filteredPatients = filteredPatients.filter(patient => 
+            patient.name.toLowerCase().includes(searchTerm) ||
+            patient.firstName.toLowerCase().includes(searchTerm) ||
+            patient.lastName.toLowerCase().includes(searchTerm) ||
+            patient.email?.toLowerCase().includes(searchTerm) ||
+            patient.phone?.toLowerCase().includes(searchTerm) ||
+            patient.id.toLowerCase().includes(searchTerm)
+          );
+        }
+        
+        // Apply status filter
+        if (statusFilter && statusFilter !== 'all') {
+          filteredPatients = filteredPatients.filter(patient => 
+            patient.status === statusFilter
           );
         }
         

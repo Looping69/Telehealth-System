@@ -41,6 +41,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
 import { useOrders } from '../hooks/useQuery';
 import { Order } from '../types';
 
@@ -273,14 +274,166 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 };
 
 /**
+ * Edit Order Modal
+ */
+interface EditOrderModalProps {
+  order: Order | null;
+  opened: boolean;
+  onClose: () => void;
+  onSave: (orderData: Order) => void;
+}
+
+const EditOrderModal: React.FC<EditOrderModalProps> = ({ order, opened, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    type: '',
+    patientName: '',
+    description: '',
+    priority: 'normal',
+    dueDate: '',
+    notes: '',
+  });
+
+  // Pre-populate form when order changes
+  React.useEffect(() => {
+    if (order) {
+      setFormData({
+        type: order.type,
+        patientName: order.patientName,
+        description: order.description,
+        priority: order.priority,
+        dueDate: order.dueDate ? (typeof order.dueDate === 'string' ? order.dueDate : order.dueDate.toISOString().split('T')[0]) : '',
+        notes: order.notes || '',
+      });
+    }
+  }, [order]);
+
+  const handleSubmit = () => {
+    if (!order) return;
+
+    // Validate required fields
+    if (!formData.type || !formData.patientName || !formData.description) {
+      showNotification({
+        title: 'Validation Error',
+        message: 'Please fill in all required fields',
+        color: 'red',
+      });
+      return;
+    }
+
+    // Update order
+    const updatedOrder: Order = {
+      ...order,
+      type: formData.type as 'lab' | 'prescription' | 'referral' | 'imaging',
+      patientName: formData.patientName,
+      title: formData.description,
+      description: formData.description,
+      priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
+      dueDate: formData.dueDate || undefined,
+      notes: formData.notes || undefined,
+    };
+
+    onSave(updatedOrder);
+    
+    showNotification({
+      title: 'Success',
+      message: 'Order updated successfully',
+      color: 'green',
+    });
+
+    onClose();
+  };
+
+  if (!order) return null;
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Edit Order"
+      size="lg"
+    >
+      <Stack gap="md">
+        <Select
+          label="Order Type"
+          placeholder="Select order type"
+          data={[
+            { value: 'prescription', label: 'Prescription' },
+            { value: 'lab', label: 'Lab Test' },
+            { value: 'imaging', label: 'Imaging' },
+            { value: 'referral', label: 'Referral' },
+          ]}
+          value={formData.type}
+          onChange={(value) => setFormData({ ...formData, type: value || '' })}
+          required
+        />
+
+        <TextInput
+          label="Patient Name"
+          placeholder="Enter patient name"
+          value={formData.patientName}
+          onChange={(event) => setFormData({ ...formData, patientName: event.currentTarget.value })}
+          required
+        />
+
+        <Textarea
+          label="Description"
+          placeholder="Enter order description"
+          value={formData.description}
+          onChange={(event) => setFormData({ ...formData, description: event.currentTarget.value })}
+          required
+          minRows={3}
+        />
+
+        <Select
+          label="Priority"
+          data={[
+            { value: 'low', label: 'Low' },
+            { value: 'normal', label: 'Normal' },
+            { value: 'high', label: 'High' },
+            { value: 'urgent', label: 'Urgent' },
+          ]}
+          value={formData.priority}
+          onChange={(value) => setFormData({ ...formData, priority: value || 'normal' })}
+        />
+
+        <TextInput
+          label="Due Date"
+          type="date"
+          value={formData.dueDate}
+          onChange={(event) => setFormData({ ...formData, dueDate: event.currentTarget.value })}
+        />
+
+        <Textarea
+          label="Notes"
+          placeholder="Additional notes (optional)"
+          value={formData.notes}
+          onChange={(event) => setFormData({ ...formData, notes: event.currentTarget.value })}
+          minRows={2}
+        />
+
+        <Group justify="flex-end" mt="md">
+          <Button variant="light" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit}>
+            Update Order
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+};
+
+/**
  * Create Order Modal
  */
 interface CreateOrderModalProps {
   opened: boolean;
   onClose: () => void;
+  onSave: (orderData: any) => void;
 }
 
-const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ opened, onClose }) => {
+const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ opened, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     type: '',
     patientName: '',
@@ -291,8 +444,51 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ opened, onClose }) 
   });
 
   const handleSubmit = () => {
-    // TODO: Implement order creation
-    console.log('Create order:', formData);
+    // Validate required fields
+    if (!formData.type || !formData.patientName || !formData.description) {
+      showNotification({
+        title: 'Validation Error',
+        message: 'Please fill in all required fields',
+        color: 'red',
+      });
+      return;
+    }
+
+    // Create new order
+    const newOrder: Order = {
+      id: Date.now().toString(),
+      patientId: Date.now().toString(),
+      patientName: formData.patientName,
+      providerId: '1',
+      provider: 'Dr. Sarah Wilson',
+      type: formData.type as 'lab' | 'prescription' | 'referral' | 'imaging',
+      title: formData.description,
+      description: formData.description,
+      status: 'pending',
+      priority: formData.priority as 'low' | 'medium' | 'high' | 'urgent',
+      createdAt: new Date(),
+      orderDate: new Date().toISOString().split('T')[0],
+      dueDate: formData.dueDate || undefined,
+      notes: formData.notes || undefined,
+    };
+
+    onSave(newOrder);
+    
+    showNotification({
+      title: 'Success',
+      message: 'Order created successfully',
+      color: 'green',
+    });
+
+    // Reset form and close modal
+    setFormData({
+      type: '',
+      patientName: '',
+      description: '',
+      priority: 'normal',
+      dueDate: '',
+      notes: '',
+    });
     onClose();
   };
 
@@ -386,11 +582,20 @@ export const OrdersPage: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
+  const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
-  const { data: orders, isLoading, error } = useOrders({
-    search: searchQuery,
-    status: statusFilter,
-  });
+  // Convert to stateful data for real-time updates
+  const { data: fetchedOrders, isLoading, error } = useOrders();
+  
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  // Update local state when fetched data changes
+  React.useEffect(() => {
+    if (fetchedOrders) {
+      setOrders(fetchedOrders);
+    }
+  }, [fetchedOrders]);
 
   const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
@@ -398,8 +603,20 @@ export const OrdersPage: React.FC = () => {
   };
 
   const handleEditOrder = (order: Order) => {
-    // TODO: Implement edit functionality
-    console.log('Edit order:', order);
+    setEditingOrder(order);
+    openEdit();
+  };
+
+  const handleSaveNewOrder = (newOrder: Order) => {
+    setOrders(prevOrders => [...prevOrders, newOrder]);
+  };
+
+  const handleSaveEditedOrder = (updatedOrder: Order) => {
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === updatedOrder.id ? updatedOrder : order
+      )
+    );
   };
 
   const filterOrdersByTab = (orders: Order[], tab: string) => {
@@ -417,7 +634,32 @@ export const OrdersPage: React.FC = () => {
     }
   };
 
-  const filteredOrders = orders ? filterOrdersByTab(orders, activeTab || 'all') : [];
+  const applyFilters = (orders: Order[]) => {
+    let filtered = orders;
+
+    // Apply tab filter first
+    filtered = filterOrdersByTab(filtered, activeTab || 'all');
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(order => 
+        order.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter) {
+      filtered = filtered.filter(order => order.status === statusFilter);
+    }
+
+    return filtered;
+  };
+
+  const filteredOrders = orders ? applyFilters(orders) : [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -730,6 +972,15 @@ export const OrdersPage: React.FC = () => {
       <CreateOrderModal
         opened={createOpened}
         onClose={closeCreate}
+        onSave={handleSaveNewOrder}
+      />
+
+      {/* Edit Order Modal */}
+      <EditOrderModal
+        order={editingOrder}
+        opened={editOpened}
+        onClose={closeEdit}
+        onSave={handleSaveEditedOrder}
       />
     </Container>
   );
