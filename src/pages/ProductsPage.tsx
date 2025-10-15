@@ -28,6 +28,11 @@ import {
   Tooltip,
   Tabs,
   Table,
+  Checkbox,
+  Menu,
+  Progress,
+  Alert,
+  rem,
 } from '@mantine/core';
 import {
   Search,
@@ -44,8 +49,17 @@ import {
   TrendingUp,
   Users,
   Calendar,
+  MoreVertical,
+  Copy,
+  Download,
+  AlertTriangle,
+  Check,
+  X,
+  Shuffle,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
 
 /**
  * Product interface
@@ -68,6 +82,8 @@ interface Product {
   createdBy: string;
   createdAt: string;
   lastUpdated: string;
+  stockLevel?: number;
+  lowStockThreshold?: number;
 }
 
 /**
@@ -92,6 +108,8 @@ const mockProducts: Product[] = [
     createdBy: 'Dr. Sarah Johnson',
     createdAt: '2024-01-01',
     lastUpdated: '2024-01-15',
+    stockLevel: 15,
+    lowStockThreshold: 10,
   },
   {
     id: 'PROD-002',
@@ -110,6 +128,8 @@ const mockProducts: Product[] = [
     createdBy: 'Dr. Michael Chen',
     createdAt: '2024-01-05',
     lastUpdated: '2024-01-18',
+    stockLevel: 8,
+    lowStockThreshold: 10,
   },
   {
     id: 'PROD-003',
@@ -128,6 +148,8 @@ const mockProducts: Product[] = [
     createdBy: 'Dr. Emily Rodriguez',
     createdAt: '2024-01-08',
     lastUpdated: '2024-01-19',
+    stockLevel: 25,
+    lowStockThreshold: 15,
   },
   {
     id: 'PROD-004',
@@ -312,9 +334,22 @@ interface ProductCardProps {
   onView: (product: Product) => void;
   onEdit: (product: Product) => void;
   onToggleStatus: (product: Product) => void;
+  onDelete: (productId: string) => void;
+  onDuplicate: (productId: string) => void;
+  isSelected: boolean;
+  onSelect: (productId: string, selected: boolean) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onView, onEdit, onToggleStatus }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ 
+  product, 
+  onView, 
+  onEdit, 
+  onToggleStatus, 
+  onDelete, 
+  onDuplicate, 
+  isSelected, 
+  onSelect 
+}) => {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'consultation':
@@ -410,38 +445,48 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onView, onEdit, onTo
         </Stack>
 
         <Group justify="space-between" align="center">
-          <Badge color={product.isActive ? 'green' : 'red'} size="sm">
-            {product.isActive ? 'Active' : 'Inactive'}
-          </Badge>
           <Group gap="xs">
-            <Tooltip label="View Details">
-              <ActionIcon
-                variant="light"
-                color="blue"
-                onClick={() => onView(product)}
-              >
-                <Eye size={16} />
+            <Checkbox
+              checked={isSelected}
+              onChange={(event) => onSelect(product.id, event.currentTarget.checked)}
+              size="sm"
+            />
+            <Badge color={product.isActive ? 'green' : 'red'} size="sm">
+              {product.isActive ? 'Active' : 'Inactive'}
+            </Badge>
+          </Group>
+          <Menu shadow="md" width={200}>
+            <Menu.Target>
+              <ActionIcon variant="light" color="gray">
+                <MoreVertical size={16} />
               </ActionIcon>
-            </Tooltip>
-            <Tooltip label="Edit">
-              <ActionIcon
-                variant="light"
-                color="orange"
-                onClick={() => onEdit(product)}
-              >
-                <Edit size={16} />
-              </ActionIcon>
-            </Tooltip>
-            <Tooltip label={product.isActive ? 'Deactivate' : 'Activate'}>
-              <ActionIcon
-                variant="light"
-                color={product.isActive ? 'red' : 'green'}
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<Eye size={14} />} onClick={() => onView(product)}>
+                View Details
+              </Menu.Item>
+              <Menu.Item leftSection={<Edit size={14} />} onClick={() => onEdit(product)}>
+                Edit Product
+              </Menu.Item>
+              <Menu.Item leftSection={<Copy size={14} />} onClick={() => onDuplicate(product.id)}>
+                Duplicate
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                leftSection={product.isActive ? <X size={14} /> : <Check size={14} />}
                 onClick={() => onToggleStatus(product)}
               >
-                <Package size={16} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
+                {product.isActive ? 'Deactivate' : 'Activate'}
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<Trash2 size={14} />}
+                color="red"
+                onClick={() => onDelete(product.id)}
+              >
+                Delete
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
       </Stack>
     </Card>
@@ -657,6 +702,10 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, opened, on
     prerequisites: [] as string[],
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [featureInput, setFeatureInput] = useState('');
+  const [prerequisiteInput, setPrerequisiteInput] = useState('');
+
   React.useEffect(() => {
     if (product) {
       setFormData({
@@ -683,11 +732,76 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, opened, on
         prerequisites: [],
       });
     }
-  }, [product]);
+    setErrors({});
+    setFeatureInput('');
+    setPrerequisiteInput('');
+  }, [product, opened]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Product name is required';
+    } else if (formData.name.length < 3) {
+      newErrors.name = 'Product name must be at least 3 characters';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required';
+    } else if (formData.description.length < 10) {
+      newErrors.description = 'Description must be at least 10 characters';
+    }
+
+    if (formData.price <= 0) {
+      newErrors.price = 'Price must be greater than 0';
+    }
+
+    if (formData.duration && formData.duration <= 0) {
+      newErrors.duration = 'Duration must be greater than 0';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = () => {
-    onSave(formData);
-    onClose();
+    if (validateForm()) {
+      onSave(formData);
+    }
+  };
+
+  const addFeature = () => {
+    if (featureInput.trim() && !formData.features.includes(featureInput.trim())) {
+      setFormData({
+        ...formData,
+        features: [...formData.features, featureInput.trim()]
+      });
+      setFeatureInput('');
+    }
+  };
+
+  const removeFeature = (index: number) => {
+    setFormData({
+      ...formData,
+      features: formData.features.filter((_, i) => i !== index)
+    });
+  };
+
+  const addPrerequisite = () => {
+    if (prerequisiteInput.trim() && !formData.prerequisites.includes(prerequisiteInput.trim())) {
+      setFormData({
+        ...formData,
+        prerequisites: [...formData.prerequisites, prerequisiteInput.trim()]
+      });
+      setPrerequisiteInput('');
+    }
+  };
+
+  const removePrerequisite = (index: number) => {
+    setFormData({
+      ...formData,
+      prerequisites: formData.prerequisites.filter((_, i) => i !== index)
+    });
   };
 
   return (
@@ -703,6 +817,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, opened, on
           placeholder="Enter product name"
           value={formData.name}
           onChange={(event) => setFormData({ ...formData, name: event.currentTarget.value })}
+          error={errors.name}
           required
         />
 
@@ -712,6 +827,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, opened, on
           value={formData.description}
           onChange={(event) => setFormData({ ...formData, description: event.currentTarget.value })}
           minRows={3}
+          error={errors.description}
           required
         />
 
@@ -740,6 +856,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, opened, on
               onChange={(value) => setFormData({ ...formData, price: Number(value) || 0 })}
               min={0}
               decimalScale={2}
+              error={errors.price}
               required
             />
           </Grid.Col>
@@ -751,7 +868,78 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, opened, on
           value={formData.duration}
           onChange={(value) => setFormData({ ...formData, duration: Number(value) || 0 })}
           min={0}
+          error={errors.duration}
         />
+
+        {/* Features Section */}
+        <div>
+          <Text fw={500} mb="xs">Features</Text>
+          <Group mb="xs">
+            <TextInput
+              placeholder="Add a feature"
+              value={featureInput}
+              onChange={(event) => setFeatureInput(event.currentTarget.value)}
+              style={{ flex: 1 }}
+              onKeyPress={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  addFeature();
+                }
+              }}
+            />
+            <Button size="sm" onClick={addFeature}>Add</Button>
+          </Group>
+          <Stack gap="xs">
+            {formData.features.map((feature, index) => (
+              <Group key={index} justify="space-between">
+                <Text size="sm">• {feature}</Text>
+                <ActionIcon
+                  size="sm"
+                  color="red"
+                  variant="light"
+                  onClick={() => removeFeature(index)}
+                >
+                  <Trash2 size={14} />
+                </ActionIcon>
+              </Group>
+            ))}
+          </Stack>
+        </div>
+
+        {/* Prerequisites Section */}
+        <div>
+          <Text fw={500} mb="xs">Prerequisites</Text>
+          <Group mb="xs">
+            <TextInput
+              placeholder="Add a prerequisite"
+              value={prerequisiteInput}
+              onChange={(event) => setPrerequisiteInput(event.currentTarget.value)}
+              style={{ flex: 1 }}
+              onKeyPress={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  addPrerequisite();
+                }
+              }}
+            />
+            <Button size="sm" onClick={addPrerequisite}>Add</Button>
+          </Group>
+          <Stack gap="xs">
+            {formData.prerequisites.map((prerequisite, index) => (
+              <Group key={index} justify="space-between">
+                <Text size="sm">• {prerequisite}</Text>
+                <ActionIcon
+                  size="sm"
+                  color="red"
+                  variant="light"
+                  onClick={() => removePrerequisite(index)}
+                >
+                  <Trash2 size={14} />
+                </ActionIcon>
+              </Group>
+            ))}
+          </Stack>
+        </div>
 
         <Group>
           <Switch
@@ -788,11 +976,13 @@ export const ProductsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [formOpened, { open: openForm, close: closeForm }] = useDisclosure(false);
 
-  // Using mock data for now
-  const products = mockProducts;
+  // Using stateful data for real-time updates
+  const [products, setProducts] = useState<Product[]>(mockProducts);
   const isLoading = false;
 
   const handleViewProduct = (product: Product) => {
@@ -810,14 +1000,253 @@ export const ProductsPage: React.FC = () => {
     openForm();
   };
 
+  /**
+   * Handle product status toggle (activate/deactivate)
+   * @param product - Product to toggle
+   */
   const handleToggleStatus = (product: Product) => {
-    // TODO: Implement status toggle
-    console.log('Toggle status:', product);
+    setLoading(true);
+    
+    setTimeout(() => {
+      setProducts(prev => prev.map(p => 
+        p.id === product.id 
+          ? { ...p, isActive: !p.isActive }
+          : p
+      ));
+      
+      notifications.show({
+        title: 'Product Updated',
+        message: `Product ${product.isActive ? 'deactivated' : 'activated'} successfully`,
+        color: product.isActive ? 'orange' : 'green',
+      });
+      
+      setLoading(false);
+    }, 500);
+  };
+
+  /**
+   * Handle product deletion with confirmation
+   * @param productId - ID of the product to delete
+   */
+  const handleDeleteProduct = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    
+    modals.openConfirmModal({
+      title: 'Delete Product',
+      children: (
+        <Text size="sm">
+          Are you sure you want to delete "{product?.name}"? This action cannot be undone.
+        </Text>
+      ),
+      labels: { confirm: 'Delete', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: () => {
+        setLoading(true);
+        
+        setTimeout(() => {
+          setProducts(prev => prev.filter(p => p.id !== productId));
+          setSelectedProducts(prev => prev.filter(id => id !== productId));
+          
+          notifications.show({
+            title: 'Product Deleted',
+            message: `"${product?.name}" has been deleted successfully`,
+            color: 'red',
+          });
+          
+          setLoading(false);
+        }, 500);
+      },
+    });
+  };
+
+  /**
+   * Handle product duplication
+   * @param productId - ID of the product to duplicate
+   */
+  const handleDuplicateProduct = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    setLoading(true);
+    
+    setTimeout(() => {
+      const duplicatedProduct: Product = {
+        ...product,
+        id: `PROD-${String(products.length + 1).padStart(3, '0')}`,
+        name: `${product.name} (Copy)`,
+        createdAt: new Date().toISOString().split('T')[0],
+        lastUpdated: new Date().toISOString().split('T')[0],
+      };
+
+      setProducts(prev => [duplicatedProduct, ...prev]);
+      
+      notifications.show({
+        title: 'Product Duplicated',
+        message: `"${product.name}" has been duplicated successfully`,
+        color: 'blue',
+      });
+      
+      setLoading(false);
+    }, 500);
+  };
+
+  /**
+   * Handle bulk operations
+   */
+  const handleBulkDelete = () => {
+    if (selectedProducts.length === 0) return;
+
+    modals.openConfirmModal({
+      title: 'Delete Selected Products',
+      children: (
+        <Text size="sm">
+          Are you sure you want to delete {selectedProducts.length} selected product(s)? This action cannot be undone.
+        </Text>
+      ),
+      labels: { confirm: 'Delete All', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: () => {
+        setLoading(true);
+        
+        setTimeout(() => {
+          setProducts(prev => prev.filter(p => !selectedProducts.includes(p.id)));
+          setSelectedProducts([]);
+          
+          notifications.show({
+            title: 'Products Deleted',
+            message: `${selectedProducts.length} product(s) deleted successfully`,
+            color: 'red',
+          });
+          
+          setLoading(false);
+        }, 500);
+      },
+    });
+  };
+
+  const handleBulkStatusChange = (status: boolean) => {
+    if (selectedProducts.length === 0) return;
+
+    setLoading(true);
+    
+    setTimeout(() => {
+      setProducts(prev => prev.map(product => 
+        selectedProducts.includes(product.id)
+          ? { ...product, isActive: status }
+          : product
+      ));
+      
+      notifications.show({
+        title: 'Products Updated',
+        message: `${selectedProducts.length} product(s) ${status ? 'activated' : 'deactivated'} successfully`,
+        color: status ? 'green' : 'orange',
+      });
+      
+      setSelectedProducts([]);
+      setLoading(false);
+    }, 500);
+  };
+
+  /**
+   * Handle export to CSV
+   */
+  const handleExportCSV = () => {
+    const csvData = filteredProducts.map(product => ({
+      Name: product.name,
+      Category: product.category,
+      Price: product.price,
+      Status: product.isActive ? 'Active' : 'Inactive',
+      Rating: product.rating,
+      Bookings: product.bookingCount,
+      Revenue: `$${(product.price * product.bookingCount).toLocaleString()}`,
+      Created: new Date(product.createdAt).toLocaleDateString(),
+    }));
+
+    const csvContent = [
+      Object.keys(csvData[0]).join(','),
+      ...csvData.map(row => Object.values(row).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `products_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    notifications.show({
+      title: 'Export Complete',
+      message: 'Products exported to CSV successfully',
+      color: 'green',
+    });
+  };
+
+  /**
+   * Handle select all products
+   */
+  const handleSelectAll = () => {
+    if (selectedProducts.length === filteredProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(filteredProducts.map(p => p.id));
+    }
   };
 
   const handleSaveProduct = (productData: Partial<Product>) => {
-    // TODO: Implement product save
-    console.log('Save product:', productData);
+    try {
+      if (selectedProduct) {
+        // Edit existing product
+        const updatedProducts = products.map(p => 
+          p.id === selectedProduct.id 
+            ? { ...p, ...productData, lastUpdated: new Date().toISOString().split('T')[0] }
+            : p
+        );
+        setProducts(updatedProducts);
+        
+        notifications.show({
+          title: 'Success',
+          message: 'Product updated successfully',
+          color: 'green',
+        });
+      } else {
+        // Create new product
+        const newProduct: Product = {
+          id: `PROD-${String(products.length + 1).padStart(3, '0')}`,
+          name: productData.name || '',
+          description: productData.description || '',
+          category: productData.category || 'consultation',
+          price: productData.price || 0,
+          duration: productData.duration,
+          isActive: true,
+          isPopular: false,
+          rating: 0,
+          reviewCount: 0,
+          bookingCount: 0,
+          features: productData.features || [],
+          prerequisites: productData.prerequisites,
+          createdBy: 'Admin User',
+          createdAt: new Date().toISOString().split('T')[0],
+          lastUpdated: new Date().toISOString().split('T')[0],
+        };
+        
+        setProducts([...products, newProduct]);
+        
+        notifications.show({
+          title: 'Success',
+          message: 'Product created successfully',
+          color: 'green',
+        });
+      }
+      
+      closeForm();
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to save product. Please try again.',
+        color: 'red',
+      });
+    }
   };
 
   const filteredProducts = products
@@ -830,6 +1259,7 @@ export const ProductsPage: React.FC = () => {
       if (statusFilter === 'active') return product.isActive;
       if (statusFilter === 'inactive') return !product.isActive;
       if (statusFilter === 'popular') return product.isPopular;
+      if (statusFilter === 'low_stock') return product.stockLevel && product.lowStockThreshold && product.stockLevel <= product.lowStockThreshold;
       return true;
     });
 
@@ -838,6 +1268,7 @@ export const ProductsPage: React.FC = () => {
   const totalRevenue = products.reduce((sum, p) => sum + (p.price * p.bookingCount), 0);
   const totalBookings = products.reduce((sum, p) => sum + p.bookingCount, 0);
   const avgRating = products.reduce((sum, p) => sum + p.rating, 0) / products.length;
+  const lowStockProducts = products.filter(p => p.stockLevel && p.lowStockThreshold && p.stockLevel <= p.lowStockThreshold).length;
 
   return (
     <Container size="xl" py="md">
@@ -846,11 +1277,54 @@ export const ProductsPage: React.FC = () => {
         <Group justify="space-between" align="center">
           <div>
             <Title order={2}>Products &amp; Services</Title>
-            <Text c="dimmed">Manage your healthcare products and service offerings</Text>
+            <Text c="dimmed">
+              Manage your healthcare products and service offerings
+              {filteredProducts.length !== products.length && (
+                <Text component="span" c="blue" ml="xs">
+                  ({filteredProducts.length} of {products.length} shown)
+                </Text>
+              )}
+            </Text>
           </div>
-          <Button leftSection={<Plus size={16} />} onClick={handleCreateProduct}>
-            Add Product
-          </Button>
+          <Group>
+            {selectedProducts.length > 0 && (
+              <Menu shadow="md" width={200}>
+                <Menu.Target>
+                  <Button variant="light" leftSection={<MoreVertical size={16} />}>
+                    Bulk Actions ({selectedProducts.length})
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<Check size={14} />}
+                    onClick={() => handleBulkStatusChange(true)}
+                  >
+                    Activate Selected
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<X size={14} />}
+                    onClick={() => handleBulkStatusChange(false)}
+                  >
+                    Deactivate Selected
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item
+                    leftSection={<Trash2 size={14} />}
+                    color="red"
+                    onClick={handleBulkDelete}
+                  >
+                    Delete Selected
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            )}
+            <Button variant="light" leftSection={<Download size={16} />} onClick={handleExportCSV}>
+              Export CSV
+            </Button>
+            <Button leftSection={<Plus size={16} />} onClick={handleCreateProduct}>
+              Add Product
+            </Button>
+          </Group>
         </Group>
 
         {/* Summary Cards */}
@@ -916,6 +1390,43 @@ export const ProductsPage: React.FC = () => {
             </Card>
           </Grid.Col>
         </Grid>
+
+        {/* Low Stock Alert */}
+        {lowStockProducts > 0 && (
+          <Alert
+            icon={<AlertTriangle size={16} />}
+            title="Low Stock Alert"
+            color="orange"
+            variant="light"
+          >
+            {lowStockProducts} product(s) are running low on stock. Consider restocking soon.
+          </Alert>
+        )}
+
+        {/* Loading Overlay */}
+        {loading && (
+          <div style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            backgroundColor: 'rgba(0,0,0,0.3)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            zIndex: 1000 
+          }}>
+            <Card shadow="lg" padding="xl" radius="md">
+              <Center>
+                <Stack align="center" gap="md">
+                  <Loader size="lg" />
+                  <Text>Processing...</Text>
+                </Stack>
+              </Center>
+            </Card>
+          </div>
+        )}
 
         {/* Filters */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -994,6 +1505,16 @@ export const ProductsPage: React.FC = () => {
                   onView={handleViewProduct}
                   onEdit={handleEditProduct}
                   onToggleStatus={handleToggleStatus}
+                  onDelete={handleDeleteProduct}
+                  onDuplicate={handleDuplicateProduct}
+                  isSelected={selectedProducts.includes(product.id)}
+                  onSelect={(productId, selected) => {
+                    if (selected) {
+                      setSelectedProducts(prev => [...prev, productId]);
+                    } else {
+                      setSelectedProducts(prev => prev.filter(id => id !== productId));
+                    }
+                  }}
                 />
               </Grid.Col>
             ))}
@@ -1003,6 +1524,20 @@ export const ProductsPage: React.FC = () => {
             <Table striped highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
+                  <Table.Th>
+                    <Checkbox
+                      checked={selectedProducts.length === filteredProducts.length && filteredProducts.length > 0}
+                      indeterminate={selectedProducts.length > 0 && selectedProducts.length < filteredProducts.length}
+                      onChange={(event) => {
+                        const isChecked = event.currentTarget.checked;
+                        if (isChecked) {
+                          setSelectedProducts(filteredProducts.map(p => p.id));
+                        } else {
+                          setSelectedProducts([]);
+                        }
+                      }}
+                    />
+                  </Table.Th>
                   <Table.Th>Name</Table.Th>
                   <Table.Th>Category</Table.Th>
                   <Table.Th>Price</Table.Th>
@@ -1015,6 +1550,19 @@ export const ProductsPage: React.FC = () => {
               <Table.Tbody>
                 {filteredProducts.map((product) => (
                   <Table.Tr key={product.id}>
+                    <Table.Td>
+                      <Checkbox
+                        checked={selectedProducts.includes(product.id)}
+                        onChange={(event) => {
+                          const isChecked = event.currentTarget.checked;
+                          if (isChecked) {
+                            setSelectedProducts(prev => [...prev, product.id]);
+                          } else {
+                            setSelectedProducts(prev => prev.filter(id => id !== product.id));
+                          }
+                        }}
+                      />
+                    </Table.Td>
                     <Table.Td>
                       <Group gap="sm">
                         {product.imageUrl && (
@@ -1095,38 +1643,48 @@ export const ProductsPage: React.FC = () => {
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Group gap="xs">
-                        <Tooltip label="View Details">
-                          <ActionIcon
-                            variant="light"
-                            color="blue"
-                            size="sm"
+                      <Menu shadow="md" width={200}>
+                        <Menu.Target>
+                          <ActionIcon variant="light" color="gray" size="sm">
+                            <MoreVertical size={14} />
+                          </ActionIcon>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                          <Menu.Item
+                            leftSection={<Eye size={14} />}
                             onClick={() => handleViewProduct(product)}
                           >
-                            <Eye size={14} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label="Edit Product">
-                          <ActionIcon
-                            variant="light"
-                            color="orange"
-                            size="sm"
+                            View Details
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<Edit size={14} />}
                             onClick={() => handleEditProduct(product)}
                           >
-                            <Edit size={14} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label={product.isActive ? 'Deactivate' : 'Activate'}>
-                          <ActionIcon
-                            variant="light"
+                            Edit Product
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<Copy size={14} />}
+                            onClick={() => handleDuplicateProduct(product.id)}
+                          >
+                            Duplicate
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={product.isActive ? <X size={14} /> : <Check size={14} />}
                             color={product.isActive ? 'red' : 'green'}
-                            size="sm"
                             onClick={() => handleToggleStatus(product)}
                           >
-                            {product.isActive ? <Trash2 size={14} /> : <Plus size={14} />}
-                          </ActionIcon>
-                        </Tooltip>
-                      </Group>
+                            {product.isActive ? 'Deactivate' : 'Activate'}
+                          </Menu.Item>
+                          <Menu.Divider />
+                          <Menu.Item
+                            leftSection={<Trash2 size={14} />}
+                            color="red"
+                            onClick={() => handleDeleteProduct(product.id)}
+                          >
+                            Delete
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
                     </Table.Td>
                   </Table.Tr>
                 ))}

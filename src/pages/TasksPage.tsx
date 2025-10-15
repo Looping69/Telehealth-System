@@ -40,6 +40,7 @@ import {
   Flag,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 import { Task } from '../types';
 
 /**
@@ -331,9 +332,10 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 interface CreateTaskModalProps {
   opened: boolean;
   onClose: () => void;
+  onTaskCreated: (task: Task) => void;
 }
 
-const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose }) => {
+const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose, onTaskCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -344,9 +346,74 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose }) =>
     patientName: '',
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.title.trim()) {
+      newErrors.title = 'Task title is required';
+    }
+    if (!formData.description.trim()) {
+      newErrors.description = 'Task description is required';
+    }
+    if (!formData.assignedTo.trim()) {
+      newErrors.assignedTo = 'Assignee is required';
+    }
+    if (!formData.dueDate) {
+      newErrors.dueDate = 'Due date is required';
+    } else {
+      const selectedDate = new Date(formData.dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        newErrors.dueDate = 'Due date cannot be in the past';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = () => {
-    // TODO: Implement task creation
-    console.log('Create task:', formData);
+    if (!validateForm()) {
+      return;
+    }
+
+    const newTask: Task = {
+      id: `TASK-${String(Date.now()).slice(-3).padStart(3, '0')}`,
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      status: 'pending',
+      priority: formData.priority as 'low' | 'normal' | 'high' | 'urgent',
+      assignedTo: formData.assignedTo.trim(),
+      dueDate: formData.dueDate,
+      createdDate: new Date().toISOString().split('T')[0],
+      category: formData.category as 'clinical' | 'administrative' | 'billing' | 'follow_up',
+      patientName: formData.patientName.trim() || undefined,
+      patientId: formData.patientName.trim() ? `PAT-${String(Date.now()).slice(-3)}` : undefined,
+    };
+
+    onTaskCreated(newTask);
+    
+    // Reset form
+    setFormData({
+      title: '',
+      description: '',
+      priority: 'normal',
+      assignedTo: '',
+      dueDate: '',
+      category: 'clinical',
+      patientName: '',
+    });
+    setErrors({});
+    
+    notifications.show({
+      title: 'Task Created',
+      message: `Task "${newTask.title}" has been created successfully.`,
+      color: 'green',
+    });
+    
     onClose();
   };
 
@@ -363,6 +430,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose }) =>
           placeholder="Enter task title"
           value={formData.title}
           onChange={(event) => setFormData({ ...formData, title: event.currentTarget.value })}
+          error={errors.title}
           required
         />
 
@@ -371,6 +439,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose }) =>
           placeholder="Enter task description"
           value={formData.description}
           onChange={(event) => setFormData({ ...formData, description: event.currentTarget.value })}
+          error={errors.description}
           required
           minRows={3}
         />
@@ -411,6 +480,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose }) =>
               placeholder="Enter assignee name"
               value={formData.assignedTo}
               onChange={(event) => setFormData({ ...formData, assignedTo: event.currentTarget.value })}
+              error={errors.assignedTo}
               required
             />
           </Grid.Col>
@@ -420,6 +490,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose }) =>
               type="date"
               value={formData.dueDate}
               onChange={(event) => setFormData({ ...formData, dueDate: event.currentTarget.value })}
+              error={errors.dueDate}
               required
             />
           </Grid.Col>
@@ -446,8 +517,213 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose }) =>
 };
 
 /**
- * Main Tasks Page Component
+ * Edit Task Modal Component
  */
+interface EditTaskModalProps {
+  task: Task | null;
+  opened: boolean;
+  onClose: () => void;
+  onTaskUpdated: (task: Task) => void;
+}
+
+const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, opened, onClose, onTaskUpdated }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    priority: 'normal',
+    assignedTo: '',
+    dueDate: '',
+    category: 'clinical',
+    patientName: '',
+    status: 'pending',
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Update form data when task changes
+  React.useEffect(() => {
+    if (task) {
+      setFormData({
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        assignedTo: task.assignedTo,
+        dueDate: task.dueDate,
+        category: task.category,
+        patientName: task.patientName || '',
+        status: task.status,
+      });
+      setErrors({});
+    }
+  }, [task]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.title.trim()) {
+      newErrors.title = 'Task title is required';
+    }
+    if (!formData.description.trim()) {
+      newErrors.description = 'Task description is required';
+    }
+    if (!formData.assignedTo.trim()) {
+      newErrors.assignedTo = 'Assignee is required';
+    }
+    if (!formData.dueDate) {
+      newErrors.dueDate = 'Due date is required';
+    } else {
+      const selectedDate = new Date(formData.dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today && formData.status !== 'completed') {
+        newErrors.dueDate = 'Due date cannot be in the past for non-completed tasks';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!task || !validateForm()) {
+      return;
+    }
+
+    const updatedTask: Task = {
+      ...task,
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      priority: formData.priority as 'low' | 'normal' | 'high' | 'urgent',
+      assignedTo: formData.assignedTo.trim(),
+      dueDate: formData.dueDate,
+      category: formData.category as 'clinical' | 'administrative' | 'billing' | 'follow_up',
+      patientName: formData.patientName.trim() || undefined,
+      status: formData.status as 'pending' | 'in_progress' | 'completed',
+    };
+
+    onTaskUpdated(updatedTask);
+    
+    notifications.show({
+      title: 'Task Updated',
+      message: `Task "${updatedTask.title}" has been updated successfully.`,
+      color: 'green',
+    });
+    
+    onClose();
+  };
+
+  if (!task) return null;
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Edit Task"
+      size="lg"
+    >
+      <Stack gap="md">
+        <TextInput
+          label="Task Title"
+          placeholder="Enter task title"
+          value={formData.title}
+          onChange={(event) => setFormData({ ...formData, title: event.currentTarget.value })}
+          error={errors.title}
+          required
+        />
+
+        <Textarea
+          label="Description"
+          placeholder="Enter task description"
+          value={formData.description}
+          onChange={(event) => setFormData({ ...formData, description: event.currentTarget.value })}
+          error={errors.description}
+          required
+          minRows={3}
+        />
+
+        <Grid>
+          <Grid.Col span={6}>
+            <Select
+              label="Priority"
+              data={[
+                { value: 'low', label: 'Low' },
+                { value: 'normal', label: 'Normal' },
+                { value: 'high', label: 'High' },
+                { value: 'urgent', label: 'Urgent' },
+              ]}
+              value={formData.priority}
+              onChange={(value) => setFormData({ ...formData, priority: value || 'normal' })}
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <Select
+              label="Status"
+              data={[
+                { value: 'pending', label: 'Pending' },
+                { value: 'in_progress', label: 'In Progress' },
+                { value: 'completed', label: 'Completed' },
+              ]}
+              value={formData.status}
+              onChange={(value) => setFormData({ ...formData, status: value || 'pending' })}
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <Select
+              label="Category"
+              data={[
+                { value: 'clinical', label: 'Clinical' },
+                { value: 'administrative', label: 'Administrative' },
+                { value: 'billing', label: 'Billing' },
+                { value: 'follow_up', label: 'Follow-up' },
+              ]}
+              value={formData.category}
+              onChange={(value) => setFormData({ ...formData, category: value || 'clinical' })}
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Assigned To"
+              placeholder="Enter assignee name"
+              value={formData.assignedTo}
+              onChange={(event) => setFormData({ ...formData, assignedTo: event.currentTarget.value })}
+              error={errors.assignedTo}
+              required
+            />
+          </Grid.Col>
+        </Grid>
+
+        <TextInput
+          label="Due Date"
+          type="date"
+          value={formData.dueDate}
+          onChange={(event) => setFormData({ ...formData, dueDate: event.currentTarget.value })}
+          error={errors.dueDate}
+          required
+        />
+
+        <TextInput
+          label="Patient Name (Optional)"
+          placeholder="Enter patient name if applicable"
+          value={formData.patientName}
+          onChange={(event) => setFormData({ ...formData, patientName: event.currentTarget.value })}
+        />
+
+        <Group justify="flex-end" mt="md">
+          <Button variant="light" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit}>
+            Update Task
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+};
+
 export const TasksPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -455,12 +731,13 @@ export const TasksPage: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
+  const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
   
   // New state for card/table view
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
-  // Using mock data for now
-  const tasks = mockTasks;
+  // Convert mock data to stateful data for real-time updates
+  const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const isLoading = false;
 
   const handleViewTask = (task: Task) => {
@@ -468,14 +745,46 @@ export const TasksPage: React.FC = () => {
     openDetails();
   };
 
+  const handleTaskCreated = (newTask: Task) => {
+    setTasks(prevTasks => [...prevTasks, newTask]);
+  };
+
+  const handleTaskUpdated = (updatedTask: Task) => {
+    setTasks(prevTasks => 
+      prevTasks.map(task => task.id === updatedTask.id ? updatedTask : task)
+    );
+  };
+
   const handleEditTask = (task: Task) => {
-    // TODO: Implement edit functionality
-    console.log('Edit task:', task);
+    setSelectedTask(task);
+    openEdit();
   };
 
   const handleCompleteTask = (task: Task) => {
-    // TODO: Implement complete functionality
-    console.log('Complete task:', task);
+    if (task.status === 'completed') {
+      notifications.show({
+        title: 'Task Already Completed',
+        message: 'This task is already marked as completed.',
+        color: 'blue',
+      });
+      return;
+    }
+
+    const updatedTask = {
+      ...task,
+      status: 'completed' as const,
+      completedDate: new Date().toISOString().split('T')[0],
+    };
+
+    setTasks(prevTasks => 
+      prevTasks.map(t => t.id === task.id ? updatedTask : t)
+    );
+
+    notifications.show({
+      title: 'Task Completed',
+      message: `Task "${task.title}" has been marked as completed.`,
+      color: 'green',
+    });
   };
 
   const filterTasksByTab = (tasks: Task[], tab: string) => {
@@ -870,6 +1179,15 @@ export const TasksPage: React.FC = () => {
       <CreateTaskModal
         opened={createOpened}
         onClose={closeCreate}
+        onTaskCreated={handleTaskCreated}
+      />
+
+      {/* Edit Task Modal */}
+      <EditTaskModal
+        task={selectedTask}
+        opened={editOpened}
+        onClose={closeEdit}
+        onTaskUpdated={handleTaskUpdated}
       />
     </Container>
   );

@@ -75,9 +75,9 @@ export interface FormAnswer {
 export interface FormData {
   /** Unique identifier for the form */
   id: string;
-  /** Form title */
+  /** Form title displayed to users */
   title: string;
-  /** Optional form description */
+  /** Optional description of the form's purpose */
   description?: string;
   /** Category for organizing forms */
   category: FormCategory;
@@ -87,11 +87,13 @@ export interface FormData {
   estimatedTime?: number;
   /** Form version for tracking changes */
   version: string;
-  /** Whether form is currently active */
+  /** Whether the form is currently active */
   active: boolean;
-  /** Creation timestamp */
+  /** Form status for management */
+  status?: 'active' | 'inactive';
+  /** ISO timestamp when form was created */
   createdAt: string;
-  /** Last update timestamp */
+  /** ISO timestamp when form was last updated */
   updatedAt: string;
 }
 

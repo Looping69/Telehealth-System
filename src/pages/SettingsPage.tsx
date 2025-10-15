@@ -55,6 +55,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 
 /**
  * Settings interfaces
@@ -184,11 +185,68 @@ const mockIntegrationSettings: IntegrationSettings = {
 const UserProfileSettings: React.FC = () => {
   const [userSettings, setUserSettings] = useState(mockUserSettings);
   const [isEditing, setIsEditing] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log('Save user settings:', userSettings);
-    setIsEditing(false);
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!userSettings.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    if (!userSettings.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    }
+
+    if (!userSettings.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userSettings.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!userSettings.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^\+?[\d\s\-\(\)]+$/.test(userSettings.phone)) {
+      newErrors.phone = 'Please enter a valid phone number';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      notifications.show({
+        title: 'Validation Error',
+        message: 'Please fix the errors in the form',
+        color: 'red',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      notifications.show({
+        title: 'Profile Updated',
+        message: 'Your profile has been successfully updated',
+        color: 'green',
+      });
+      
+      setIsEditing(false);
+      setErrors({});
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to update profile. Please try again.',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -208,6 +266,7 @@ const UserProfileSettings: React.FC = () => {
             variant={isEditing ? 'filled' : 'light'}
             leftSection={isEditing ? <Save size={16} /> : <User size={16} />}
             onClick={isEditing ? handleSave : () => setIsEditing(true)}
+            loading={isLoading}
           >
             {isEditing ? 'Save Changes' : 'Edit Profile'}
           </Button>
@@ -224,6 +283,7 @@ const UserProfileSettings: React.FC = () => {
                 setUserSettings({ ...userSettings, firstName: event.currentTarget.value })
               }
               disabled={!isEditing}
+              error={errors.firstName}
             />
           </Grid.Col>
           <Grid.Col span={6}>
@@ -234,6 +294,7 @@ const UserProfileSettings: React.FC = () => {
                 setUserSettings({ ...userSettings, lastName: event.currentTarget.value })
               }
               disabled={!isEditing}
+              error={errors.lastName}
             />
           </Grid.Col>
           <Grid.Col span={6}>
@@ -245,6 +306,7 @@ const UserProfileSettings: React.FC = () => {
                 setUserSettings({ ...userSettings, email: event.currentTarget.value })
               }
               disabled={!isEditing}
+              error={errors.email}
             />
           </Grid.Col>
           <Grid.Col span={6}>
@@ -255,6 +317,7 @@ const UserProfileSettings: React.FC = () => {
                 setUserSettings({ ...userSettings, phone: event.currentTarget.value })
               }
               disabled={!isEditing}
+              error={errors.phone}
             />
           </Grid.Col>
           <Grid.Col span={6}>
@@ -293,10 +356,10 @@ const UserProfileSettings: React.FC = () => {
 
         {isEditing && (
           <Group justify="flex-end" gap="xs">
-            <Button variant="light" onClick={() => setIsEditing(false)}>
+            <Button variant="light" onClick={() => setIsEditing(false)} disabled={isLoading}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>Save Changes</Button>
+            <Button onClick={handleSave} loading={isLoading}>Save Changes</Button>
           </Group>
         )}
       </Stack>
@@ -309,10 +372,28 @@ const UserProfileSettings: React.FC = () => {
  */
 const NotificationSettingsComponent: React.FC = () => {
   const [notificationSettings, setNotificationSettings] = useState(mockNotificationSettings);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log('Save notification settings:', notificationSettings);
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      notifications.show({
+        title: 'Notification Settings Updated',
+        message: 'Your notification preferences have been successfully saved',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to save notification settings. Please try again.',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -325,7 +406,7 @@ const NotificationSettingsComponent: React.FC = () => {
               Configure how you want to receive notifications
             </Text>
           </div>
-          <Button leftSection={<Save size={16} />} onClick={handleSave}>
+          <Button leftSection={<Save size={16} />} onClick={handleSave} loading={isLoading}>
             Save Changes
           </Button>
         </Group>
@@ -452,10 +533,95 @@ const NotificationSettingsComponent: React.FC = () => {
 const SecuritySettingsComponent: React.FC = () => {
   const [securitySettings, setSecuritySettings] = useState(mockSecuritySettings);
   const [changePasswordOpened, { open: openChangePassword, close: closeChangePassword }] = useDisclosure(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
 
-  const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log('Save security settings:', securitySettings);
+  const validatePassword = () => {
+    const errors: Record<string, string> = {};
+
+    if (!passwordData.currentPassword) {
+      errors.currentPassword = 'Current password is required';
+    }
+
+    if (!passwordData.newPassword) {
+      errors.newPassword = 'New password is required';
+    } else if (passwordData.newPassword.length < 8) {
+      errors.newPassword = 'Password must be at least 8 characters long';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordData.newPassword)) {
+      errors.newPassword = 'Password must contain uppercase, lowercase, and number';
+    }
+
+    if (!passwordData.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your password';
+    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleChangePassword = async () => {
+    if (!validatePassword()) {
+      notifications.show({
+        title: 'Validation Error',
+        message: 'Please fix the errors in the form',
+        color: 'red',
+      });
+      return;
+    }
+
+    setIsPasswordLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      notifications.show({
+        title: 'Password Changed',
+        message: 'Your password has been successfully updated',
+        color: 'green',
+      });
+      
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordErrors({});
+      closeChangePassword();
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to change password. Please try again.',
+        color: 'red',
+      });
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      notifications.show({
+        title: 'Security Settings Updated',
+        message: 'Your security settings have been successfully saved',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to save security settings. Please try again.',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -468,7 +634,7 @@ const SecuritySettingsComponent: React.FC = () => {
               Manage your account security and access controls
             </Text>
           </div>
-          <Button leftSection={<Save size={16} />} onClick={handleSave}>
+          <Button leftSection={<Save size={16} />} onClick={handleSave} loading={isLoading}>
             Save Changes
           </Button>
         </Group>
@@ -581,23 +747,38 @@ const SecuritySettingsComponent: React.FC = () => {
           <PasswordInput
             label="Current Password"
             placeholder="Enter your current password"
+            value={passwordData.currentPassword}
+            onChange={(event) =>
+              setPasswordData({ ...passwordData, currentPassword: event.currentTarget.value })
+            }
+            error={passwordErrors.currentPassword}
             required
           />
           <PasswordInput
             label="New Password"
             placeholder="Enter your new password"
+            value={passwordData.newPassword}
+            onChange={(event) =>
+              setPasswordData({ ...passwordData, newPassword: event.currentTarget.value })
+            }
+            error={passwordErrors.newPassword}
             required
           />
           <PasswordInput
             label="Confirm New Password"
             placeholder="Confirm your new password"
+            value={passwordData.confirmPassword}
+            onChange={(event) =>
+              setPasswordData({ ...passwordData, confirmPassword: event.currentTarget.value })
+            }
+            error={passwordErrors.confirmPassword}
             required
           />
           <Group justify="flex-end" mt="md">
-            <Button variant="light" onClick={closeChangePassword}>
+            <Button variant="light" onClick={closeChangePassword} disabled={isPasswordLoading}>
               Cancel
             </Button>
-            <Button>Update Password</Button>
+            <Button onClick={handleChangePassword} loading={isPasswordLoading}>Update Password</Button>
           </Group>
         </Stack>
       </Modal>
@@ -610,10 +791,63 @@ const SecuritySettingsComponent: React.FC = () => {
  */
 const SystemSettingsComponent: React.FC = () => {
   const [systemSettings, setSystemSettings] = useState(mockSystemSettings);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log('Save system settings:', systemSettings);
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!systemSettings.organizationName.trim()) {
+      newErrors.organizationName = 'Organization name is required';
+    }
+
+    if (!systemSettings.primaryColor) {
+      newErrors.primaryColor = 'Primary color is required';
+    }
+
+    if (!systemSettings.secondaryColor) {
+      newErrors.secondaryColor = 'Secondary color is required';
+    }
+
+    if (systemSettings.appointmentDuration < 15 || systemSettings.appointmentDuration > 240) {
+      newErrors.appointmentDuration = 'Appointment duration must be between 15 and 240 minutes';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      notifications.show({
+        title: 'Validation Error',
+        message: 'Please fix the errors in the form',
+        color: 'red',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      notifications.show({
+        title: 'System Settings Updated',
+        message: 'Your system configuration has been successfully saved',
+        color: 'green',
+      });
+      
+      setErrors({});
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to save system settings. Please try again.',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -626,7 +860,7 @@ const SystemSettingsComponent: React.FC = () => {
               Configure system-wide settings and preferences
             </Text>
           </div>
-          <Button leftSection={<Save size={16} />} onClick={handleSave}>
+          <Button leftSection={<Save size={16} />} onClick={handleSave} loading={isLoading}>
             Save Changes
           </Button>
         </Group>
@@ -646,6 +880,7 @@ const SystemSettingsComponent: React.FC = () => {
                     organizationName: event.currentTarget.value,
                   })
                 }
+                error={errors.organizationName}
               />
               <FileInput
                 label="Organization Logo"
@@ -665,6 +900,7 @@ const SystemSettingsComponent: React.FC = () => {
                   onChange={(value) =>
                     setSystemSettings({ ...systemSettings, primaryColor: value })
                   }
+                  error={errors.primaryColor}
                 />
               </Grid.Col>
               <Grid.Col span={6}>
@@ -674,6 +910,7 @@ const SystemSettingsComponent: React.FC = () => {
                   onChange={(value) =>
                     setSystemSettings({ ...systemSettings, secondaryColor: value })
                   }
+                  error={errors.secondaryColor}
                 />
               </Grid.Col>
             </Grid>
@@ -728,9 +965,10 @@ const SystemSettingsComponent: React.FC = () => {
                 })
               }
               min={15}
-              max={120}
+              max={240}
               step={15}
               suffix=" minutes"
+              error={errors.appointmentDuration}
             />
           </div>
         </Stack>
@@ -741,18 +979,139 @@ const SystemSettingsComponent: React.FC = () => {
 
 /**
  * Integration Settings Component
+ * Manages external service integrations
  */
 const IntegrationSettingsComponent: React.FC = () => {
   const [integrationSettings, setIntegrationSettings] = useState(mockIntegrationSettings);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [testingConnections, setTestingConnections] = useState<Record<string, boolean>>({});
 
-  const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log('Save integration settings:', integrationSettings);
+  /**
+   * Validates integration settings form
+   * @returns Object containing validation errors
+   */
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!integrationSettings.medplumUrl.trim()) {
+      newErrors.medplumUrl = 'Medplum URL is required';
+    } else if (!integrationSettings.medplumUrl.match(/^https?:\/\/.+/)) {
+      newErrors.medplumUrl = 'Please enter a valid URL';
+    }
+
+    if (!integrationSettings.medplumClientId.trim()) {
+      newErrors.medplumClientId = 'Client ID is required';
+    }
+
+    if (!integrationSettings.emailProvider) {
+      newErrors.emailProvider = 'Email provider is required';
+    }
+
+    if (!integrationSettings.emailApiKey.trim() || integrationSettings.emailApiKey === '••••••••••••••••') {
+      newErrors.emailApiKey = 'Email API key is required';
+    }
+
+    if (!integrationSettings.smsProvider) {
+      newErrors.smsProvider = 'SMS provider is required';
+    }
+
+    if (!integrationSettings.smsApiKey.trim() || integrationSettings.smsApiKey === '••••••••••••••••') {
+      newErrors.smsApiKey = 'SMS API key is required';
+    }
+
+    if (!integrationSettings.paymentProvider) {
+      newErrors.paymentProvider = 'Payment provider is required';
+    }
+
+    if (!integrationSettings.paymentApiKey.trim() || integrationSettings.paymentApiKey === '••••••••••••••••') {
+      newErrors.paymentApiKey = 'Payment API key is required';
+    }
+
+    return newErrors;
   };
 
-  const handleTestConnection = (service: string) => {
-    // TODO: Implement connection test
-    console.log('Test connection:', service);
+  /**
+   * Handles saving integration settings
+   */
+  const handleSave = async () => {
+    const validationErrors = validateForm();
+    
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      notifications.show({
+        title: 'Validation Error',
+        message: 'Please fix the errors below',
+        color: 'red',
+        icon: <X size={16} />,
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      notifications.show({
+        title: 'Success',
+        message: 'Integration settings saved successfully',
+        color: 'green',
+        icon: <Check size={16} />,
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to save integration settings',
+        color: 'red',
+        icon: <X size={16} />,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Handles testing connections to external services
+   * @param service - The service to test connection for
+   */
+  const handleTestConnection = async (service: string) => {
+    setTestingConnections(prev => ({ ...prev, [service]: true }));
+
+    try {
+      // Simulate connection test
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate random success/failure for demo
+      const isSuccess = Math.random() > 0.3;
+      
+      if (isSuccess) {
+        notifications.show({
+          title: 'Connection Successful',
+          message: `Successfully connected to ${service} service`,
+          color: 'green',
+          icon: <Check size={16} />,
+        });
+      } else {
+        notifications.show({
+          title: 'Connection Failed',
+          message: `Failed to connect to ${service} service. Please check your configuration.`,
+          color: 'red',
+          icon: <X size={16} />,
+        });
+      }
+    } catch (error) {
+      notifications.show({
+        title: 'Connection Error',
+        message: `Error testing ${service} connection`,
+        color: 'red',
+        icon: <X size={16} />,
+      });
+    } finally {
+      setTestingConnections(prev => ({ ...prev, [service]: false }));
+    }
   };
 
   return (
@@ -765,7 +1124,7 @@ const IntegrationSettingsComponent: React.FC = () => {
               Configure external service integrations
             </Text>
           </div>
-          <Button leftSection={<Save size={16} />} onClick={handleSave}>
+          <Button leftSection={<Save size={16} />} onClick={handleSave} loading={isLoading}>
             Save Changes
           </Button>
         </Group>
@@ -788,6 +1147,7 @@ const IntegrationSettingsComponent: React.FC = () => {
                     medplumUrl: event.currentTarget.value,
                   })
                 }
+                error={errors.medplumUrl}
               />
               <TextInput
                 label="Client ID"
@@ -798,12 +1158,14 @@ const IntegrationSettingsComponent: React.FC = () => {
                     medplumClientId: event.currentTarget.value,
                   })
                 }
+                error={errors.medplumClientId}
               />
               <Group>
                 <Button
                   variant="light"
                   leftSection={<RefreshCw size={16} />}
                   onClick={() => handleTestConnection('medplum')}
+                  loading={testingConnections.medplum}
                 >
                   Test Connection
                 </Button>
@@ -829,6 +1191,7 @@ const IntegrationSettingsComponent: React.FC = () => {
                     emailProvider: value || '',
                   })
                 }
+                error={errors.emailProvider}
               />
               <PasswordInput
                 label="API Key"
@@ -839,12 +1202,14 @@ const IntegrationSettingsComponent: React.FC = () => {
                     emailApiKey: event.currentTarget.value,
                   })
                 }
+                error={errors.emailApiKey}
               />
               <Group>
                 <Button
                   variant="light"
                   leftSection={<Mail size={16} />}
                   onClick={() => handleTestConnection('email')}
+                  loading={testingConnections.email}
                 >
                   Send Test Email
                 </Button>
@@ -869,6 +1234,7 @@ const IntegrationSettingsComponent: React.FC = () => {
                     smsProvider: value || '',
                   })
                 }
+                error={errors.smsProvider}
               />
               <PasswordInput
                 label="API Key"
@@ -879,12 +1245,14 @@ const IntegrationSettingsComponent: React.FC = () => {
                     smsApiKey: event.currentTarget.value,
                   })
                 }
+                error={errors.smsApiKey}
               />
               <Group>
                 <Button
                   variant="light"
                   leftSection={<Phone size={16} />}
                   onClick={() => handleTestConnection('sms')}
+                  loading={testingConnections.sms}
                 >
                   Send Test SMS
                 </Button>
@@ -909,6 +1277,7 @@ const IntegrationSettingsComponent: React.FC = () => {
                     paymentProvider: value || '',
                   })
                 }
+                error={errors.paymentProvider}
               />
               <PasswordInput
                 label="API Key"
@@ -919,12 +1288,14 @@ const IntegrationSettingsComponent: React.FC = () => {
                     paymentApiKey: event.currentTarget.value,
                   })
                 }
+                error={errors.paymentApiKey}
               />
               <Group>
                 <Button
                   variant="light"
                   leftSection={<Key size={16} />}
                   onClick={() => handleTestConnection('payment')}
+                  loading={testingConnections.payment}
                 >
                   Test Connection
                 </Button>

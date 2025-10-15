@@ -27,6 +27,9 @@ import {
   Progress,
   Divider,
   Tooltip,
+  Menu,
+  rem,
+  Checkbox,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import {
@@ -44,8 +47,15 @@ import {
   TrendingUp,
   Gift,
   Clock,
+  MoreVertical,
+  Check,
+  X,
+  Download,
+  Shuffle,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
 
 /**
  * Discount interface
@@ -72,9 +82,9 @@ interface Discount {
 }
 
 /**
- * Mock data for discounts
+ * Initial mock data for discounts (converted to stateful)
  */
-const mockDiscounts: Discount[] = [
+const initialDiscounts: Discount[] = [
   {
     id: 'DISC-001',
     code: 'WELCOME20',
@@ -739,16 +749,15 @@ const DiscountFormModal: React.FC<DiscountFormModalProps> = ({
  * Main Discounts Page Component
  */
 export const DiscountsPage: React.FC = () => {
+  const [discounts, setDiscounts] = useState<Discount[]>(initialDiscounts);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedDiscount, setSelectedDiscount] = useState<Discount | null>(null);
+  const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [formOpened, { open: openForm, close: closeForm }] = useDisclosure(false);
-
-  // Using mock data for now
-  const discounts = mockDiscounts;
-  const isLoading = false;
 
   const handleEditDiscount = (discount: Discount) => {
     setSelectedDiscount(discount);
@@ -760,25 +769,259 @@ export const DiscountsPage: React.FC = () => {
     openForm();
   };
 
-  const handleDeleteDiscount = (discount: Discount) => {
-    // TODO: Implement discount deletion
-    console.log('Delete discount:', discount);
+  const handleDeleteDiscount = async (discount: Discount) => {
+    modals.openConfirmModal({
+      title: 'Delete Discount',
+      children: (
+        <Text size="sm">
+          Are you sure you want to delete the discount "{discount.name}"? This action cannot be undone.
+        </Text>
+      ),
+      labels: { confirm: 'Delete', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        setIsLoading(true);
+        try {
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          setDiscounts(prev => prev.filter(d => d.id !== discount.id));
+          notifications.show({
+            title: 'Success',
+            message: 'Discount deleted successfully',
+            color: 'green',
+          });
+        } catch (error) {
+          notifications.show({
+            title: 'Error',
+            message: 'Failed to delete discount',
+            color: 'red',
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      },
+    });
   };
 
-  const handleToggleStatus = (discount: Discount) => {
-    // TODO: Implement status toggle
-    console.log('Toggle status:', discount);
+  const handleToggleStatus = async (discount: Discount) => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setDiscounts(prev => prev.map(d => 
+        d.id === discount.id 
+          ? { ...d, isActive: !d.isActive }
+          : d
+      ));
+      
+      notifications.show({
+        title: 'Success',
+        message: `Discount ${discount.isActive ? 'deactivated' : 'activated'} successfully`,
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to update discount status',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSaveDiscount = (discountData: Partial<Discount>) => {
-    // TODO: Implement discount save
-    console.log('Save discount:', discountData);
+  const handleSaveDiscount = async (discountData: Partial<Discount>) => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (selectedDiscount) {
+        // Update existing discount
+        setDiscounts(prev => prev.map(d => 
+          d.id === selectedDiscount.id 
+            ? { ...d, ...discountData }
+            : d
+        ));
+        notifications.show({
+          title: 'Success',
+          message: 'Discount updated successfully',
+          color: 'green',
+        });
+      } else {
+        // Create new discount
+        const newDiscount: Discount = {
+          id: `DISC-${String(discounts.length + 1).padStart(3, '0')}`,
+          usageCount: 0,
+          createdBy: 'Current User',
+          createdAt: new Date().toISOString().split('T')[0],
+          applicableServices: ['All Services'],
+          ...discountData,
+        } as Discount;
+        
+        setDiscounts(prev => [...prev, newDiscount]);
+        notifications.show({
+          title: 'Success',
+          message: 'Discount created successfully',
+          color: 'green',
+        });
+      }
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to save discount',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    // TODO: Show notification
-    console.log('Copied code:', code);
+  const handleCopyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      notifications.show({
+        title: 'Copied!',
+        message: `Discount code "${code}" copied to clipboard`,
+        color: 'blue',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to copy discount code',
+        color: 'red',
+      });
+    }
+  };
+
+  const handleDuplicateDiscount = async (discount: Discount) => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const duplicatedDiscount: Discount = {
+        ...discount,
+        id: `DISC-${String(discounts.length + 1).padStart(3, '0')}`,
+        code: `${discount.code}_COPY`,
+        name: `${discount.name} (Copy)`,
+        usageCount: 0,
+        createdAt: new Date().toISOString().split('T')[0],
+        createdBy: 'Current User',
+      };
+      
+      setDiscounts(prev => [...prev, duplicatedDiscount]);
+      notifications.show({
+        title: 'Success',
+        message: 'Discount duplicated successfully',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to duplicate discount',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedDiscounts.length === 0) return;
+
+    modals.openConfirmModal({
+      title: 'Delete Selected Discounts',
+      children: (
+        <Text size="sm">
+          Are you sure you want to delete {selectedDiscounts.length} selected discount(s)? This action cannot be undone.
+        </Text>
+      ),
+      labels: { confirm: 'Delete All', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        setIsLoading(true);
+        try {
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          setDiscounts(prev => prev.filter(d => !selectedDiscounts.includes(d.id)));
+          setSelectedDiscounts([]);
+          notifications.show({
+            title: 'Success',
+            message: `${selectedDiscounts.length} discount(s) deleted successfully`,
+            color: 'green',
+          });
+        } catch (error) {
+          notifications.show({
+            title: 'Error',
+            message: 'Failed to delete selected discounts',
+            color: 'red',
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      },
+    });
+  };
+
+  const handleExportDiscounts = async () => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const csvContent = [
+        ['ID', 'Code', 'Name', 'Type', 'Value', 'Status', 'Usage', 'Start Date', 'End Date'].join(','),
+        ...filteredDiscounts.map(discount => [
+          discount.id,
+          discount.code,
+          discount.name,
+          discount.type,
+          discount.value,
+          discount.isActive ? 'Active' : 'Inactive',
+          `${discount.usageCount}${discount.usageLimit ? `/${discount.usageLimit}` : ''}`,
+          discount.startDate,
+          discount.endDate,
+        ].join(','))
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'discounts.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      notifications.show({
+        title: 'Success',
+        message: 'Discounts exported successfully',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to export discounts',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSelectDiscount = (id: string, selected: boolean) => {
+    setSelectedDiscounts(prev => 
+      selected 
+        ? [...prev, id]
+        : prev.filter(discountId => discountId !== id)
+    );
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    setSelectedDiscounts(selected ? filteredDiscounts.map(d => d.id) : []);
   };
 
   const filteredDiscounts = discounts
@@ -814,12 +1057,35 @@ export const DiscountsPage: React.FC = () => {
         {/* Header */}
         <Group justify="space-between" align="center">
           <div>
-            <Title order={2}>Discounts &amp; Promotions</Title>
+            <Title order={2}>Discounts & Promotions</Title>
             <Text c="dimmed">Manage discount codes and promotional offers</Text>
           </div>
-          <Button leftSection={<Plus size={16} />} onClick={handleCreateDiscount}>
-            Create Discount
-          </Button>
+          <Group>
+            {selectedDiscounts.length > 0 && (
+              <>
+                <Button
+                  variant="light"
+                  color="red"
+                  leftSection={<Trash2 size={16} />}
+                  onClick={handleBulkDelete}
+                  loading={isLoading}
+                >
+                  Delete Selected ({selectedDiscounts.length})
+                </Button>
+              </>
+            )}
+            <Button
+              variant="light"
+              leftSection={<Download size={16} />}
+              onClick={handleExportDiscounts}
+              loading={isLoading}
+            >
+              Export
+            </Button>
+            <Button leftSection={<Plus size={16} />} onClick={handleCreateDiscount}>
+              Create Discount
+            </Button>
+          </Group>
         </Group>
 
         {/* Summary Cards */}
@@ -945,6 +1211,21 @@ export const DiscountsPage: React.FC = () => {
               </Button.Group>
             </Grid.Col>
           </Grid>
+          {filteredDiscounts.length > 0 && (
+            <Group justify="space-between" mt="md">
+              <Text size="sm" c="dimmed">
+                Showing {filteredDiscounts.length} of {discounts.length} discounts
+              </Text>
+              {viewMode === 'table' && (
+                <Checkbox
+                  label="Select All"
+                  checked={selectedDiscounts.length === filteredDiscounts.length}
+                  indeterminate={selectedDiscounts.length > 0 && selectedDiscounts.length < filteredDiscounts.length}
+                  onChange={(event) => handleSelectAll(event.currentTarget.checked)}
+                />
+              )}
+            </Group>
+          )}
         </Card>
 
         {/* Discounts Grid/Table */}
@@ -962,6 +1243,9 @@ export const DiscountsPage: React.FC = () => {
                   onDelete={handleDeleteDiscount}
                   onToggleStatus={handleToggleStatus}
                   onCopyCode={handleCopyCode}
+                  onDuplicate={handleDuplicateDiscount}
+                  isSelected={selectedDiscounts.includes(discount.id)}
+                  onSelect={handleSelectDiscount}
                 />
               </Grid.Col>
             ))}
@@ -990,6 +1274,9 @@ export const DiscountsPage: React.FC = () => {
                     onDelete={handleDeleteDiscount}
                     onToggleStatus={handleToggleStatus}
                     onCopyCode={handleCopyCode}
+                    onDuplicate={handleDuplicateDiscount}
+                    isSelected={selectedDiscounts.includes(discount.id)}
+                    onSelect={handleSelectDiscount}
                   />
                 ))}
               </Table.Tbody>

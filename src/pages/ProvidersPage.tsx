@@ -28,6 +28,7 @@ import {
   Checkbox,
   Switch,
   Divider,
+  MultiSelect,
 } from '@mantine/core';
 import {
   Search,
@@ -49,6 +50,7 @@ import {
   Stethoscope,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 import { Provider, ProviderAvailability } from '../types';
 
 /**
@@ -312,18 +314,21 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onView, onEdit })
 };
 
 /**
- * Provider Details Modal
+ * Provider Details Modal Component
+ * Displays comprehensive provider information in a tabbed interface
  */
 interface ProviderDetailsModalProps {
   provider: Provider | null;
   opened: boolean;
   onClose: () => void;
+  onEdit?: (provider: Provider) => void;
 }
 
 const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
   provider,
   opened,
   onClose,
+  onEdit,
 }) => {
   if (!provider) return null;
 
@@ -481,7 +486,17 @@ const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
           <Button variant="light" onClick={onClose}>
             Close
           </Button>
-          <Button>Edit Provider</Button>
+          {onEdit && (
+            <Button 
+              leftSection={<Edit size={16} />}
+              onClick={() => {
+                onEdit(provider);
+                onClose();
+              }}
+            >
+              Edit Provider
+            </Button>
+          )}
         </Group>
       </Stack>
     </Modal>
@@ -494,26 +509,101 @@ const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
 interface CreateProviderModalProps {
   opened: boolean;
   onClose: () => void;
+  onProviderCreated: (provider: Provider) => void;
 }
 
-const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClose }) => {
+const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClose, onProviderCreated }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
-    specialties: [],
+    specialties: [] as string[],
     licenseNumber: '',
     npiNumber: '',
     department: '',
     title: '',
     bio: '',
-    languages: [],
+    languages: [] as string[],
+    yearsExperience: 0,
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    if (!formData.email.includes('@')) newErrors.email = 'Valid email is required';
+    if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
+    if (!formData.department) newErrors.department = 'Department is required';
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (!formData.licenseNumber.trim()) newErrors.licenseNumber = 'License number is required';
+    if (!formData.npiNumber.trim()) newErrors.npiNumber = 'NPI number is required';
+    if (formData.specialties.length === 0) newErrors.specialties = 'At least one specialty is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = () => {
-    // TODO: Implement provider creation
-    console.log('Create provider:', formData);
+    if (!validateForm()) {
+      notifications.show({
+        title: 'Validation Error',
+        message: 'Please fill in all required fields correctly.',
+        color: 'red',
+      });
+      return;
+    }
+
+    const newProvider: Provider = {
+      id: `PROV-${Date.now()}`,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      specialties: formData.specialties,
+      licenseNumber: formData.licenseNumber,
+      npiNumber: formData.npiNumber,
+      status: 'active',
+      department: formData.department,
+      title: formData.title,
+      bio: formData.bio,
+      education: [],
+      certifications: [],
+      languages: formData.languages,
+      rating: 0,
+      totalPatients: 0,
+      yearsExperience: formData.yearsExperience,
+      availability: [
+        { dayOfWeek: 'monday', startTime: '09:00', endTime: '17:00', isAvailable: true },
+        { dayOfWeek: 'tuesday', startTime: '09:00', endTime: '17:00', isAvailable: true },
+        { dayOfWeek: 'wednesday', startTime: '09:00', endTime: '17:00', isAvailable: true },
+        { dayOfWeek: 'thursday', startTime: '09:00', endTime: '17:00', isAvailable: true },
+        { dayOfWeek: 'friday', startTime: '09:00', endTime: '17:00', isAvailable: true },
+      ],
+    };
+
+    onProviderCreated(newProvider);
+    
+    // Reset form
+    setFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      specialties: [],
+      licenseNumber: '',
+      npiNumber: '',
+      department: '',
+      title: '',
+      bio: '',
+      languages: [],
+      yearsExperience: 0,
+    });
+    setErrors({});
     onClose();
   };
 
@@ -532,6 +622,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
               placeholder="Enter first name"
               value={formData.firstName}
               onChange={(event) => setFormData({ ...formData, firstName: event.currentTarget.value })}
+              error={errors.firstName}
               required
             />
           </Grid.Col>
@@ -541,6 +632,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
               placeholder="Enter last name"
               value={formData.lastName}
               onChange={(event) => setFormData({ ...formData, lastName: event.currentTarget.value })}
+              error={errors.lastName}
               required
             />
           </Grid.Col>
@@ -553,6 +645,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
               placeholder="Enter email address"
               value={formData.email}
               onChange={(event) => setFormData({ ...formData, email: event.currentTarget.value })}
+              error={errors.email}
               required
             />
           </Grid.Col>
@@ -562,6 +655,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
               placeholder="Enter phone number"
               value={formData.phone}
               onChange={(event) => setFormData({ ...formData, phone: event.currentTarget.value })}
+              error={errors.phone}
               required
             />
           </Grid.Col>
@@ -573,15 +667,16 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
               label="Department"
               placeholder="Select department"
               data={[
-                { value: 'internal_medicine', label: 'Internal Medicine' },
-                { value: 'pediatrics', label: 'Pediatrics' },
-                { value: 'cardiology', label: 'Cardiology' },
-                { value: 'orthopedics', label: 'Orthopedics' },
-                { value: 'dermatology', label: 'Dermatology' },
-                { value: 'neurology', label: 'Neurology' },
+                { value: 'Internal Medicine', label: 'Internal Medicine' },
+                { value: 'Pediatrics', label: 'Pediatrics' },
+                { value: 'Cardiology', label: 'Cardiology' },
+                { value: 'Orthopedics', label: 'Orthopedics' },
+                { value: 'Dermatology', label: 'Dermatology' },
+                { value: 'Neurology', label: 'Neurology' },
               ]}
               value={formData.department}
               onChange={(value) => setFormData({ ...formData, department: value || '' })}
+              error={errors.department}
               required
             />
           </Grid.Col>
@@ -591,6 +686,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
               placeholder="Enter job title"
               value={formData.title}
               onChange={(event) => setFormData({ ...formData, title: event.currentTarget.value })}
+              error={errors.title}
               required
             />
           </Grid.Col>
@@ -603,6 +699,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
               placeholder="Enter license number"
               value={formData.licenseNumber}
               onChange={(event) => setFormData({ ...formData, licenseNumber: event.currentTarget.value })}
+              error={errors.licenseNumber}
               required
             />
           </Grid.Col>
@@ -612,10 +709,60 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
               placeholder="Enter NPI number"
               value={formData.npiNumber}
               onChange={(event) => setFormData({ ...formData, npiNumber: event.currentTarget.value })}
+              error={errors.npiNumber}
               required
             />
           </Grid.Col>
         </Grid>
+
+        <MultiSelect
+          label="Specialties"
+          placeholder="Select specialties"
+          data={[
+            'Internal Medicine',
+            'Cardiology',
+            'Pediatrics',
+            'Orthopedics',
+            'Dermatology',
+            'Neurology',
+            'Family Medicine',
+            'Sports Medicine',
+            'Emergency Medicine',
+            'Psychiatry',
+          ]}
+          value={formData.specialties}
+          onChange={(value) => setFormData({ ...formData, specialties: value })}
+          error={errors.specialties}
+          required
+        />
+
+        <MultiSelect
+          label="Languages"
+          placeholder="Select languages"
+          data={[
+            'English',
+            'Spanish',
+            'French',
+            'German',
+            'Italian',
+            'Portuguese',
+            'Mandarin',
+            'Japanese',
+            'Korean',
+            'Arabic',
+          ]}
+          value={formData.languages}
+          onChange={(value) => setFormData({ ...formData, languages: value })}
+        />
+
+        <NumberInput
+          label="Years of Experience"
+          placeholder="Enter years of experience"
+          value={formData.yearsExperience}
+          onChange={(value) => setFormData({ ...formData, yearsExperience: value || 0 })}
+          min={0}
+          max={50}
+        />
 
         <Textarea
           label="Biography"
@@ -639,6 +786,318 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
 };
 
 /**
+ * Edit Provider Modal Component
+ * Allows editing of existing provider information with pre-populated data
+ */
+interface EditProviderModalProps {
+  provider: Provider | null;
+  opened: boolean;
+  onClose: () => void;
+  onProviderUpdated: (provider: Provider) => void;
+}
+
+const EditProviderModal: React.FC<EditProviderModalProps> = ({ 
+  provider, 
+  opened, 
+  onClose, 
+  onProviderUpdated 
+}) => {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    specialties: [] as string[],
+    licenseNumber: '',
+    npiNumber: '',
+    department: '',
+    title: '',
+    bio: '',
+    languages: [] as string[],
+    status: 'active' as 'active' | 'inactive' | 'on_leave',
+    yearsExperience: 0,
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Pre-populate form when provider changes
+  React.useEffect(() => {
+    if (provider) {
+      setFormData({
+        firstName: provider.firstName,
+        lastName: provider.lastName,
+        email: provider.email,
+        phone: provider.phone,
+        specialties: provider.specialties,
+        licenseNumber: provider.licenseNumber,
+        npiNumber: provider.npiNumber,
+        department: provider.department,
+        title: provider.title,
+        bio: provider.bio,
+        languages: provider.languages,
+        status: provider.status,
+        yearsExperience: provider.yearsExperience,
+      });
+    }
+  }, [provider]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
+    if (!formData.licenseNumber.trim()) newErrors.licenseNumber = 'License number is required';
+    if (!formData.npiNumber.trim()) newErrors.npiNumber = 'NPI number is required';
+    if (!formData.department.trim()) newErrors.department = 'Department is required';
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    // Phone validation
+    const phoneRegex = /^\(\d{3}\) \d{3}-\d{4}$/;
+    if (formData.phone && !phoneRegex.test(formData.phone)) {
+      newErrors.phone = 'Phone must be in format (555) 123-4567';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!validateForm() || !provider) return;
+
+    try {
+      const updatedProvider: Provider = {
+        ...provider,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        specialties: formData.specialties,
+        licenseNumber: formData.licenseNumber,
+        npiNumber: formData.npiNumber,
+        department: formData.department,
+        title: formData.title,
+        bio: formData.bio,
+        languages: formData.languages,
+        status: formData.status,
+        yearsExperience: formData.yearsExperience,
+      };
+
+      onProviderUpdated(updatedProvider);
+      setErrors({});
+      onClose();
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to update provider. Please try again.',
+        color: 'red',
+      });
+    }
+  };
+
+  if (!provider) return null;
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Edit Provider"
+      size="lg"
+    >
+      <Stack gap="md">
+        <Grid>
+          <Grid.Col span={6}>
+            <TextInput
+              label="First Name"
+              placeholder="Enter first name"
+              value={formData.firstName}
+              onChange={(event) => setFormData({ ...formData, firstName: event.currentTarget.value })}
+              error={errors.firstName}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Last Name"
+              placeholder="Enter last name"
+              value={formData.lastName}
+              onChange={(event) => setFormData({ ...formData, lastName: event.currentTarget.value })}
+              error={errors.lastName}
+              required
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Email"
+              placeholder="Enter email address"
+              value={formData.email}
+              onChange={(event) => setFormData({ ...formData, email: event.currentTarget.value })}
+              error={errors.email}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Phone"
+              placeholder="Enter phone number"
+              value={formData.phone}
+              onChange={(event) => setFormData({ ...formData, phone: event.currentTarget.value })}
+              error={errors.phone}
+              required
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <Select
+              label="Department"
+              placeholder="Select department"
+              data={[
+                { value: 'Internal Medicine', label: 'Internal Medicine' },
+                { value: 'Pediatrics', label: 'Pediatrics' },
+                { value: 'Cardiology', label: 'Cardiology' },
+                { value: 'Orthopedics', label: 'Orthopedics' },
+                { value: 'Dermatology', label: 'Dermatology' },
+                { value: 'Neurology', label: 'Neurology' },
+              ]}
+              value={formData.department}
+              onChange={(value) => setFormData({ ...formData, department: value || '' })}
+              error={errors.department}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Title"
+              placeholder="Enter job title"
+              value={formData.title}
+              onChange={(event) => setFormData({ ...formData, title: event.currentTarget.value })}
+              error={errors.title}
+              required
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <TextInput
+              label="License Number"
+              placeholder="Enter license number"
+              value={formData.licenseNumber}
+              onChange={(event) => setFormData({ ...formData, licenseNumber: event.currentTarget.value })}
+              error={errors.licenseNumber}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="NPI Number"
+              placeholder="Enter NPI number"
+              value={formData.npiNumber}
+              onChange={(event) => setFormData({ ...formData, npiNumber: event.currentTarget.value })}
+              error={errors.npiNumber}
+              required
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Grid>
+          <Grid.Col span={6}>
+            <Select
+              label="Status"
+              placeholder="Select status"
+              data={[
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+                { value: 'on_leave', label: 'On Leave' },
+              ]}
+              value={formData.status}
+              onChange={(value) => setFormData({ ...formData, status: value as 'active' | 'inactive' | 'on_leave' })}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <NumberInput
+              label="Years of Experience"
+              placeholder="Enter years of experience"
+              value={formData.yearsExperience}
+              onChange={(value) => setFormData({ ...formData, yearsExperience: value || 0 })}
+              min={0}
+              max={50}
+            />
+          </Grid.Col>
+        </Grid>
+
+        <MultiSelect
+          label="Specialties"
+          placeholder="Select specialties"
+          data={[
+            'Internal Medicine',
+            'Cardiology',
+            'Pediatrics',
+            'Orthopedics',
+            'Dermatology',
+            'Neurology',
+            'Family Medicine',
+            'Sports Medicine',
+            'Emergency Medicine',
+            'Psychiatry',
+          ]}
+          value={formData.specialties}
+          onChange={(value) => setFormData({ ...formData, specialties: value })}
+        />
+
+        <MultiSelect
+          label="Languages"
+          placeholder="Select languages"
+          data={[
+            'English',
+            'Spanish',
+            'French',
+            'German',
+            'Italian',
+            'Portuguese',
+            'Mandarin',
+            'Japanese',
+            'Korean',
+            'Arabic',
+          ]}
+          value={formData.languages}
+          onChange={(value) => setFormData({ ...formData, languages: value })}
+        />
+
+        <Textarea
+          label="Biography"
+          placeholder="Enter provider biography"
+          value={formData.bio}
+          onChange={(event) => setFormData({ ...formData, bio: event.currentTarget.value })}
+          minRows={3}
+        />
+
+        <Group justify="flex-end" mt="md">
+          <Button variant="light" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit}>
+            Update Provider
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+};
+
+/**
  * Main Providers Page Component
  */
 export const ProvidersPage: React.FC = () => {
@@ -650,9 +1109,10 @@ export const ProvidersPage: React.FC = () => {
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
+  const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
 
-  // Using mock data for now
-  const providers = mockProviders;
+  // Convert mock data to stateful data for real-time updates
+  const [providers, setProviders] = useState<Provider[]>(mockProviders);
   const isLoading = false;
 
   const handleViewProvider = (provider: Provider) => {
@@ -661,8 +1121,30 @@ export const ProvidersPage: React.FC = () => {
   };
 
   const handleEditProvider = (provider: Provider) => {
-    // TODO: Implement edit functionality
-    console.log('Edit provider:', provider);
+    setSelectedProvider(provider);
+    openEdit();
+  };
+
+  const handleProviderCreated = (newProvider: Provider) => {
+    setProviders(prev => [...prev, newProvider]);
+    notifications.show({
+      title: 'Success',
+      message: 'Provider created successfully!',
+      color: 'green',
+    });
+  };
+
+  const handleProviderUpdated = (updatedProvider: Provider) => {
+    setProviders(prev => 
+      prev.map(provider => 
+        provider.id === updatedProvider.id ? updatedProvider : provider
+      )
+    );
+    notifications.show({
+      title: 'Success',
+      message: 'Provider updated successfully!',
+      color: 'green',
+    });
   };
 
   const filteredProviders = providers
@@ -959,12 +1441,22 @@ export const ProvidersPage: React.FC = () => {
         provider={selectedProvider}
         opened={detailsOpened}
         onClose={closeDetails}
+        onEdit={handleEditProvider}
       />
 
       {/* Create Provider Modal */}
       <CreateProviderModal
         opened={createOpened}
         onClose={closeCreate}
+        onProviderCreated={handleProviderCreated}
+      />
+
+      {/* Edit Provider Modal */}
+      <EditProviderModal
+        provider={selectedProvider}
+        opened={editOpened}
+        onClose={closeEdit}
+        onProviderUpdated={handleProviderUpdated}
       />
     </Container>
   );

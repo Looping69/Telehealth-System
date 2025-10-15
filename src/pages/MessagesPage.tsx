@@ -382,7 +382,428 @@ const MessageTableRow: React.FC<MessageTableRowProps> = ({ message, onView, onRe
 };
 
 /**
- * Main Messages Page Component
+ * Compose Message Modal Component
+ * Handles creating new messages and replies
+ */
+interface ComposeMessageModalProps {
+  opened: boolean;
+  onClose: () => void;
+  onMessageSent: (message: Message) => void;
+  replyTo?: Message | null;
+}
+
+const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({ 
+  opened, 
+  onClose, 
+  onMessageSent, 
+  replyTo 
+}) => {
+  const [formData, setFormData] = useState({
+    recipientId: replyTo?.senderId || '',
+    recipientName: replyTo?.senderName || '',
+    subject: replyTo ? `Re: ${replyTo.subject}` : '',
+    content: '',
+    priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent',
+    messageType: 'clinical' as 'clinical' | 'administrative' | 'general',
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [attachments, setAttachments] = useState<File[]>([]);
+
+  // Mock recipient options
+  const recipientOptions = [
+    { value: 'PAT-001', label: 'Sarah Johnson (Patient)' },
+    { value: 'PAT-002', label: 'Michael Chen (Patient)' },
+    { value: 'PAT-003', label: 'Emma Davis (Patient)' },
+    { value: 'DR-002', label: 'Dr. Johnson (Provider)' },
+    { value: 'STAFF-001', label: 'Jane Doe (Staff)' },
+  ];
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.recipientId) {
+      newErrors.recipientId = 'Recipient is required';
+    }
+    if (!formData.subject.trim()) {
+      newErrors.subject = 'Subject is required';
+    }
+    if (!formData.content.trim()) {
+      newErrors.content = 'Message content is required';
+    }
+    if (formData.content.length > 2000) {
+      newErrors.content = 'Message content must be less than 2000 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!validateForm()) return;
+
+    const selectedRecipient = recipientOptions.find(r => r.value === formData.recipientId);
+    
+    const newMessage: Message = {
+      id: `MSG-${Date.now()}`,
+      conversationId: replyTo?.conversationId || `CONV-${Date.now()}`,
+      senderId: 'DR-001', // Current user
+      senderName: 'Dr. Smith', // Current user name
+      senderRole: 'healthcare_provider',
+      recipientId: formData.recipientId,
+      recipientName: selectedRecipient?.label.split(' (')[0] || formData.recipientName,
+      recipientRole: selectedRecipient?.label.includes('Patient') ? 'patient' : 
+                    selectedRecipient?.label.includes('Provider') ? 'healthcare_provider' : 'staff',
+      subject: formData.subject,
+      content: formData.content,
+      timestamp: new Date().toISOString(),
+      status: 'sent',
+      priority: formData.priority,
+      isRead: false,
+      attachments: attachments.map((file, index) => ({
+        id: `ATT-${Date.now()}-${index}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      })),
+      messageType: formData.messageType,
+    };
+
+    onMessageSent(newMessage);
+    
+    // Reset form
+    setFormData({
+      recipientId: '',
+      recipientName: '',
+      subject: '',
+      content: '',
+      priority: 'normal',
+      messageType: 'clinical',
+    });
+    setAttachments([]);
+    setErrors({});
+    onClose();
+
+    // Show success notification (you can implement this with a notification system)
+    console.log('Message sent successfully!');
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    const validFiles = files.filter(file => file.size <= 10 * 1024 * 1024); // 10MB limit
+    
+    if (validFiles.length !== files.length) {
+      console.warn('Some files were too large and were not added');
+    }
+    
+    setAttachments(prev => [...prev, ...validFiles]);
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={replyTo ? `Reply to: ${replyTo.subject}` : "Compose Message"}
+      size="lg"
+    >
+      <Stack gap="md">
+        {replyTo && (
+          <Card withBorder p="sm" bg="gray.0">
+            <Text size="sm" c="dimmed" mb="xs">Replying to:</Text>
+            <Text size="sm" fw={500}>{replyTo.senderName}</Text>
+            <Text size="xs" c="dimmed" truncate>{replyTo.content}</Text>
+          </Card>
+        )}
+
+        <Select
+          label="Recipient"
+          placeholder="Select recipient"
+          data={recipientOptions}
+          value={formData.recipientId}
+          onChange={(value) => setFormData(prev => ({ ...prev, recipientId: value || '' }))}
+          error={errors.recipientId}
+          required
+          disabled={!!replyTo}
+        />
+
+        <TextInput
+          label="Subject"
+          placeholder="Enter message subject"
+          value={formData.subject}
+          onChange={(event) => setFormData(prev => ({ ...prev, subject: event.currentTarget.value }))}
+          error={errors.subject}
+          required
+        />
+
+        <Grid>
+          <Grid.Col span={6}>
+            <Select
+              label="Priority"
+              data={[
+                { value: 'low', label: 'Low' },
+                { value: 'normal', label: 'Normal' },
+                { value: 'high', label: 'High' },
+                { value: 'urgent', label: 'Urgent' },
+              ]}
+              value={formData.priority}
+              onChange={(value) => setFormData(prev => ({ ...prev, priority: value as any || 'normal' }))}
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <Select
+              label="Message Type"
+              data={[
+                { value: 'clinical', label: 'Clinical' },
+                { value: 'administrative', label: 'Administrative' },
+                { value: 'general', label: 'General' },
+              ]}
+              value={formData.messageType}
+              onChange={(value) => setFormData(prev => ({ ...prev, messageType: value as any || 'clinical' }))}
+            />
+          </Grid.Col>
+        </Grid>
+
+        <Textarea
+          label="Message"
+          placeholder="Enter your message"
+          value={formData.content}
+          onChange={(event) => setFormData(prev => ({ ...prev, content: event.currentTarget.value }))}
+          error={errors.content}
+          minRows={4}
+          maxRows={8}
+          required
+        />
+
+        <div>
+          <Text size="sm" fw={500} mb="xs">Attachments</Text>
+          <input
+            type="file"
+            multiple
+            onChange={handleFileUpload}
+            style={{ display: 'none' }}
+            id="file-upload"
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+          />
+          <Button
+            variant="light"
+            leftSection={<Paperclip size={16} />}
+            onClick={() => document.getElementById('file-upload')?.click()}
+            size="sm"
+          >
+            Add Attachments
+          </Button>
+          
+          {attachments.length > 0 && (
+            <Stack gap="xs" mt="sm">
+              {attachments.map((file, index) => (
+                <Group key={index} justify="space-between" p="xs" bg="gray.0" style={{ borderRadius: 4 }}>
+                  <div>
+                    <Text size="sm" fw={500}>{file.name}</Text>
+                    <Text size="xs" c="dimmed">{formatFileSize(file.size)}</Text>
+                  </div>
+                  <ActionIcon
+                    variant="subtle"
+                    color="red"
+                    onClick={() => removeAttachment(index)}
+                  >
+                    <Trash2 size={16} />
+                  </ActionIcon>
+                </Group>
+              ))}
+            </Stack>
+          )}
+        </div>
+
+        <Group justify="flex-end" mt="md">
+          <Button variant="light" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button leftSection={<Send size={16} />} onClick={handleSubmit}>
+            Send Message
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+};
+
+/**
+ * View Message Modal Component
+ * Displays full message details
+ */
+interface ViewMessageModalProps {
+  opened: boolean;
+  onClose: () => void;
+  message: Message | null;
+  onReply: (message: Message) => void;
+}
+
+const ViewMessageModal: React.FC<ViewMessageModalProps> = ({ 
+  opened, 
+  onClose, 
+  message, 
+  onReply 
+}) => {
+  if (!message) return null;
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'red';
+      case 'high': return 'orange';
+      case 'normal': return 'blue';
+      case 'low': return 'gray';
+      default: return 'blue';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'delivered': return 'green';
+      case 'sent': return 'blue';
+      case 'read': return 'gray';
+      default: return 'gray';
+    }
+  };
+
+  const handleReply = () => {
+    onReply(message);
+    onClose();
+  };
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Message Details"
+      size="lg"
+    >
+      <Stack gap="md">
+        {/* Message Header */}
+        <Card withBorder p="md">
+          <Group justify="space-between" mb="md">
+            <div>
+              <Text fw={600} size="lg">{message.subject}</Text>
+              <Group gap="xs" mt="xs">
+                <Badge color={getPriorityColor(message.priority)} size="sm">
+                  {message.priority.toUpperCase()}
+                </Badge>
+                <Badge color={getStatusColor(message.status)} size="sm">
+                  {message.status.toUpperCase()}
+                </Badge>
+                <Badge variant="light" size="sm">
+                  {message.messageType.toUpperCase()}
+                </Badge>
+              </Group>
+            </div>
+            <Group>
+              <ActionIcon
+                variant="light"
+                color="blue"
+                onClick={handleReply}
+                size="lg"
+              >
+                <Reply size={18} />
+              </ActionIcon>
+            </Group>
+          </Group>
+
+          <Divider mb="md" />
+
+          <Grid>
+            <Grid.Col span={6}>
+              <Text size="sm" c="dimmed" mb="xs">From:</Text>
+              <Group gap="sm">
+                <Avatar size="sm" name={message.senderName} color="blue" />
+                <div>
+                  <Text size="sm" fw={500}>{message.senderName}</Text>
+                  <Text size="xs" c="dimmed">{message.senderRole.replace('_', ' ')}</Text>
+                </div>
+              </Group>
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <Text size="sm" c="dimmed" mb="xs">To:</Text>
+              <Group gap="sm">
+                <Avatar size="sm" name={message.recipientName} color="green" />
+                <div>
+                  <Text size="sm" fw={500}>{message.recipientName}</Text>
+                  <Text size="xs" c="dimmed">{message.recipientRole.replace('_', ' ')}</Text>
+                </div>
+              </Group>
+            </Grid.Col>
+          </Grid>
+
+          <Text size="sm" c="dimmed" mt="md">
+            Sent: {formatDate(message.timestamp)}
+          </Text>
+        </Card>
+
+        {/* Message Content */}
+        <Card withBorder p="md">
+          <Text size="sm" c="dimmed" mb="sm">Message:</Text>
+          <ScrollArea.Autosize maxHeight={300}>
+            <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+              {message.content}
+            </Text>
+          </ScrollArea.Autosize>
+        </Card>
+
+        {/* Attachments */}
+        {message.attachments && message.attachments.length > 0 && (
+          <Card withBorder p="md">
+            <Text size="sm" c="dimmed" mb="sm">Attachments:</Text>
+            <Stack gap="xs">
+              {message.attachments.map((attachment) => (
+                <Group key={attachment.id} justify="space-between" p="xs" bg="gray.0" style={{ borderRadius: 4 }}>
+                  <Group gap="sm">
+                    <Paperclip size={16} />
+                    <div>
+                      <Text size="sm" fw={500}>{attachment.name}</Text>
+                      <Text size="xs" c="dimmed">
+                        {(attachment.size / 1024).toFixed(1)} KB
+                      </Text>
+                    </div>
+                  </Group>
+                  <Button variant="light" size="xs">
+                    Download
+                  </Button>
+                </Group>
+              ))}
+            </Stack>
+          </Card>
+        )}
+
+        {/* Actions */}
+        <Group justify="flex-end" mt="md">
+          <Button variant="light" onClick={onClose}>
+            Close
+          </Button>
+          <Button leftSection={<Reply size={16} />} onClick={handleReply}>
+            Reply
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+};
+
+/**
+ * Messages Page Component
  */
 const MessagesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -398,9 +819,9 @@ const MessagesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
 
-  // Using mock data for now
-  const conversations = mockConversations;
-  const messages = mockMessages;
+  // Convert mock data to stateful data for real-time updates
+  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [conversations, setConversations] = useState(mockConversations);
   const isLoading = false;
 
   const currentUser = 'DR-001'; // Mock current user
@@ -414,15 +835,77 @@ const MessagesPage: React.FC = () => {
     msg.conversationId === selectedConversation
   ).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
+  /**
+   * Handle sending a new message
+   * @param message - The message to send
+   */
+  const handleMessageSent = (message: Message) => {
+    // Add the new message to the messages state
+    setMessages(prev => [...prev, message]);
+    
+    // Update or create conversation
+    const existingConvIndex = conversations.findIndex(conv => conv.id === message.conversationId);
+    
+    if (existingConvIndex >= 0) {
+      // Update existing conversation
+      const updatedConversations = [...conversations];
+      updatedConversations[existingConvIndex] = {
+        ...updatedConversations[existingConvIndex],
+        lastMessage: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : ''),
+        lastMessageTime: message.timestamp,
+        unreadCount: updatedConversations[existingConvIndex].unreadCount + 1,
+      };
+      setConversations(updatedConversations);
+    } else {
+      // Create new conversation
+      const newConversation = {
+        id: message.conversationId,
+        participants: [message.senderName, message.recipientName],
+        lastMessage: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : ''),
+        lastMessageTime: message.timestamp,
+        unreadCount: 1,
+        subject: message.subject,
+        messageType: message.messageType,
+      };
+      setConversations(prev => [newConversation, ...prev]);
+    }
+    
+    console.log('Message sent successfully!');
+  };
+
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
     
-    // TODO: Implement message sending
-    console.log('Send message:', newMessage);
+    // This is for the conversation view - create a simple message
+    const message: Message = {
+      id: `MSG-${Date.now()}`,
+      conversationId: selectedConversation || `CONV-${Date.now()}`,
+      senderId: currentUser,
+      senderName: 'Dr. Smith',
+      senderRole: 'healthcare_provider',
+      recipientId: 'PAT-001', // This would be determined by the conversation
+      recipientName: 'Patient', // This would be determined by the conversation
+      recipientRole: 'patient',
+      subject: 'Quick Message',
+      content: newMessage,
+      timestamp: new Date().toISOString(),
+      status: 'sent',
+      priority: 'normal',
+      isRead: false,
+      attachments: [],
+      messageType: 'general',
+    };
+    
+    handleMessageSent(message);
     setNewMessage('');
   };
 
   const handleViewMessage = (message: Message) => {
+    // Mark message as read when viewed
+    setMessages(prev => prev.map(msg => 
+      msg.id === message.id ? { ...msg, isRead: true } : msg
+    ));
+    
     setSelectedMessage(message);
     openViewDetails();
   };
@@ -432,8 +915,18 @@ const MessagesPage: React.FC = () => {
     openCompose();
   };
 
+  const handleComposeClose = () => {
+    setSelectedMessage(null);
+    closeCompose();
+  };
+
+  const handleViewClose = () => {
+    setSelectedMessage(null);
+    closeViewDetails();
+  };
+
   // Filter messages based on search and filters
-  const filteredMessages = mockMessages.filter((message) => {
+  const filteredMessages = messages.filter((message) => {
     const matchesSearch = 
       message.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       message.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -650,6 +1143,22 @@ const MessagesPage: React.FC = () => {
             </Table>
           </Card>
         )}
+
+        {/* Compose Message Modal */}
+        <ComposeMessageModal
+          opened={composeOpened}
+          onClose={handleComposeClose}
+          onMessageSent={handleMessageSent}
+          replyTo={selectedMessage}
+        />
+
+        {/* View Message Modal */}
+        <ViewMessageModal
+          opened={viewDetailsOpened}
+          onClose={handleViewClose}
+          message={selectedMessage}
+          onReply={handleReplyMessage}
+        />
       </Stack>
     </Container>
   );

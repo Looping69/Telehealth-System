@@ -31,6 +31,11 @@ import {
   Progress,
   Avatar,
   Table,
+  Checkbox,
+  Menu,
+  NumberInput,
+  MultiSelect,
+  Notification,
 } from '@mantine/core';
 import {
   Search,
@@ -52,8 +57,15 @@ import {
   TrendingUp,
   Users,
   Heart,
+  Copy,
+  Share,
+  MoreVertical,
+  Upload,
+  X,
+  Check,
+  AlertTriangle,
 } from 'lucide-react';
-import { useDisclosure } from '@mantine/hooks';
+import { useDisclosure, useNotifications } from '@mantine/hooks';
 
 /**
  * Resource interface
@@ -223,9 +235,22 @@ interface ResourceCardProps {
   onView: (resource: Resource) => void;
   onEdit: (resource: Resource) => void;
   onDownload: (resource: Resource) => void;
+  onDelete: (resource: Resource) => void;
+  onDuplicate: (resource: Resource) => void;
+  isSelected: boolean;
+  onSelect: (resourceId: string) => void;
 }
 
-const ResourceCard: React.FC<ResourceCardProps> = ({ resource, onView, onEdit, onDownload }) => {
+const ResourceCard: React.FC<ResourceCardProps> = ({ 
+  resource, 
+  onView, 
+  onEdit, 
+  onDownload, 
+  onDelete, 
+  onDuplicate, 
+  isSelected, 
+  onSelect 
+}) => {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'document':
@@ -394,35 +419,45 @@ const ResourceCard: React.FC<ResourceCardProps> = ({ resource, onView, onEdit, o
             )}
           </Group>
           <Group gap="xs">
-            <Tooltip label="View Details">
-              <ActionIcon
-                variant="light"
-                color="blue"
-                onClick={() => onView(resource)}
-              >
-                <Eye size={16} />
-              </ActionIcon>
-            </Tooltip>
-            {resource.fileUrl && (
-              <Tooltip label="Download">
-                <ActionIcon
-                  variant="light"
-                  color="green"
-                  onClick={() => onDownload(resource)}
-                >
-                  <Download size={16} />
+            <Checkbox
+              checked={isSelected}
+              onChange={() => onSelect(resource.id)}
+              size="sm"
+            />
+            <Menu shadow="md" width={200}>
+              <Menu.Target>
+                <ActionIcon variant="light" color="gray">
+                  <MoreVertical size={16} />
                 </ActionIcon>
-              </Tooltip>
-            )}
-            <Tooltip label="Edit">
-              <ActionIcon
-                variant="light"
-                color="orange"
-                onClick={() => onEdit(resource)}
-              >
-                <Edit size={16} />
-              </ActionIcon>
-            </Tooltip>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item leftSection={<Eye size={14} />} onClick={() => onView(resource)}>
+                  View Details
+                </Menu.Item>
+                <Menu.Item leftSection={<Edit size={14} />} onClick={() => onEdit(resource)}>
+                  Edit Resource
+                </Menu.Item>
+                {resource.fileUrl && (
+                  <Menu.Item leftSection={<Download size={14} />} onClick={() => onDownload(resource)}>
+                    Download
+                  </Menu.Item>
+                )}
+                <Menu.Item leftSection={<Copy size={14} />} onClick={() => onDuplicate(resource)}>
+                  Duplicate
+                </Menu.Item>
+                <Menu.Item leftSection={<Share size={14} />}>
+                  Share
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item 
+                  leftSection={<Trash2 size={14} />} 
+                  color="red"
+                  onClick={() => onDelete(resource)}
+                >
+                  Delete
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </Group>
         </Group>
       </Stack>
@@ -438,9 +473,22 @@ interface ResourceTableRowProps {
   onView: (resource: Resource) => void;
   onEdit: (resource: Resource) => void;
   onDownload: (resource: Resource) => void;
+  onDelete: (resource: Resource) => void;
+  onDuplicate: (resource: Resource) => void;
+  isSelected: boolean;
+  onSelect: (resourceId: string) => void;
 }
 
-const ResourceTableRow: React.FC<ResourceTableRowProps> = ({ resource, onView, onEdit, onDownload }) => {
+const ResourceTableRow: React.FC<ResourceTableRowProps> = ({ 
+  resource, 
+  onView, 
+  onEdit, 
+  onDownload, 
+  onDelete, 
+  onDuplicate, 
+  isSelected, 
+  onSelect 
+}) => {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'document':
@@ -564,38 +612,45 @@ const ResourceTableRow: React.FC<ResourceTableRowProps> = ({ resource, onView, o
       </Table.Td>
       <Table.Td>
         <Group gap="xs">
-          <Tooltip label="View Details">
-            <ActionIcon
-              variant="light"
-              color="blue"
-              size="sm"
-              onClick={() => onView(resource)}
-            >
-              <Eye size={14} />
-            </ActionIcon>
-          </Tooltip>
-          {resource.fileUrl && (
-            <Tooltip label="Download">
-              <ActionIcon
-                variant="light"
-                color="green"
-                size="sm"
-                onClick={() => onDownload(resource)}
-              >
-                <Download size={14} />
+          <Checkbox
+            checked={isSelected}
+            onChange={() => onSelect(resource.id)}
+            size="sm"
+          />
+          <Menu shadow="md" width={200}>
+            <Menu.Target>
+              <ActionIcon variant="light" color="gray" size="sm">
+                <MoreVertical size={14} />
               </ActionIcon>
-            </Tooltip>
-          )}
-          <Tooltip label="Edit">
-            <ActionIcon
-              variant="light"
-              color="orange"
-              size="sm"
-              onClick={() => onEdit(resource)}
-            >
-              <Edit size={14} />
-            </ActionIcon>
-          </Tooltip>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<Eye size={12} />} onClick={() => onView(resource)}>
+                View Details
+              </Menu.Item>
+              <Menu.Item leftSection={<Edit size={12} />} onClick={() => onEdit(resource)}>
+                Edit Resource
+              </Menu.Item>
+              {resource.fileUrl && (
+                <Menu.Item leftSection={<Download size={12} />} onClick={() => onDownload(resource)}>
+                  Download
+                </Menu.Item>
+              )}
+              <Menu.Item leftSection={<Copy size={12} />} onClick={() => onDuplicate(resource)}>
+                Duplicate
+              </Menu.Item>
+              <Menu.Item leftSection={<Share size={12} />}>
+                Share
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item 
+                leftSection={<Trash2 size={12} />} 
+                color="red"
+                onClick={() => onDelete(resource)}
+              >
+                Delete
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
       </Table.Td>
     </Table.Tr>
@@ -984,11 +1039,14 @@ export const ResourcesPage: React.FC = () => {
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [formOpened, { open: openForm, close: closeForm }] = useDisclosure(false);
+  const [deleteOpened, { open: openDelete, close: closeDelete }] = useDisclosure(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [selectedResources, setSelectedResources] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Using mock data for now
-  const resources = mockResources;
-  const isLoading = false;
+  // Convert mock data to stateful for real resource management
+  const [resources, setResources] = useState<Resource[]>(mockResources);
 
   const handleViewResource = (resource: Resource) => {
     setSelectedResource(resource);
@@ -1005,16 +1063,196 @@ export const ResourcesPage: React.FC = () => {
     openForm();
   };
 
-  const handleDownloadResource = (resource: Resource) => {
+  const handleDownloadResource = async (resource: Resource) => {
     if (resource.fileUrl) {
-      // TODO: Implement download functionality
-      console.log('Download resource:', resource);
+      setIsLoading(true);
+      try {
+        // Simulate file download
+        const link = document.createElement('a');
+        link.href = resource.fileUrl;
+        link.download = `${resource.title}.${resource.type === 'document' ? 'pdf' : resource.type === 'video' ? 'mp4' : 'file'}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Update download count
+        setResources(prev => prev.map(r => 
+          r.id === resource.id 
+            ? { ...r, downloadCount: r.downloadCount + 1 }
+            : r
+        ));
+        
+        setNotification({ type: 'success', message: `${resource.title} downloaded successfully!` });
+      } catch (error) {
+        setNotification({ type: 'error', message: 'Failed to download resource. Please try again.' });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  const handleSaveResource = (resourceData: Partial<Resource>) => {
-    // TODO: Implement resource save
-    console.log('Save resource:', resourceData);
+  const handleSaveResource = async (resourceData: Partial<Resource>) => {
+    setIsLoading(true);
+    try {
+      if (selectedResource) {
+        // Edit existing resource
+        setResources(prev => prev.map(r => 
+          r.id === selectedResource.id 
+            ? { ...r, ...resourceData, lastUpdated: new Date().toISOString().split('T')[0] }
+            : r
+        ));
+        setNotification({ type: 'success', message: 'Resource updated successfully!' });
+      } else {
+        // Create new resource
+        const newResource: Resource = {
+          id: `RES-${String(resources.length + 1).padStart(3, '0')}`,
+          title: resourceData.title || '',
+          description: resourceData.description || '',
+          type: resourceData.type || 'document',
+          category: resourceData.category || 'patient-education',
+          fileUrl: resourceData.fileUrl,
+          thumbnailUrl: resourceData.thumbnailUrl,
+          fileSize: resourceData.fileSize,
+          duration: resourceData.duration,
+          isPublic: resourceData.isPublic || false,
+          isFeatured: resourceData.isFeatured || false,
+          tags: resourceData.tags || [],
+          viewCount: 0,
+          downloadCount: 0,
+          rating: 0,
+          reviewCount: 0,
+          author: resourceData.author || 'Current User',
+          authorAvatar: resourceData.authorAvatar,
+          createdAt: new Date().toISOString().split('T')[0],
+          lastUpdated: new Date().toISOString().split('T')[0],
+          language: resourceData.language || 'English',
+        };
+        setResources(prev => [...prev, newResource]);
+        setNotification({ type: 'success', message: 'Resource created successfully!' });
+      }
+      closeForm();
+    } catch (error) {
+      setNotification({ type: 'error', message: 'Failed to save resource. Please try again.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteResource = async (resourceId: string) => {
+    setIsLoading(true);
+    try {
+      setResources(prev => prev.filter(r => r.id !== resourceId));
+      setNotification({ type: 'success', message: 'Resource deleted successfully!' });
+      closeDelete();
+    } catch (error) {
+      setNotification({ type: 'error', message: 'Failed to delete resource. Please try again.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDuplicateResource = async (resource: Resource) => {
+    setIsLoading(true);
+    try {
+      const duplicatedResource: Resource = {
+        ...resource,
+        id: `RES-${String(resources.length + 1).padStart(3, '0')}`,
+        title: `${resource.title} (Copy)`,
+        viewCount: 0,
+        downloadCount: 0,
+        createdAt: new Date().toISOString().split('T')[0],
+        lastUpdated: new Date().toISOString().split('T')[0],
+      };
+      setResources(prev => [...prev, duplicatedResource]);
+      setNotification({ type: 'success', message: 'Resource duplicated successfully!' });
+    } catch (error) {
+      setNotification({ type: 'error', message: 'Failed to duplicate resource. Please try again.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedResources.length === 0) return;
+    
+    setIsLoading(true);
+    try {
+      setResources(prev => prev.filter(r => !selectedResources.includes(r.id)));
+      setSelectedResources([]);
+      setNotification({ type: 'success', message: `${selectedResources.length} resources deleted successfully!` });
+    } catch (error) {
+      setNotification({ type: 'error', message: 'Failed to delete resources. Please try again.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBulkStatusChange = async (isPublic: boolean) => {
+    if (selectedResources.length === 0) return;
+    
+    setIsLoading(true);
+    try {
+      setResources(prev => prev.map(r => 
+        selectedResources.includes(r.id) 
+          ? { ...r, isPublic, lastUpdated: new Date().toISOString().split('T')[0] }
+          : r
+      ));
+      setSelectedResources([]);
+      setNotification({ 
+        type: 'success', 
+        message: `${selectedResources.length} resources ${isPublic ? 'made public' : 'made private'} successfully!` 
+      });
+    } catch (error) {
+      setNotification({ type: 'error', message: 'Failed to update resource status. Please try again.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    const csvContent = [
+      ['ID', 'Title', 'Type', 'Category', 'Author', 'Views', 'Downloads', 'Rating', 'Created', 'Status'],
+      ...filteredResources.map(r => [
+        r.id,
+        r.title,
+        r.type,
+        r.category,
+        r.author,
+        r.viewCount,
+        r.downloadCount,
+        r.rating,
+        r.createdAt,
+        r.isPublic ? 'Public' : 'Private'
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `resources-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    setNotification({ type: 'success', message: 'Resources exported to CSV successfully!' });
+  };
+
+  const toggleResourceSelection = (resourceId: string) => {
+    setSelectedResources(prev => 
+      prev.includes(resourceId) 
+        ? prev.filter(id => id !== resourceId)
+        : [...prev, resourceId]
+    );
+  };
+
+  const toggleAllResourcesSelection = () => {
+    if (selectedResources.length === filteredResources.length) {
+      setSelectedResources([]);
+    } else {
+      setSelectedResources(filteredResources.map(r => r.id));
+    }
   };
 
   const filteredResources = resources
@@ -1116,86 +1354,141 @@ export const ResourcesPage: React.FC = () => {
           </Grid.Col>
         </Grid>
 
-        {/* Filters */}
+        {/* Filters and Bulk Actions */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Grid align="end">
-            <Grid.Col span={{ base: 12, sm: 6, md: 2 }}>
-              <TextInput
-                placeholder="Search resources..."
-                leftSection={<Search size={16} />}
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.currentTarget.value)}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 2 }}>
-              <Select
-                placeholder="Filter by type"
-                leftSection={<Filter size={16} />}
-                data={[
-                  { value: 'document', label: 'Document' },
-                  { value: 'video', label: 'Video' },
-                  { value: 'image', label: 'Image' },
-                  { value: 'article', label: 'Article' },
-                  { value: 'guide', label: 'Guide' },
-                  { value: 'form', label: 'Form' },
-                ]}
-                value={typeFilter}
-                onChange={setTypeFilter}
-                clearable
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 2 }}>
-              <Select
-                placeholder="Filter by category"
-                leftSection={<BookOpen size={16} />}
-                data={[
-                  { value: 'patient-education', label: 'Patient Education' },
-                  { value: 'provider-training', label: 'Provider Training' },
-                  { value: 'policies', label: 'Policies' },
-                  { value: 'forms', label: 'Forms' },
-                  { value: 'marketing', label: 'Marketing' },
-                  { value: 'research', label: 'Research' },
-                ]}
-                value={categoryFilter}
-                onChange={setCategoryFilter}
-                clearable
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 2 }}>
-              <Select
-                placeholder="Filter by visibility"
-                leftSection={<TrendingUp size={16} />}
-                data={[
-                  { value: 'public', label: 'Public' },
-                  { value: 'private', label: 'Private' },
-                  { value: 'featured', label: 'Featured' },
-                ]}
-                value={visibilityFilter}
-                onChange={setVisibilityFilter}
-                clearable
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <Group justify="flex-end">
-                <Button.Group>
-                  <Button
-                    variant={viewMode === 'cards' ? 'filled' : 'light'}
-                    onClick={() => setViewMode('cards')}
-                    size="sm"
-                  >
-                    Cards
-                  </Button>
-                  <Button
-                    variant={viewMode === 'table' ? 'filled' : 'light'}
-                    onClick={() => setViewMode('table')}
-                    size="sm"
-                  >
-                    Table
-                  </Button>
-                </Button.Group>
+          <Stack gap="md">
+            <Grid align="end">
+              <Grid.Col span={{ base: 12, sm: 6, md: 2 }}>
+                <TextInput
+                  placeholder="Search resources..."
+                  leftSection={<Search size={16} />}
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.currentTarget.value)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, md: 2 }}>
+                <Select
+                  placeholder="Filter by type"
+                  leftSection={<Filter size={16} />}
+                  data={[
+                    { value: 'document', label: 'Document' },
+                    { value: 'video', label: 'Video' },
+                    { value: 'image', label: 'Image' },
+                    { value: 'article', label: 'Article' },
+                    { value: 'guide', label: 'Guide' },
+                    { value: 'form', label: 'Form' },
+                  ]}
+                  value={typeFilter}
+                  onChange={setTypeFilter}
+                  clearable
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, md: 2 }}>
+                <Select
+                  placeholder="Filter by category"
+                  leftSection={<BookOpen size={16} />}
+                  data={[
+                    { value: 'patient-education', label: 'Patient Education' },
+                    { value: 'provider-training', label: 'Provider Training' },
+                    { value: 'policies', label: 'Policies' },
+                    { value: 'forms', label: 'Forms' },
+                    { value: 'marketing', label: 'Marketing' },
+                    { value: 'research', label: 'Research' },
+                  ]}
+                  value={categoryFilter}
+                  onChange={setCategoryFilter}
+                  clearable
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, md: 2 }}>
+                <Select
+                  placeholder="Filter by visibility"
+                  leftSection={<TrendingUp size={16} />}
+                  data={[
+                    { value: 'public', label: 'Public' },
+                    { value: 'private', label: 'Private' },
+                    { value: 'featured', label: 'Featured' },
+                  ]}
+                  value={visibilityFilter}
+                  onChange={setVisibilityFilter}
+                  clearable
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+                <Group justify="flex-end">
+                  <Button.Group>
+                    <Button
+                      variant={viewMode === 'cards' ? 'filled' : 'light'}
+                      onClick={() => setViewMode('cards')}
+                      size="sm"
+                    >
+                      Cards
+                    </Button>
+                    <Button
+                      variant={viewMode === 'table' ? 'filled' : 'light'}
+                      onClick={() => setViewMode('table')}
+                      size="sm"
+                    >
+                      Table
+                    </Button>
+                  </Button.Group>
+                </Group>
+              </Grid.Col>
+            </Grid>
+
+            {/* Search Results Count */}
+            <Group justify="space-between" align="center">
+              <Text size="sm" c="dimmed">
+                Showing {filteredResources.length} of {resources.length} resources
+              </Text>
+              <Group gap="xs">
+                <Button
+                  leftSection={<Upload size={14} />}
+                  variant="light"
+                  size="sm"
+                  onClick={handleExportCSV}
+                >
+                  Export CSV
+                </Button>
               </Group>
-            </Grid.Col>
-          </Grid>
+            </Group>
+
+            {/* Bulk Actions */}
+            {selectedResources.length > 0 && (
+              <Group justify="space-between" align="center" p="sm" style={{ backgroundColor: 'var(--mantine-color-blue-0)', borderRadius: 'var(--mantine-radius-sm)' }}>
+                <Text size="sm" fw={500}>
+                  {selectedResources.length} resource{selectedResources.length > 1 ? 's' : ''} selected
+                </Text>
+                <Group gap="xs">
+                  <Button
+                    leftSection={<Eye size={14} />}
+                    variant="light"
+                    size="sm"
+                    onClick={() => handleBulkStatusChange(true)}
+                  >
+                    Make Public
+                  </Button>
+                  <Button
+                    leftSection={<Eye size={14} />}
+                    variant="light"
+                    size="sm"
+                    onClick={() => handleBulkStatusChange(false)}
+                  >
+                    Make Private
+                  </Button>
+                  <Button
+                    leftSection={<Trash2 size={14} />}
+                    color="red"
+                    variant="light"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                  >
+                    Delete Selected
+                  </Button>
+                </Group>
+              </Group>
+            )}
+          </Stack>
         </Card>
 
         {/* Resources Display */}
@@ -1212,6 +1505,10 @@ export const ResourcesPage: React.FC = () => {
                   onView={handleViewResource}
                   onEdit={handleEditResource}
                   onDownload={handleDownloadResource}
+                  onDelete={handleDeleteResource}
+                  onDuplicate={handleDuplicateResource}
+                  isSelected={selectedResources.includes(resource.id)}
+                  onSelect={toggleResourceSelection}
                 />
               </Grid.Col>
             ))}
@@ -1221,6 +1518,13 @@ export const ResourcesPage: React.FC = () => {
             <Table striped highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
+                  <Table.Th>
+                    <Checkbox
+                      checked={selectedResources.length === filteredResources.length && filteredResources.length > 0}
+                      indeterminate={selectedResources.length > 0 && selectedResources.length < filteredResources.length}
+                      onChange={toggleAllResourcesSelection}
+                    />
+                  </Table.Th>
                   <Table.Th>Resource</Table.Th>
                   <Table.Th>Type</Table.Th>
                   <Table.Th>Category</Table.Th>
@@ -1242,6 +1546,10 @@ export const ResourcesPage: React.FC = () => {
                     onView={handleViewResource}
                     onEdit={handleEditResource}
                     onDownload={handleDownloadResource}
+                    onDelete={handleDeleteResource}
+                    onDuplicate={handleDuplicateResource}
+                    isSelected={selectedResources.includes(resource.id)}
+                    onSelect={toggleResourceSelection}
                   />
                 ))}
               </Table.Tbody>
@@ -1269,6 +1577,37 @@ export const ResourcesPage: React.FC = () => {
           </Center>
         )}
       </Stack>
+
+      {/* Notification */}
+      {notification && (
+        <Notification
+          icon={notification.type === 'success' ? <Check size={18} /> : <AlertTriangle size={18} />}
+          color={notification.type === 'success' ? 'green' : 'red'}
+          title={notification.title}
+          onClose={() => setNotification(null)}
+          style={{ position: 'fixed', top: 20, right: 20, zIndex: 1000 }}
+        >
+          {notification.message}
+        </Notification>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal opened={deleteOpened} onClose={() => setDeleteOpened(false)} title="Delete Resource">
+        <Text>Are you sure you want to delete this resource? This action cannot be undone.</Text>
+        <Group justify="flex-end" mt="md">
+          <Button variant="light" onClick={() => setDeleteOpened(false)}>
+            Cancel
+          </Button>
+          <Button color="red" onClick={() => {
+            if (selectedResource) {
+              handleDeleteResource(selectedResource.id);
+            }
+            setDeleteOpened(false);
+          }}>
+            Delete
+          </Button>
+        </Group>
+      </Modal>
 
       {/* Resource Details Modal */}
       <ResourceDetailsModal

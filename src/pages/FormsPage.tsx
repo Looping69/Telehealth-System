@@ -5,7 +5,7 @@
  * Outputs: Form management interface and form taking experience
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Container,
   Title,
@@ -22,9 +22,17 @@ import {
   Tooltip,
   Alert,
   Table,
+  TextInput,
+  Loader,
+  Menu,
+  Divider,
+  Checkbox,
+  Paper,
+  ScrollArea,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
 import { 
   Plus, 
   FileText, 
@@ -36,6 +44,13 @@ import {
   Trash2,
   AlertCircle,
   CheckCircle,
+  Search,
+  Filter,
+  Copy,
+  Download,
+  Upload,
+  MoreVertical,
+  Settings,
 } from 'lucide-react';
 
 import { MultiStepForm } from '../components/forms/MultiStepForm';
@@ -53,20 +68,25 @@ export default function FormsPage() {
   const [selectedForm, setSelectedForm] = useState<FormData | null>(null);
   const [formModalOpened, { open: openFormModal, close: closeFormModal }] = useDisclosure(false);
   const [createModalOpened, { open: openCreateModal, close: closeCreateModal }] = useDisclosure(false);
+  const [previewModalOpened, { open: openPreviewModal, close: closePreviewModal }] = useDisclosure(false);
   const [formBuilderOpened, setFormBuilderOpened] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock data for existing forms and submissions
-  const [existingForms] = useState<FormData[]>([
-    createFormFromTemplate('patient-intake')!,
-    createFormFromTemplate('symptom-assessment')!,
-    createFormFromTemplate('medical-history')!,
-    createFormFromTemplate('follow-up')!,
+  // Convert mock data to stateful for real form management
+  const [existingForms, setExistingForms] = useState<FormData[]>([
+    { ...createFormFromTemplate('patient-intake')!, status: 'active' },
+    { ...createFormFromTemplate('symptom-assessment')!, status: 'active' },
+    { ...createFormFromTemplate('medical-history')!, status: 'active' },
+    { ...createFormFromTemplate('follow-up')!, status: 'inactive' },
   ]);
 
-  const [submissions] = useState<FormSubmission[]>([
+  const [submissions, setSubmissions] = useState<FormSubmission[]>([
     {
       id: 'sub-1',
       formId: existingForms[0]?.id || '',
@@ -78,6 +98,19 @@ export default function FormsPage() {
       completionTime: 900,
     },
   ]);
+
+  // Filter forms based on search and filters
+  const filteredForms = existingForms.filter(form => {
+    const matchesSearch = form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         form.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = filterCategory === 'all' || form.category === filterCategory;
+    const matchesStatus = filterStatus === 'all' || form.status === filterStatus;
+    
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  // Get unique categories for filter
+  const categories = Array.from(new Set(existingForms.map(form => form.category)));
 
   /**
    * Handles form submission
@@ -101,6 +134,9 @@ export default function FormsPage() {
         submittedAt: new Date().toISOString(),
         completionTime: 0, // Would calculate actual time
       };
+
+      // Update submissions
+      setSubmissions(prev => [submission, ...prev]);
 
       notifications.show({
         title: 'Form Submitted Successfully',
@@ -126,18 +162,37 @@ export default function FormsPage() {
   /**
    * Handles creating a new form from template
    */
-  const handleCreateForm = () => {
+  const handleCreateForm = async () => {
     if (!selectedTemplate) return;
 
-    const newForm = createFormFromTemplate(selectedTemplate);
-    if (newForm) {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const newForm = createFormFromTemplate(selectedTemplate);
+      if (newForm) {
+        const formWithStatus = { ...newForm, status: 'active' as const };
+        setExistingForms(prev => [formWithStatus, ...prev]);
+        
+        notifications.show({
+          title: 'Form Created',
+          message: 'New form has been created successfully.',
+          color: 'green',
+          icon: <CheckCircle size={16} />,
+        });
+        closeCreateModal();
+        setSelectedTemplate('');
+      }
+    } catch (error) {
       notifications.show({
-        title: 'Form Created',
-        message: 'New form has been created successfully.',
-        color: 'green',
+        title: 'Creation Failed',
+        message: 'There was an error creating the form. Please try again.',
+        color: 'red',
+        icon: <AlertCircle size={16} />,
       });
-      closeCreateModal();
-      setSelectedTemplate('');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -147,6 +202,172 @@ export default function FormsPage() {
   const startForm = (form: FormData) => {
     setSelectedForm(form);
     openFormModal();
+  };
+
+  /**
+   * Handles form preview
+   */
+  const handlePreviewForm = (form: FormData) => {
+    setSelectedForm(form);
+    openPreviewModal();
+  };
+
+  /**
+   * Handles form editing
+   */
+  const handleEditForm = (form: FormData) => {
+    // For now, open form builder with the form data
+    setSelectedForm(form);
+    setFormBuilderOpened(true);
+    
+    notifications.show({
+      title: 'Edit Mode',
+      message: 'Form builder opened for editing. Changes will be saved automatically.',
+      color: 'blue',
+    });
+  };
+
+  /**
+   * Handles form deletion with confirmation
+   */
+  const handleDeleteForm = (form: FormData) => {
+    modals.openConfirmModal({
+      title: 'Delete Form',
+      children: (
+        <Text size="sm">
+          Are you sure you want to delete "{form.title}"? This action cannot be undone.
+          All associated submissions will also be removed.
+        </Text>
+      ),
+      labels: { confirm: 'Delete', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        setIsLoading(true);
+        try {
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          setExistingForms(prev => prev.filter(f => f.id !== form.id));
+          setSubmissions(prev => prev.filter(s => s.formId !== form.id));
+          
+          notifications.show({
+            title: 'Form Deleted',
+            message: 'The form has been successfully deleted.',
+            color: 'green',
+            icon: <CheckCircle size={16} />,
+          });
+        } catch (error) {
+          notifications.show({
+            title: 'Deletion Failed',
+            message: 'There was an error deleting the form. Please try again.',
+            color: 'red',
+            icon: <AlertCircle size={16} />,
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      },
+    });
+  };
+
+  /**
+   * Handles form duplication
+   */
+  const handleDuplicateForm = async (form: FormData) => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const duplicatedForm: FormData = {
+        ...form,
+        id: `form-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title: `${form.title} (Copy)`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: 'active',
+      };
+      
+      setExistingForms(prev => [duplicatedForm, ...prev]);
+      
+      notifications.show({
+        title: 'Form Duplicated',
+        message: 'The form has been successfully duplicated.',
+        color: 'green',
+        icon: <CheckCircle size={16} />,
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Duplication Failed',
+        message: 'There was an error duplicating the form. Please try again.',
+        color: 'red',
+        icon: <AlertCircle size={16} />,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Handles form status toggle
+   */
+  const handleToggleStatus = async (form: FormData) => {
+    setIsLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const newStatus = form.status === 'active' ? 'inactive' : 'active';
+      setExistingForms(prev => 
+        prev.map(f => f.id === form.id ? { ...f, status: newStatus } : f)
+      );
+      
+      notifications.show({
+        title: 'Status Updated',
+        message: `Form is now ${newStatus}.`,
+        color: 'blue',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Update Failed',
+        message: 'There was an error updating the form status.',
+        color: 'red',
+        icon: <AlertCircle size={16} />,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Handles form export
+   */
+  const handleExportForm = (form: FormData) => {
+    try {
+      const dataStr = JSON.stringify(form, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `${form.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+      
+      notifications.show({
+        title: 'Form Exported',
+        message: 'The form has been exported successfully.',
+        color: 'green',
+        icon: <Download size={16} />,
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Export Failed',
+        message: 'There was an error exporting the form.',
+        color: 'red',
+        icon: <AlertCircle size={16} />,
+      });
+    }
   };
 
   /**
@@ -160,6 +381,13 @@ export default function FormsPage() {
       case 'archived': return 'dark';
       default: return 'gray';
     }
+  };
+
+  /**
+   * Gets status color for forms
+   */
+  const getFormStatusColor = (status: string) => {
+    return status === 'active' ? 'green' : 'gray';
   };
 
   return (
@@ -177,6 +405,7 @@ export default function FormsPage() {
             <Button
               leftSection={<Plus size={16} />}
               onClick={openCreateModal}
+              loading={isLoading}
             >
               Create Form
             </Button>
@@ -189,6 +418,51 @@ export default function FormsPage() {
             </Button>
           </Group>
         </Group>
+
+        {/* Search and Filters */}
+        <Card padding="md">
+          <Group justify="space-between" mb="md">
+            <Title order={3}>Search & Filter</Title>
+            <Group gap="xs">
+              <Text size="sm" c="dimmed">
+                {filteredForms.length} of {existingForms.length} forms
+              </Text>
+            </Group>
+          </Group>
+          <Group>
+            <TextInput
+              placeholder="Search forms..."
+              leftSection={<Search size={16} />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <Select
+              placeholder="Category"
+              data={[
+                { value: 'all', label: 'All Categories' },
+                ...categories.map(cat => ({ 
+                  value: cat, 
+                  label: cat.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) 
+                }))
+              ]}
+              value={filterCategory}
+              onChange={(value) => setFilterCategory(value || 'all')}
+              leftSection={<Filter size={16} />}
+            />
+            <Select
+              placeholder="Status"
+              data={[
+                { value: 'all', label: 'All Status' },
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+              ]}
+              value={filterStatus}
+              onChange={(value) => setFilterStatus(value || 'all')}
+              leftSection={<Settings size={16} />}
+            />
+          </Group>
+        </Card>
 
         {/* Quick Stats */}
         <Grid>
@@ -276,9 +550,13 @@ export default function FormsPage() {
             </Button.Group>
           </Group>
           
-          {viewMode === 'cards' ? (
+          {filteredForms.length === 0 ? (
+            <Alert icon={<AlertCircle size={16} />}>
+              No forms found matching your search criteria.
+            </Alert>
+          ) : viewMode === 'cards' ? (
           <Grid>
-            {existingForms.map((form) => (
+            {filteredForms.map((form) => (
               <Grid.Col key={form.id} span={{ base: 12, md: 6, lg: 4 }}>
                 <Card padding="lg" shadow="sm" h="100%">
                   <Stack gap="md" h="100%">
@@ -287,14 +565,19 @@ export default function FormsPage() {
                         <Badge color="blue" variant="light">
                           {form.category.replace('_', ' ')}
                         </Badge>
-                        {form.estimatedTime && (
-                          <Group gap={4}>
-                            <Clock size={12} />
-                            <Text size="xs" c="dimmed">
-                              {form.estimatedTime} min
-                            </Text>
-                          </Group>
-                        )}
+                        <Group gap="xs">
+                          <Badge color={getFormStatusColor(form.status)} size="sm">
+                            {form.status}
+                          </Badge>
+                          {form.estimatedTime && (
+                            <Group gap={4}>
+                              <Clock size={12} />
+                              <Text size="xs" c="dimmed">
+                                {form.estimatedTime} min
+                              </Text>
+                            </Group>
+                          )}
+                        </Group>
                       </Group>
                       <Title order={4} mb="xs">{form.title}</Title>
                       <Text size="sm" c="dimmed" lineClamp={2}>
@@ -311,25 +594,64 @@ export default function FormsPage() {
                         leftSection={<Play size={16} />}
                         onClick={() => startForm(form)}
                         size="sm"
+                        disabled={form.status === 'inactive'}
                       >
                         Start Form
                       </Button>
                       <Group gap="xs">
                         <Tooltip label="Preview">
-                          <ActionIcon variant="subtle" size="sm">
+                          <ActionIcon 
+                            variant="subtle" 
+                            size="sm"
+                            onClick={() => handlePreviewForm(form)}
+                          >
                             <Eye size={16} />
                           </ActionIcon>
                         </Tooltip>
                         <Tooltip label="Edit">
-                          <ActionIcon variant="subtle" size="sm">
+                          <ActionIcon 
+                            variant="subtle" 
+                            size="sm"
+                            onClick={() => handleEditForm(form)}
+                          >
                             <Edit size={16} />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Delete">
-                          <ActionIcon variant="subtle" color="red" size="sm">
-                            <Trash2 size={16} />
-                          </ActionIcon>
-                        </Tooltip>
+                        <Menu shadow="md" width={200}>
+                          <Menu.Target>
+                            <ActionIcon variant="subtle" size="sm">
+                              <MoreVertical size={16} />
+                            </ActionIcon>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item 
+                              leftSection={<Copy size={14} />}
+                              onClick={() => handleDuplicateForm(form)}
+                            >
+                              Duplicate
+                            </Menu.Item>
+                            <Menu.Item 
+                              leftSection={<Settings size={14} />}
+                              onClick={() => handleToggleStatus(form)}
+                            >
+                              {form.status === 'active' ? 'Deactivate' : 'Activate'}
+                            </Menu.Item>
+                            <Menu.Item 
+                              leftSection={<Download size={14} />}
+                              onClick={() => handleExportForm(form)}
+                            >
+                              Export
+                            </Menu.Item>
+                            <Menu.Divider />
+                            <Menu.Item 
+                              leftSection={<Trash2 size={14} />}
+                              color="red"
+                              onClick={() => handleDeleteForm(form)}
+                            >
+                              Delete
+                            </Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
                       </Group>
                     </Group>
                   </Stack>
@@ -344,13 +666,14 @@ export default function FormsPage() {
                 <Table.Tr>
                   <Table.Th>Form Title</Table.Th>
                   <Table.Th>Category</Table.Th>
+                  <Table.Th>Status</Table.Th>
                   <Table.Th>Questions</Table.Th>
                   <Table.Th>Est. Time</Table.Th>
                   <Table.Th>Actions</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {existingForms.map((form) => (
+                {filteredForms.map((form) => (
                   <Table.Tr key={form.id}>
                     <Table.Td>
                       <div>
@@ -363,6 +686,11 @@ export default function FormsPage() {
                     <Table.Td>
                       <Badge color="blue" variant="light">
                         {form.category.replace('_', ' ')}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge color={getFormStatusColor(form.status)}>
+                        {form.status}
                       </Badge>
                     </Table.Td>
                     <Table.Td>
@@ -383,18 +711,59 @@ export default function FormsPage() {
                           leftSection={<Play size={16} />}
                           onClick={() => startForm(form)}
                           size="xs"
+                          disabled={form.status === 'inactive'}
                         >
                           Start
                         </Button>
-                        <ActionIcon variant="subtle" size="sm">
+                        <ActionIcon 
+                          variant="subtle" 
+                          size="sm"
+                          onClick={() => handlePreviewForm(form)}
+                        >
                           <Eye size={16} />
                         </ActionIcon>
-                        <ActionIcon variant="subtle" size="sm">
+                        <ActionIcon 
+                          variant="subtle" 
+                          size="sm"
+                          onClick={() => handleEditForm(form)}
+                        >
                           <Edit size={16} />
                         </ActionIcon>
-                        <ActionIcon variant="subtle" color="red" size="sm">
-                          <Trash2 size={16} />
-                        </ActionIcon>
+                        <Menu shadow="md" width={200}>
+                          <Menu.Target>
+                            <ActionIcon variant="subtle" size="sm">
+                              <MoreVertical size={16} />
+                            </ActionIcon>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item 
+                              leftSection={<Copy size={14} />}
+                              onClick={() => handleDuplicateForm(form)}
+                            >
+                              Duplicate
+                            </Menu.Item>
+                            <Menu.Item 
+                              leftSection={<Settings size={14} />}
+                              onClick={() => handleToggleStatus(form)}
+                            >
+                              {form.status === 'active' ? 'Deactivate' : 'Activate'}
+                            </Menu.Item>
+                            <Menu.Item 
+                              leftSection={<Download size={14} />}
+                              onClick={() => handleExportForm(form)}
+                            >
+                              Export
+                            </Menu.Item>
+                            <Menu.Divider />
+                            <Menu.Item 
+                              leftSection={<Trash2 size={14} />}
+                              color="red"
+                              onClick={() => handleDeleteForm(form)}
+                            >
+                              Delete
+                            </Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
                       </Group>
                     </Table.Td>
                   </Table.Tr>
@@ -458,6 +827,58 @@ export default function FormsPage() {
         )}
       </Modal>
 
+      {/* Form Preview Modal */}
+      <Modal
+        opened={previewModalOpened}
+        onClose={closePreviewModal}
+        size="lg"
+        title={`Preview: ${selectedForm?.title}`}
+        centered
+      >
+        {selectedForm && (
+          <ScrollArea h={400}>
+            <Stack gap="md">
+              <div>
+                <Text size="sm" c="dimmed" mb="xs">Description</Text>
+                <Text>{selectedForm.description}</Text>
+              </div>
+              <div>
+                <Text size="sm" c="dimmed" mb="xs">Category</Text>
+                <Badge color="blue" variant="light">
+                  {selectedForm.category.replace('_', ' ')}
+                </Badge>
+              </div>
+              <div>
+                <Text size="sm" c="dimmed" mb="xs">Questions ({selectedForm.questions.length})</Text>
+                <Stack gap="sm">
+                  {selectedForm.questions.map((question, index) => (
+                    <Paper key={question.id} p="md" withBorder>
+                      <Group justify="space-between" mb="xs">
+                        <Text fw={500}>Question {index + 1}</Text>
+                        <Badge size="sm" variant="light">
+                          {question.type}
+                        </Badge>
+                      </Group>
+                      <Text size="sm">{question.text}</Text>
+                      {question.placeholder && (
+                        <Text size="xs" c="dimmed" mt="xs">
+                          Placeholder: {question.placeholder}
+                        </Text>
+                      )}
+                      {question.required && (
+                        <Badge size="xs" color="red" mt="xs">
+                          Required
+                        </Badge>
+                      )}
+                    </Paper>
+                  ))}
+                </Stack>
+              </div>
+            </Stack>
+          </ScrollArea>
+        )}
+      </Modal>
+
       {/* Create Form Modal */}
       <Modal
         opened={createModalOpened}
@@ -486,6 +907,7 @@ export default function FormsPage() {
             <Button 
               onClick={handleCreateForm}
               disabled={!selectedTemplate}
+              loading={isLoading}
             >
               Create Form
             </Button>

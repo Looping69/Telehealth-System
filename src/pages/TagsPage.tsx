@@ -28,6 +28,8 @@ import {
   Divider,
   Tooltip,
   NumberInput,
+  Menu,
+  rem,
 } from '@mantine/core';
 import {
   Search,
@@ -43,8 +45,15 @@ import {
   Calendar,
   FileText,
   Settings,
+  Copy,
+  Download,
+  MoreVertical,
+  Check,
+  X,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
+import { modals } from '@mantine/modals';
 
 /**
  * Tag interface
@@ -63,9 +72,9 @@ interface TagItem {
 }
 
 /**
- * Mock data for tags
+ * Initial mock data for tags (converted to stateful)
  */
-const mockTags: TagItem[] = [
+const initialTags: TagItem[] = [
   {
     id: 'TAG-001',
     name: 'High Priority',
@@ -172,106 +181,98 @@ interface TagCardProps {
   onEdit: (tag: TagItem) => void;
   onDelete: (tag: TagItem) => void;
   onToggleStatus: (tag: TagItem) => void;
+  onDuplicate: (tag: TagItem) => void;
+  onViewUsage: (tag: TagItem) => void;
 }
 
-const TagCard: React.FC<TagCardProps> = ({ tag, onEdit, onDelete, onToggleStatus }) => {
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'patient':
-        return <Users size={16} />;
-      case 'appointment':
-        return <Calendar size={16} />;
-      case 'resource':
-        return <FileText size={16} />;
-      case 'billing':
-        return <Hash size={16} />;
-      default:
-        return <Tag size={16} />;
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'patient':
-        return 'blue';
-      case 'appointment':
-        return 'green';
-      case 'resource':
-        return 'orange';
-      case 'billing':
-        return 'purple';
-      default:
-        return 'gray';
-    }
-  };
-
+const TagCard: React.FC<TagCardProps> = ({ 
+  tag, 
+  onEdit, 
+  onDelete, 
+  onToggleStatus, 
+  onDuplicate, 
+  onViewUsage 
+}) => {
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder>
-      <Stack gap="md">
+      <Stack gap="sm">
+        {/* Header */}
         <Group justify="space-between" align="flex-start">
-          <Group>
+          <Group gap="sm">
             <ColorSwatch color={tag.color} size={24} />
-            <Stack gap={4}>
-              <Group gap="xs" align="center">
-                <Text fw={500} size="lg">
-                  {tag.name}
-                </Text>
-                <Badge
-                  size="sm"
-                  color={getCategoryColor(tag.category)}
-                  leftSection={getCategoryIcon(tag.category)}
-                >
-                  {tag.category}
-                </Badge>
-              </Group>
-              <Text size="sm" c="dimmed" lineClamp={2}>
-                {tag.description}
+            <div>
+              <Text fw={500} size="sm">
+                {tag.name}
               </Text>
-            </Stack>
+              <Badge
+                size="xs"
+                color={tag.category === 'patient' ? 'blue' : 
+                       tag.category === 'appointment' ? 'green' :
+                       tag.category === 'resource' ? 'orange' :
+                       tag.category === 'billing' ? 'purple' : 'gray'}
+              >
+                {tag.category}
+              </Badge>
+            </div>
           </Group>
+          <Menu shadow="md" width={200}>
+            <Menu.Target>
+              <ActionIcon variant="light" size="sm">
+                <MoreVertical size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<Edit style={{ width: rem(14), height: rem(14) }} />} onClick={() => onEdit(tag)}>
+                Edit Tag
+              </Menu.Item>
+              <Menu.Item leftSection={<Copy style={{ width: rem(14), height: rem(14) }} />} onClick={() => onDuplicate(tag)}>
+                Duplicate
+              </Menu.Item>
+              <Menu.Item leftSection={<Eye style={{ width: rem(14), height: rem(14) }} />} onClick={() => onViewUsage(tag)}>
+                View Usage
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item 
+                leftSection={<Settings style={{ width: rem(14), height: rem(14) }} />} 
+                onClick={() => onToggleStatus(tag)}
+                color={tag.isActive ? 'red' : 'green'}
+              >
+                {tag.isActive ? 'Deactivate' : 'Activate'}
+              </Menu.Item>
+              <Menu.Item 
+                leftSection={<Trash2 style={{ width: rem(14), height: rem(14) }} />} 
+                onClick={() => onDelete(tag)}
+                color="red"
+              >
+                Delete
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+
+        {/* Description */}
+        <Text size="sm" c="dimmed" lineClamp={2}>
+          {tag.description}
+        </Text>
+
+        {/* Status and Usage */}
+        <Group justify="space-between" align="center">
           <Badge color={tag.isActive ? 'green' : 'red'} size="sm">
             {tag.isActive ? 'Active' : 'Inactive'}
           </Badge>
+          <Text size="xs" c="dimmed">
+            Used {tag.usageCount} times
+          </Text>
         </Group>
 
-        <Group justify="space-between" align="center">
-          <Stack gap={4}>
-            <Text size="xs" c="dimmed">
-              Usage: <strong>{tag.usageCount}</strong> times
-            </Text>
-            <Text size="xs" c="dimmed">
-              Last used: {tag.lastUsed}
-            </Text>
-          </Stack>
-          <Group gap="xs">
-            <Tooltip label={tag.isActive ? 'Deactivate' : 'Activate'}>
-              <ActionIcon
-                variant="light"
-                color={tag.isActive ? 'red' : 'green'}
-                onClick={() => onToggleStatus(tag)}
-              >
-                <Settings size={16} />
-              </ActionIcon>
-            </Tooltip>
-            <Tooltip label="Edit">
-              <ActionIcon
-                variant="light"
-                color="blue"
-                onClick={() => onEdit(tag)}
-              >
-                <Edit size={16} />
-              </ActionIcon>
-            </Tooltip>
-            <Tooltip label="Delete">
-              <ActionIcon
-                variant="light"
-                color="red"
-                onClick={() => onDelete(tag)}
-              >
-                <Trash2 size={16} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
+        {/* Footer */}
+        <Group justify="space-between" align="center" mt="xs">
+          <Text size="xs" c="dimmed">
+            By {tag.createdBy}
+          </Text>
+          <Text size="xs" c="dimmed">
+            {tag.lastUsed}
+          </Text>
         </Group>
       </Stack>
     </Card>
@@ -279,23 +280,25 @@ const TagCard: React.FC<TagCardProps> = ({ tag, onEdit, onDelete, onToggleStatus
 };
 
 /**
- * Tag Form Modal
+ * Tag Form Modal Component
  */
 interface TagFormModalProps {
   tag: TagItem | null;
   opened: boolean;
   onClose: () => void;
   onSave: (tag: Partial<TagItem>) => void;
+  isLoading: boolean;
 }
 
-const TagFormModal: React.FC<TagFormModalProps> = ({ tag, opened, onClose, onSave }) => {
+const TagFormModal: React.FC<TagFormModalProps> = ({ tag, opened, onClose, onSave, isLoading }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     color: '#2563eb',
     category: 'general' as TagItem['category'],
-    isActive: true,
   });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   React.useEffect(() => {
     if (tag) {
@@ -304,7 +307,6 @@ const TagFormModal: React.FC<TagFormModalProps> = ({ tag, opened, onClose, onSav
         description: tag.description,
         color: tag.color,
         category: tag.category,
-        isActive: tag.isActive,
       });
     } else {
       setFormData({
@@ -312,20 +314,42 @@ const TagFormModal: React.FC<TagFormModalProps> = ({ tag, opened, onClose, onSav
         description: '',
         color: '#2563eb',
         category: 'general',
-        isActive: true,
       });
     }
-  }, [tag]);
+    setErrors({});
+  }, [tag, opened]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Tag name is required';
+    } else if (formData.name.length < 2) {
+      newErrors.name = 'Tag name must be at least 2 characters';
+    } else if (formData.name.length > 50) {
+      newErrors.name = 'Tag name must be less than 50 characters';
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required';
+    } else if (formData.description.length > 200) {
+      newErrors.description = 'Description must be less than 200 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = () => {
-    onSave(formData);
-    onClose();
+    if (validateForm()) {
+      onSave(formData);
+    }
   };
 
   const predefinedColors = [
     '#ff4757', '#ffa502', '#2ed573', '#5352ed', '#ff6b81',
-    '#70a1ff', '#747d8c', '#ffd700', '#2563eb', '#059669',
-    '#dc2626', '#7c3aed', '#ea580c', '#0891b2', '#be123c',
+    '#70a1ff', '#747d8c', '#ffd700', '#ff3838', '#ff9f43',
+    '#10ac84', '#5f27cd', '#ee5a52', '#0abde3', '#222f3e',
   ];
 
   return (
@@ -341,6 +365,7 @@ const TagFormModal: React.FC<TagFormModalProps> = ({ tag, opened, onClose, onSav
           placeholder="Enter tag name"
           value={formData.name}
           onChange={(event) => setFormData({ ...formData, name: event.currentTarget.value })}
+          error={errors.name}
           required
         />
 
@@ -349,11 +374,15 @@ const TagFormModal: React.FC<TagFormModalProps> = ({ tag, opened, onClose, onSav
           placeholder="Enter tag description"
           value={formData.description}
           onChange={(event) => setFormData({ ...formData, description: event.currentTarget.value })}
+          error={errors.description}
           minRows={3}
+          required
         />
 
         <Select
           label="Category"
+          value={formData.category}
+          onChange={(value) => setFormData({ ...formData, category: value as TagItem['category'] })}
           data={[
             { value: 'patient', label: 'Patient' },
             { value: 'appointment', label: 'Appointment' },
@@ -361,8 +390,6 @@ const TagFormModal: React.FC<TagFormModalProps> = ({ tag, opened, onClose, onSav
             { value: 'billing', label: 'Billing' },
             { value: 'general', label: 'General' },
           ]}
-          value={formData.category}
-          onChange={(value) => setFormData({ ...formData, category: value as TagItem['category'] })}
           required
         />
 
@@ -370,7 +397,7 @@ const TagFormModal: React.FC<TagFormModalProps> = ({ tag, opened, onClose, onSav
           <Text size="sm" fw={500} mb="xs">
             Color
           </Text>
-          <Group gap="xs" mb="md">
+          <Group gap="xs" mb="sm">
             {predefinedColors.map((color) => (
               <ColorSwatch
                 key={color}
@@ -384,22 +411,15 @@ const TagFormModal: React.FC<TagFormModalProps> = ({ tag, opened, onClose, onSav
           <ColorPicker
             value={formData.color}
             onChange={(color) => setFormData({ ...formData, color })}
-            format="hex"
-            swatches={predefinedColors}
+            size="sm"
           />
         </div>
 
-        <Checkbox
-          label="Active"
-          checked={formData.isActive}
-          onChange={(event) => setFormData({ ...formData, isActive: event.currentTarget.checked })}
-        />
-
         <Group justify="flex-end" mt="md">
-          <Button variant="light" onClick={onClose}>
+          <Button variant="light" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button onClick={handleSubmit} loading={isLoading}>
             {tag ? 'Update Tag' : 'Create Tag'}
           </Button>
         </Group>
@@ -409,7 +429,7 @@ const TagFormModal: React.FC<TagFormModalProps> = ({ tag, opened, onClose, onSav
 };
 
 /**
- * Tag Usage Modal
+ * Tag Usage Modal Component
  */
 interface TagUsageModalProps {
   tag: TagItem | null;
@@ -422,71 +442,61 @@ const TagUsageModal: React.FC<TagUsageModalProps> = ({ tag, opened, onClose }) =
 
   // Mock usage data
   const usageData = [
-    { type: 'Patient', name: 'John Doe', date: '2024-01-20', id: 'PAT-001' },
-    { type: 'Appointment', name: 'Follow-up Visit', date: '2024-01-19', id: 'APT-123' },
-    { type: 'Patient', name: 'Jane Smith', date: '2024-01-18', id: 'PAT-002' },
-    { type: 'Resource', name: 'Diabetes Care Guide', date: '2024-01-17', id: 'RES-045' },
+    { type: 'Patients', count: Math.floor(tag.usageCount * 0.6), icon: Users },
+    { type: 'Appointments', count: Math.floor(tag.usageCount * 0.3), icon: Calendar },
+    { type: 'Resources', count: Math.floor(tag.usageCount * 0.1), icon: FileText },
   ];
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={`Tag Usage: ${tag.name}`}
-      size="lg"
-    >
+    <Modal opened={opened} onClose={onClose} title={`Usage Details: ${tag.name}`} size="md">
       <Stack gap="md">
-        <Group>
+        <Group gap="sm" mb="md">
           <ColorSwatch color={tag.color} size={24} />
           <div>
             <Text fw={500}>{tag.name}</Text>
-            <Text size="sm" c="dimmed">
-              Used {tag.usageCount} times
-            </Text>
+            <Text size="sm" c="dimmed">{tag.description}</Text>
           </div>
         </Group>
 
+        <Text size="sm" fw={500} mb="xs">Usage Breakdown</Text>
+        
+        {usageData.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Card key={item.type} padding="sm" withBorder>
+              <Group justify="space-between">
+                <Group gap="sm">
+                  <ActionIcon variant="light" size="sm">
+                    <Icon size={16} />
+                  </ActionIcon>
+                  <Text size="sm">{item.type}</Text>
+                </Group>
+                <Badge variant="light">{item.count}</Badge>
+              </Group>
+            </Card>
+          );
+        })}
+
         <Divider />
 
-        <div>
-          <Text fw={500} mb="md">
-            Recent Usage
-          </Text>
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Type</Table.Th>
-                <Table.Th>Name</Table.Th>
-                <Table.Th>ID</Table.Th>
-                <Table.Th>Date</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {usageData.map((item, index) => (
-                <Table.Tr key={index}>
-                  <Table.Td>
-                    <Badge size="sm" variant="light">
-                      {item.type}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>{item.name}</Table.Td>
-                  <Table.Td>
-                    <Text size="sm" c="dimmed">
-                      {item.id}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>{item.date}</Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </div>
-
-        <Group justify="flex-end" mt="md">
-          <Button variant="light" onClick={onClose}>
-            Close
-          </Button>
+        <Group justify="space-between">
+          <Text size="sm" c="dimmed">Total Usage</Text>
+          <Text fw={500}>{tag.usageCount}</Text>
         </Group>
+
+        <Group justify="space-between">
+          <Text size="sm" c="dimmed">Last Used</Text>
+          <Text size="sm">{tag.lastUsed}</Text>
+        </Group>
+
+        <Group justify="space-between">
+          <Text size="sm" c="dimmed">Created By</Text>
+          <Text size="sm">{tag.createdBy}</Text>
+        </Group>
+
+        <Button fullWidth onClick={onClose} mt="md">
+          Close
+        </Button>
       </Stack>
     </Modal>
   );
@@ -496,6 +506,8 @@ const TagUsageModal: React.FC<TagUsageModalProps> = ({ tag, opened, onClose }) =
  * Main Tags Page Component
  */
 export const TagsPage: React.FC = () => {
+  // State management
+  const [tags, setTags] = useState<TagItem[]>(initialTags);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -503,41 +515,313 @@ export const TagsPage: React.FC = () => {
   const [formOpened, { open: openForm, close: closeForm }] = useDisclosure(false);
   const [usageOpened, { open: openUsage, close: closeUsage }] = useDisclosure(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  // Using mock data for now
-  const tags = mockTags;
-  const isLoading = false;
-
+  /**
+   * Handle tag editing
+   */
   const handleEditTag = (tag: TagItem) => {
     setSelectedTag(tag);
     openForm();
   };
 
+  /**
+   * Handle tag creation
+   */
   const handleCreateTag = () => {
     setSelectedTag(null);
     openForm();
   };
 
+  /**
+   * Handle tag deletion with confirmation
+   */
   const handleDeleteTag = (tag: TagItem) => {
-    // TODO: Implement tag deletion
-    console.log('Delete tag:', tag);
+    modals.openConfirmModal({
+      title: 'Delete Tag',
+      children: (
+        <Stack gap="sm">
+          <Group gap="sm">
+            <ColorSwatch color={tag.color} size={20} />
+            <Text>Are you sure you want to delete "{tag.name}"?</Text>
+          </Group>
+          <Text size="sm" c="dimmed">
+            This action cannot be undone. The tag will be removed from all associated items.
+          </Text>
+        </Stack>
+      ),
+      labels: { confirm: 'Delete', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        try {
+          setIsLoading(true);
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          setTags(prev => prev.filter(t => t.id !== tag.id));
+          
+          notifications.show({
+            title: 'Tag Deleted',
+            message: `"${tag.name}" has been successfully deleted.`,
+            color: 'green',
+            icon: <Check size={16} />,
+          });
+        } catch (error) {
+          notifications.show({
+            title: 'Error',
+            message: 'Failed to delete tag. Please try again.',
+            color: 'red',
+            icon: <X size={16} />,
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      },
+    });
   };
 
-  const handleToggleStatus = (tag: TagItem) => {
-    // TODO: Implement status toggle
-    console.log('Toggle status:', tag);
+  /**
+   * Handle tag status toggle
+   */
+  const handleToggleStatus = async (tag: TagItem) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setTags(prev => prev.map(t => 
+        t.id === tag.id 
+          ? { ...t, isActive: !t.isActive, lastUsed: new Date().toISOString().split('T')[0] }
+          : t
+      ));
+      
+      notifications.show({
+        title: 'Status Updated',
+        message: `"${tag.name}" has been ${!tag.isActive ? 'activated' : 'deactivated'}.`,
+        color: 'blue',
+        icon: <Check size={16} />,
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to update tag status. Please try again.',
+        color: 'red',
+        icon: <X size={16} />,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSaveTag = (tagData: Partial<TagItem>) => {
-    // TODO: Implement tag save
-    console.log('Save tag:', tagData);
+  /**
+   * Handle tag save (create/update)
+   */
+  const handleSaveTag = async (tagData: Partial<TagItem>) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (selectedTag) {
+        // Update existing tag
+        setTags(prev => prev.map(t => 
+          t.id === selectedTag.id 
+            ? { 
+                ...t, 
+                ...tagData, 
+                lastUsed: new Date().toISOString().split('T')[0] 
+              }
+            : t
+        ));
+        
+        notifications.show({
+          title: 'Tag Updated',
+          message: `"${tagData.name}" has been successfully updated.`,
+          color: 'green',
+          icon: <Check size={16} />,
+        });
+      } else {
+        // Create new tag
+        const newTag: TagItem = {
+          id: `TAG-${String(tags.length + 1).padStart(3, '0')}`,
+          name: tagData.name!,
+          description: tagData.description!,
+          color: tagData.color!,
+          category: tagData.category!,
+          isActive: true,
+          usageCount: 0,
+          createdBy: 'Current User',
+          createdAt: new Date().toISOString().split('T')[0],
+          lastUsed: new Date().toISOString().split('T')[0],
+        };
+        
+        setTags(prev => [...prev, newTag]);
+        
+        notifications.show({
+          title: 'Tag Created',
+          message: `"${tagData.name}" has been successfully created.`,
+          color: 'green',
+          icon: <Check size={16} />,
+        });
+      }
+      
+      closeForm();
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to save tag. Please try again.',
+        color: 'red',
+        icon: <X size={16} />,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  /**
+   * Handle tag duplication
+   */
+  const handleDuplicateTag = async (tag: TagItem) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const duplicatedTag: TagItem = {
+        ...tag,
+        id: `TAG-${String(tags.length + 1).padStart(3, '0')}`,
+        name: `${tag.name} (Copy)`,
+        usageCount: 0,
+        createdBy: 'Current User',
+        createdAt: new Date().toISOString().split('T')[0],
+        lastUsed: new Date().toISOString().split('T')[0],
+      };
+      
+      setTags(prev => [...prev, duplicatedTag]);
+      
+      notifications.show({
+        title: 'Tag Duplicated',
+        message: `"${duplicatedTag.name}" has been created.`,
+        color: 'green',
+        icon: <Check size={16} />,
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to duplicate tag. Please try again.',
+        color: 'red',
+        icon: <X size={16} />,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Handle view usage
+   */
   const handleViewUsage = (tag: TagItem) => {
     setSelectedTag(tag);
     openUsage();
   };
 
+  /**
+   * Handle bulk delete
+   */
+  const handleBulkDelete = () => {
+    if (selectedTags.length === 0) return;
+
+    modals.openConfirmModal({
+      title: 'Delete Multiple Tags',
+      children: (
+        <Stack gap="sm">
+          <Text>Are you sure you want to delete {selectedTags.length} selected tags?</Text>
+          <Text size="sm" c="dimmed">
+            This action cannot be undone. The tags will be removed from all associated items.
+          </Text>
+        </Stack>
+      ),
+      labels: { confirm: 'Delete All', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: async () => {
+        try {
+          setIsLoading(true);
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          setTags(prev => prev.filter(t => !selectedTags.includes(t.id)));
+          setSelectedTags([]);
+          
+          notifications.show({
+            title: 'Tags Deleted',
+            message: `${selectedTags.length} tags have been successfully deleted.`,
+            color: 'green',
+            icon: <Check size={16} />,
+          });
+        } catch (error) {
+          notifications.show({
+            title: 'Error',
+            message: 'Failed to delete tags. Please try again.',
+            color: 'red',
+            icon: <X size={16} />,
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      },
+    });
+  };
+
+  /**
+   * Handle export tags
+   */
+  const handleExportTags = () => {
+    try {
+      const exportData = filteredTags.map(tag => ({
+        name: tag.name,
+        description: tag.description,
+        category: tag.category,
+        color: tag.color,
+        status: tag.isActive ? 'Active' : 'Inactive',
+        usageCount: tag.usageCount,
+        createdBy: tag.createdBy,
+        createdAt: tag.createdAt,
+        lastUsed: tag.lastUsed,
+      }));
+
+      const csvContent = [
+        Object.keys(exportData[0]).join(','),
+        ...exportData.map(row => Object.values(row).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tags-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      notifications.show({
+        title: 'Export Successful',
+        message: 'Tags have been exported to CSV file.',
+        color: 'green',
+        icon: <Check size={16} />,
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Export Failed',
+        message: 'Failed to export tags. Please try again.',
+        color: 'red',
+        icon: <X size={16} />,
+      });
+    }
+  };
+
+  // Filter tags based on search and filters
   const filteredTags = tags
     .filter(tag =>
       tag.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -562,12 +846,42 @@ export const TagsPage: React.FC = () => {
         {/* Header */}
         <Group justify="space-between" align="center">
           <div>
-            <Title order={2}>Tags &amp; Labels</Title>
+            <Title order={2}>Tags & Labels</Title>
             <Text c="dimmed">Organize and categorize your healthcare data</Text>
+            {filteredTags.length !== tags.length && (
+              <Text size="sm" c="dimmed">
+                Showing {filteredTags.length} of {tags.length} tags
+              </Text>
+            )}
           </div>
-          <Button leftSection={<Plus size={16} />} onClick={handleCreateTag}>
-            Create Tag
-          </Button>
+          <Group gap="sm">
+            {selectedTags.length > 0 && (
+              <Button
+                variant="light"
+                color="red"
+                leftSection={<Trash2 size={16} />}
+                onClick={handleBulkDelete}
+                loading={isLoading}
+              >
+                Delete ({selectedTags.length})
+              </Button>
+            )}
+            <Button
+              variant="light"
+              leftSection={<Download size={16} />}
+              onClick={handleExportTags}
+              disabled={filteredTags.length === 0}
+            >
+              Export
+            </Button>
+            <Button 
+              leftSection={<Plus size={16} />} 
+              onClick={handleCreateTag}
+              loading={isLoading}
+            >
+              Create Tag
+            </Button>
+          </Group>
         </Group>
 
         {/* Summary Cards */}
@@ -709,6 +1023,8 @@ export const TagsPage: React.FC = () => {
                   onEdit={handleEditTag}
                   onDelete={handleDeleteTag}
                   onToggleStatus={handleToggleStatus}
+                  onDuplicate={handleDuplicateTag}
+                  onViewUsage={handleViewUsage}
                 />
               </Grid.Col>
             ))}
@@ -718,6 +1034,19 @@ export const TagsPage: React.FC = () => {
             <Table>
               <Table.Thead>
                 <Table.Tr>
+                  <Table.Th>
+                    <Checkbox
+                      checked={selectedTags.length === filteredTags.length && filteredTags.length > 0}
+                      indeterminate={selectedTags.length > 0 && selectedTags.length < filteredTags.length}
+                      onChange={(event) => {
+                        if (event.currentTarget.checked) {
+                          setSelectedTags(filteredTags.map(t => t.id));
+                        } else {
+                          setSelectedTags([]);
+                        }
+                      }}
+                    />
+                  </Table.Th>
                   <Table.Th>Tag</Table.Th>
                   <Table.Th>Category</Table.Th>
                   <Table.Th>Status</Table.Th>
@@ -730,6 +1059,18 @@ export const TagsPage: React.FC = () => {
               <Table.Tbody>
                 {filteredTags.map((tag) => (
                   <Table.Tr key={tag.id}>
+                    <Table.Td>
+                      <Checkbox
+                        checked={selectedTags.includes(tag.id)}
+                        onChange={(event) => {
+                          if (event.currentTarget.checked) {
+                            setSelectedTags(prev => [...prev, tag.id]);
+                          } else {
+                            setSelectedTags(prev => prev.filter(id => id !== tag.id));
+                          }
+                        }}
+                      />
+                    </Table.Td>
                     <Table.Td>
                       <Group gap="sm">
                         <ColorSwatch color={tag.color} size={20} />
@@ -774,6 +1115,7 @@ export const TagsPage: React.FC = () => {
                             color={tag.isActive ? 'red' : 'green'}
                             onClick={() => handleToggleStatus(tag)}
                             size="sm"
+                            loading={isLoading}
                           >
                             <Settings size={16} />
                           </ActionIcon>
@@ -794,6 +1136,7 @@ export const TagsPage: React.FC = () => {
                             color="red"
                             onClick={() => handleDeleteTag(tag)}
                             size="sm"
+                            loading={isLoading}
                           >
                             <Trash2 size={16} />
                           </ActionIcon>
@@ -834,6 +1177,7 @@ export const TagsPage: React.FC = () => {
         opened={formOpened}
         onClose={closeForm}
         onSave={handleSaveTag}
+        isLoading={isLoading}
       />
 
       {/* Tag Usage Modal */}
