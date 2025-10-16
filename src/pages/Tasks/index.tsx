@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { Task } from '../types';
+import { Task } from '../../types';
 
 /**
  * Mock data for tasks

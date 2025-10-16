@@ -42,8 +42,8 @@ import {
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { useOrders } from '../hooks/useQuery';
-import { Order } from '../types';
+import { useOrders } from '../../hooks/useQuery';
+import { Order } from '../../types';
 
 /**
  * Order Card Component

@@ -50,7 +50,7 @@ import {
   Edit,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { Message } from '../types';
+import { Message } from '../../types';
 
 /**
  * Mock data for messages and conversations

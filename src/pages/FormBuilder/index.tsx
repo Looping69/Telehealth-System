@@ -44,9 +44,9 @@ import {
   Upload,
 } from 'lucide-react';
 import { Questionnaire } from '@medplum/fhirtypes';
-import { FormBuilder } from '../components/forms/FormBuilder';
-import { MultiStepForm } from '../components/forms/MultiStepForm';
-import { useAuthStore } from '../store/authStore';
+import { FormBuilder } from '../../components/forms/FormBuilder';
+import { MultiStepForm } from '../../components/forms/MultiStepForm';
+import { useAuthStore } from '../../store/authStore';
 
 /**
  * FormBuilderPage Component

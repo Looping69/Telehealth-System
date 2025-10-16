@@ -53,11 +53,11 @@ import {
   Settings,
 } from 'lucide-react';
 
-import { MultiStepForm } from '../components/forms/MultiStepForm';
-import { FormBuilder } from '../components/forms/FormBuilder';
-import { formTemplates, createFormFromTemplate } from '../data/formTemplates';
-import { FormData, FormSubmission, FormAnswers, FormTemplate } from '../types/forms';
-import { useAuthStore } from '../store/authStore';
+import { MultiStepForm } from '../../components/forms/MultiStepForm';
+import { FormBuilder } from '../../components/forms/FormBuilder';
+import { formTemplates, createFormFromTemplate } from '../../data/formTemplates';
+import { FormData, FormSubmission, FormAnswers, FormTemplate } from '../../types/forms';
+import { useAuthStore } from '../../store/authStore';
 
 /**
  * FormsPage Component

@@ -37,10 +37,10 @@ import {
   CheckCircle,
   Plus,
 } from 'lucide-react';
-import { useDashboardMetrics, useTasks } from '../hooks/useMedplum';
-import { useAppointments, usePatients } from '../hooks/useQuery';
-import { formatHumanName, getReferenceDisplay, convertAppointmentFromFHIR, convertTaskFromFHIR } from '../utils/fhir';
-import { useAuthStore } from '../store/authStore';
+import { useDashboardMetrics, useTasks } from '../../hooks/useMedplum';
+import { useAppointments, usePatients } from '../../hooks/useQuery';
+import { formatHumanName, getReferenceDisplay, convertAppointmentFromFHIR, convertTaskFromFHIR } from '../../utils/fhir';
+import { useAuthStore } from '../../store/authStore';
 
 /**
  * Metric Card Component

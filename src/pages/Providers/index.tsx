@@ -51,7 +51,7 @@ import {
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { Provider, ProviderAvailability } from '../types';
+import { Provider, ProviderAvailability } from '../../types';
 
 /**
  * Mock data for healthcare providers

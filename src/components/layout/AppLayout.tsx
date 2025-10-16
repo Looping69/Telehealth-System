@@ -51,6 +51,8 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { NavigationItem } from './NavigationItem';
 import { getNavigationItems } from '../../utils/permissions';
+import { ModeSwitcher } from '../common/ModeSwitcher';
+import { useMode } from '../../contexts/ModeContext';
 
 export function AppLayout() {
   const theme = useMantineTheme();
@@ -58,6 +60,7 @@ export function AppLayout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const { mode } = useMode();
 
   const handleLogout = () => {
     logout();
@@ -190,6 +193,9 @@ export function AppLayout() {
           </Group>
 
           <Group>
+            {/* Mode Switcher */}
+            <ModeSwitcher size="sm" />
+
             {/* Notifications */}
             <Button variant="subtle" size="sm" p="xs">
               <Bell size={18} />
@@ -257,11 +263,19 @@ export function AppLayout() {
         {/* Footer */}
         <AppShell.Section>
           <Divider mb="md" />
-          <Group justify="center">
+          <Stack gap="sm" align="center">
+            <ModeSwitcher variant="compact" />
             <Text size="xs" c="dimmed">
-              Telehealth Dashboard v1.0
+              Powered By Medplum
             </Text>
-          </Group>
+            <Badge 
+              size="xs" 
+              color={mode === 'fhir' ? 'green' : 'blue'} 
+              variant="light"
+            >
+              {mode === 'fhir' ? 'Live FHIR Mode' : 'Mock Data Mode'}
+            </Badge>
+          </Stack>
         </AppShell.Section>
       </AppShell.Navbar>
 

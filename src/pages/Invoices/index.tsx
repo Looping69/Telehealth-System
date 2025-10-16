@@ -44,7 +44,7 @@ import {
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { Invoice } from '../types';
+import { Invoice } from '../../types';
 
 /**
  * Mock data for invoices
