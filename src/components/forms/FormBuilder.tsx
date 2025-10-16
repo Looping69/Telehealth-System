@@ -72,9 +72,11 @@ export function FormBuilder({ onSave, onCancel, initialQuestionnaire }: FormBuil
   // Form metadata
   const [formTitle, setFormTitle] = useState(initialQuestionnaire?.title || '');
   const [formDescription, setFormDescription] = useState(initialQuestionnaire?.description || '');
-  const [formStatus, setFormStatus] = useState<'draft' | 'active' | 'retired'>(
-    initialQuestionnaire?.status || 'draft'
-  );
+  const [formStatus, setFormStatus] = useState<'draft' | 'active' | 'retired'>(() => {
+    const status = initialQuestionnaire?.status;
+    if (status === 'unknown') return 'draft';
+    return (status as 'draft' | 'active' | 'retired') || 'draft';
+  });
   
   // Questions management
   const [questions, setQuestions] = useState<QuestionBuilder[]>(() => {
@@ -115,7 +117,7 @@ export function FormBuilder({ onSave, onCancel, initialQuestionnaire }: FormBuil
   /**
    * Extracts validation rules from FHIR QuestionnaireItem
    */
-  function extractValidationFromItem(item: QuestionnaireItem) {
+  function extractValidationFromItem(item: QuestionnaireItem): Question['validation'] {
     const validation: Question['validation'] = {};
     
     // Extract from extensions or other FHIR properties
@@ -258,8 +260,8 @@ export function FormBuilder({ onSave, onCancel, initialQuestionnaire }: FormBuil
   /**
    * Maps our Question type to FHIR QuestionnaireItem type
    */
-  function mapQuestionTypeToFhir(type: Question['type']): string {
-    const typeMap: Record<Question['type'], string> = {
+  function mapQuestionTypeToFhir(type: Question['type']): QuestionnaireItem['type'] {
+    const typeMap: Record<Question['type'], QuestionnaireItem['type']> = {
       'text': 'string',
       'textarea': 'text',
       'email': 'string',
@@ -707,7 +709,7 @@ function QuestionEditor({ question, onChange }: QuestionEditorProps) {
             placeholder="Min"
             value={question.validation?.min}
             onChange={(value) => onChange({ 
-              validation: { ...question.validation, min: value || undefined }
+              validation: { ...question.validation, min: typeof value === 'number' ? value : undefined }
             })}
           />
           <NumberInput
@@ -715,7 +717,7 @@ function QuestionEditor({ question, onChange }: QuestionEditorProps) {
             placeholder="Max"
             value={question.validation?.max}
             onChange={(value) => onChange({ 
-              validation: { ...question.validation, max: value || undefined }
+              validation: { ...question.validation, max: typeof value === 'number' ? value : undefined }
             })}
           />
         </Group>
@@ -727,14 +729,14 @@ function QuestionEditor({ question, onChange }: QuestionEditorProps) {
             label="Scale Min"
             value={question.validation?.min || 1}
             onChange={(value) => onChange({ 
-              validation: { ...question.validation, min: value || 1 }
+              validation: { ...question.validation, min: typeof value === 'number' ? value : 1 }
             })}
           />
           <NumberInput
             label="Scale Max"
             value={question.validation?.max || 10}
             onChange={(value) => onChange({ 
-              validation: { ...question.validation, max: value || 10 }
+              validation: { ...question.validation, max: typeof value === 'number' ? value : 10 }
             })}
           />
         </Group>

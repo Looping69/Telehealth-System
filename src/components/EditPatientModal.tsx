@@ -3,7 +3,7 @@
  * Form for editing existing patients with pre-populated fields
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   Stack,

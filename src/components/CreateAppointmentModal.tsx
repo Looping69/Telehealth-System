@@ -183,8 +183,8 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
             label="Session Type"
             placeholder="Select session type"
             data={[
-              { value: 'video', label: 'Video Call', leftSection: <Video size={16} /> },
-              { value: 'phone', label: 'Phone Call', leftSection: <Phone size={16} /> },
+              { value: 'video', label: 'Video Call' },
+              { value: 'phone', label: 'Phone Call' },
               { value: 'in-person', label: 'In-Person' },
             ]}
             required

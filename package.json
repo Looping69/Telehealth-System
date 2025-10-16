@@ -8,7 +8,13 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "medplum:start": "docker-compose -f docker-compose.simple.yml up -d",
+    "medplum:stop": "docker-compose -f docker-compose.simple.yml down",
+    "medplum:restart": "npm run medplum:stop && npm run medplum:start",
+    "medplum:logs": "docker-compose -f docker-compose.simple.yml logs -f",
+    "medplum:reset": "docker-compose -f docker-compose.simple.yml down -v && docker system prune -f",
+    "medplum:status": "docker-compose -f docker-compose.simple.yml ps"
   },
   "keywords": [],
   "author": "",

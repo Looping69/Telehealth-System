@@ -1,0 +1,71 @@
+# Simplified Docker Compose for Medplum FHIR Server
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: medplum-postgres
+    environment:
+      POSTGRES_DB: medplum
+      POSTGRES_USER: medplum
+      POSTGRES_PASSWORD: medplum123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medplum -d medplum"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medplum-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: medplum-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - medplum-network
+
+  # Medplum FHIR Server
+  medplum-server:
+    image: medplum/medplum-server:3.1.4
+    container_name: medplum-server
+    ports:
+      - "8103:8103"
+    volumes:
+      - ./medplum.config.json:/usr/src/medplum/packages/server/medplum.config.json:ro
+      - medplum_storage:/usr/src/medplum/packages/server/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8103/fhir/R4/metadata"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - medplum-network
+    restart: unless-stopped
+
+networks:
+  medplum-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  medplum_storage:

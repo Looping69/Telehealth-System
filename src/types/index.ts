@@ -129,12 +129,17 @@ export interface Task {
   title: string;
   description?: string;
   assignedTo?: string;
-  createdBy: string;
-  status: 'todo' | 'in_progress' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  createdBy?: string;
+  status: 'todo' | 'in_progress' | 'completed' | 'pending';
+  priority: 'low' | 'medium' | 'high' | 'normal';
+  dueDate?: Date | string;
+  createdDate?: Date | string;
+  completedDate?: Date | string;
+  patientId?: string;
+  patientName?: string;
+  category?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Provider {

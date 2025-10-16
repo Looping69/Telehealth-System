@@ -80,7 +80,7 @@ export function suppressBrowserExtensionErrors(): void {
   // Handle unhandled promise rejections
   const originalUnhandledRejection = window.onunhandledrejection;
   
-  window.onunhandledrejection = (event) => {
+  window.addEventListener('unhandledrejection', function(event: PromiseRejectionEvent) {
     const errorMessage = event.reason?.message || event.reason?.toString() || '';
     
     const suppressedPatterns = [
@@ -106,9 +106,9 @@ export function suppressBrowserExtensionErrors(): void {
     }
 
     if (originalUnhandledRejection) {
-      originalUnhandledRejection(event);
+      originalUnhandledRejection.call(this, event);
     }
-  };
+  });
 }
 
 /**

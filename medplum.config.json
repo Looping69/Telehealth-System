@@ -1,37 +1,28 @@
 {
   "port": 8103,
-  "baseUrl": "http://localhost:8103/",
-  "issuer": "http://localhost:8103/",
-  "audience": "http://localhost:8103/",
+  "baseUrl": "http://localhost:8103",
+  "issuer": "http://localhost:8103",
+  "audience": "http://localhost:8103",
   "jwksUrl": "http://localhost:8103/.well-known/jwks.json",
   "authorizeUrl": "http://localhost:8103/oauth2/authorize",
   "tokenUrl": "http://localhost:8103/oauth2/token",
   "userInfoUrl": "http://localhost:8103/oauth2/userinfo",
-  "appBaseUrl": "http://localhost:3000/",
-  "binaryStorage": "file:./binary/",
-  "storageBaseUrl": "http://localhost:8103/storage/",
-  "signingKeyId": "medplum-server-key",
-  "signingKey": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA3Tz2mr7SZiAMfQyuvBjM9Oi...\n-----END RSA PRIVATE KEY-----",
-  "signingKeyPassphrase": "top secret",
-  "supportEmail": "support@example.com",
+  "logoutUrl": "http://localhost:8103/oauth2/logout",
   "database": {
     "host": "postgres",
     "port": 5432,
     "dbname": "medplum",
     "username": "medplum",
-    "password": "medplum"
+    "password": "medplum123"
   },
   "redis": {
     "host": "redis",
-    "port": 6379,
-    "password": "medplum"
+    "port": 6379
   },
-  "adminClientId": "medplum-admin",
-  "adminClientSecret": "medplum-admin-secret",
-  "superAdmin": {
-    "email": "admin@telehealth.com",
-    "password": "admin123",
-    "firstName": "System",
-    "lastName": "Administrator"
-  }
+  "binaryStorage": "file",
+  "storageBaseUrl": "http://localhost:8103/storage",
+  "signingKeyId": "medplum-server-key",
+  "signingKey": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA3Tz2mr7SZiAMfQyuvBjM9Oi...\n-----END RSA PRIVATE KEY-----",
+  "supportEmail": "support@example.com",
+  "logLevel": "info"
 }

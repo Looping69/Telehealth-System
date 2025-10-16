@@ -25,7 +25,7 @@ import { Question, FormAnswer, FormData } from '../../types/forms';
 
 interface MultiStepFormProps {
   questions: Question[];
-  title: string;
+  title?: string;
   description?: string;
   onSubmit: (data: FormData) => void;
   onCancel: () => void;
@@ -139,13 +139,14 @@ export function MultiStepForm({
       setIsSubmitting(true);
       const formData: FormData = {
         id: `form-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        title,
+        title: title || 'Untitled Form',
         description: description || '',
-        category: 'general',
+        category: 'custom',
         questions,
-        answers,
-        submittedAt: new Date(),
-        status: 'completed'
+        version: '1.0',
+        active: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       onSubmit(formData);
     }

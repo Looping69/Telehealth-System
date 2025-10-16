@@ -23,6 +23,7 @@ import { notifications } from '@mantine/notifications';
 interface CreatePatientModalProps {
   opened: boolean;
   onClose: () => void;
+  onPatientCreated?: (patient: any) => void;
 }
 
 interface PatientFormData {
@@ -76,18 +77,20 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({
       emergencyPhone: '',
     },
     validate: {
-      firstName: (value) => (value.length < 2 ? 'First name must have at least 2 letters' : null),
-      lastName: (value) => (value.length < 2 ? 'Last name must have at least 2 letters' : null),
-      dateOfBirth: (value) => (!value ? 'Date of birth is required' : null),
-      gender: (value) => (!value ? 'Gender is required' : null),
-      phone: (value) => (!/^\(\d{3}\) \d{3}-\d{4}$/.test(value) && value.length > 0 ? 'Phone must be in format (123) 456-7890' : null),
-      email: (value) => (!/^\S+@\S+$/.test(value) && value.length > 0 ? 'Invalid email' : null),
-      'address.street': (value) => (value.length < 5 ? 'Street address is required' : null),
-      'address.city': (value) => (value.length < 2 ? 'City is required' : null),
-      'address.state': (value) => (!value ? 'State is required' : null),
-      'address.zipCode': (value) => (!/^\d{5}(-\d{4})?$/.test(value) ? 'ZIP code must be 5 digits or 5+4 format' : null),
-      emergencyContact: (value) => (value.length < 2 ? 'Emergency contact name is required' : null),
-      emergencyPhone: (value) => (!/^\(\d{3}\) \d{3}-\d{4}$/.test(value) ? 'Emergency phone must be in format (123) 456-7890' : null),
+      firstName: (value: string) => (value.length < 2 ? 'First name must have at least 2 letters' : null),
+      lastName: (value: string) => (value.length < 2 ? 'Last name must have at least 2 letters' : null),
+      dateOfBirth: (value: Date | null) => (!value ? 'Date of birth is required' : null),
+      gender: (value: string) => (!value ? 'Gender is required' : null),
+      phone: (value: string) => (!/^\(\d{3}\) \d{3}-\d{4}$/.test(value) && value.length > 0 ? 'Phone must be in format (123) 456-7890' : null),
+      email: (value: string) => (!/^\S+@\S+$/.test(value) && value.length > 0 ? 'Invalid email' : null),
+      address: {
+        street: (value: string) => (value.length < 5 ? 'Street address is required' : null),
+        city: (value: string) => (value.length < 2 ? 'City is required' : null),
+        state: (value: string) => (!value ? 'State is required' : null),
+        zipCode: (value: string) => (!/^\d{5}(-\d{4})?$/.test(value) ? 'ZIP code must be 5 digits or 5+4 format' : null),
+      },
+      emergencyContact: (value: string) => (value.length < 2 ? 'Emergency contact name is required' : null),
+      emergencyPhone: (value: string) => (!/^\(\d{3}\) \d{3}-\d{4}$/.test(value) ? 'Emergency phone must be in format (123) 456-7890' : null),
     },
   });
 

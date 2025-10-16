@@ -135,6 +135,32 @@ services:
       retries: 3
       start_period: 60s
 
+  # Medplum App (Web Interface)
+  medplum-app:
+    image: medplum/medplum-app:latest
+    environment:
+      # Configure the app to connect to the medplum-server
+      MEDPLUM_BASE_URL: http://medplum-server:8103
+      MEDPLUM_CLIENT_ID: ${MEDPLUM_CLIENT_ID:-demo-client-id}
+      MEDPLUM_REGISTER_ENABLED: "true"
+      MEDPLUM_GOOGLE_CLIENT_ID: ""
+      MEDPLUM_RECAPTCHA_SITE_KEY: ""
+      NODE_ENV: production
+    ports:
+      - "3001:3000"
+    depends_on:
+      medplum-server:
+        condition: service_healthy
+    networks:
+      - telehealth-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 networks:
   telehealth-network:
     driver: bridge

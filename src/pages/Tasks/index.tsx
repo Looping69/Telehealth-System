@@ -144,7 +144,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onView, onEdit, onComplete })
   };
 
   const isOverdue = () => {
-    return new Date(task.dueDate) < new Date() && task.status !== 'completed';
+    return task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
   };
 
   return (
@@ -178,7 +178,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onView, onEdit, onComplete })
           </Group>
           <Group gap="xs">
             <Calendar size={14} />
-            <Text size="sm">Due: {task.dueDate}</Text>
+            <Text size="sm">Due: {typeof task.dueDate === 'string' ? task.dueDate : task.dueDate?.toLocaleDateString()}</Text>
             {isOverdue() && (
               <Badge color="red" size="xs">
                 Overdue
@@ -263,7 +263,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             <Badge color={task.status === 'completed' ? 'green' : 'yellow'}>
               {task.status}
             </Badge>
-            <Badge color={task.priority === 'urgent' ? 'red' : 'blue'}>
+            <Badge color={task.priority === 'high' ? 'red' : 'blue'}>
               {task.priority} priority
             </Badge>
           </Group>
@@ -282,16 +282,11 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 <strong>Assigned to:</strong> {task.assignedTo}
               </Text>
               <Text size="sm">
-                <strong>Created:</strong> {task.createdDate}
+                <strong>Created:</strong> {task.createdAt.toLocaleDateString()}
               </Text>
               <Text size="sm">
-                <strong>Due Date:</strong> {task.dueDate}
+                <strong>Due Date:</strong> {task.dueDate ? task.dueDate.toLocaleDateString() : 'No due date'}
               </Text>
-              {task.completedDate && (
-                <Text size="sm">
-                  <strong>Completed:</strong> {task.completedDate}
-                </Text>
-              )}
             </Stack>
           </Grid.Col>
           <Grid.Col span={6}>
@@ -301,9 +296,6 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 <>
                   <Text size="sm">
                     <strong>Patient:</strong> {task.patientName}
-                  </Text>
-                  <Text size="sm">
-                    <strong>Patient ID:</strong> {task.patientId}
                   </Text>
                 </>
               ) : (
@@ -384,14 +376,14 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose, onTa
       id: `TASK-${String(Date.now()).slice(-3).padStart(3, '0')}`,
       title: formData.title.trim(),
       description: formData.description.trim(),
-      status: 'pending',
-      priority: formData.priority as 'low' | 'normal' | 'high' | 'urgent',
+      status: 'todo',
+      priority: formData.priority === 'urgent' ? 'high' : formData.priority as 'low' | 'medium' | 'high',
       assignedTo: formData.assignedTo.trim(),
-      dueDate: formData.dueDate,
-      createdDate: new Date().toISOString().split('T')[0],
-      category: formData.category as 'clinical' | 'administrative' | 'billing' | 'follow_up',
+      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+      createdAt: new Date(),
+      createdBy: 'current-user', // TODO: Get from auth context
+      updatedAt: new Date(),
       patientName: formData.patientName.trim() || undefined,
-      patientId: formData.patientName.trim() ? `PAT-${String(Date.now()).slice(-3)}` : undefined,
     };
 
     onTaskCreated(newTask);
@@ -530,12 +522,12 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, opened, onClose, on
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    priority: 'normal',
+    priority: 'normal' as 'low' | 'medium' | 'high' | 'normal',
     assignedTo: '',
     dueDate: '',
     category: 'clinical',
     patientName: '',
-    status: 'pending',
+    status: 'pending' as 'todo' | 'in_progress' | 'completed' | 'pending',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -545,11 +537,11 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, opened, onClose, on
     if (task) {
       setFormData({
         title: task.title,
-        description: task.description,
+        description: task.description || '',
         priority: task.priority,
-        assignedTo: task.assignedTo,
-        dueDate: task.dueDate,
-        category: task.category,
+        assignedTo: task.assignedTo || '',
+        dueDate: task.dueDate ? (typeof task.dueDate === 'string' ? task.dueDate : task.dueDate.toISOString().split('T')[0]) : '',
+        category: task.category || '',
         patientName: task.patientName || '',
         status: task.status,
       });
@@ -593,12 +585,11 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, opened, onClose, on
       ...task,
       title: formData.title.trim(),
       description: formData.description.trim(),
-      priority: formData.priority as 'low' | 'normal' | 'high' | 'urgent',
+      priority: formData.priority === 'urgent' ? 'high' : formData.priority as 'low' | 'medium' | 'high',
       assignedTo: formData.assignedTo.trim(),
-      dueDate: formData.dueDate,
-      category: formData.category as 'clinical' | 'administrative' | 'billing' | 'follow_up',
+      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
       patientName: formData.patientName.trim() || undefined,
-      status: formData.status as 'pending' | 'in_progress' | 'completed',
+      status: formData.status === 'pending' ? 'todo' : formData.status as 'todo' | 'in_progress' | 'completed',
     };
 
     onTaskUpdated(updatedTask);
@@ -790,14 +781,14 @@ export const TasksPage: React.FC = () => {
   const filterTasksByTab = (tasks: Task[], tab: string) => {
     switch (tab) {
       case 'pending':
-        return tasks.filter(task => task.status === 'pending');
+        return tasks.filter(task => task.status === 'todo');
       case 'in_progress':
         return tasks.filter(task => task.status === 'in_progress');
       case 'completed':
         return tasks.filter(task => task.status === 'completed');
       case 'overdue':
         return tasks.filter(task => 
-          new Date(task.dueDate) < new Date() && task.status !== 'completed'
+          task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed'
         );
       default:
         return tasks;
@@ -807,17 +798,17 @@ export const TasksPage: React.FC = () => {
   const filteredTasks = filterTasksByTab(tasks, activeTab || 'all')
     .filter(task => 
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.patientName?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .filter(task => !statusFilter || task.status === statusFilter);
 
   // Calculate summary statistics
-  const pendingTasks = tasks.filter(task => task.status === 'pending').length;
+  const pendingTasks = tasks.filter(task => task.status === 'todo').length;
   const inProgressTasks = tasks.filter(task => task.status === 'in_progress').length;
   const completedTasks = tasks.filter(task => task.status === 'completed').length;
   const overdueTasks = tasks.filter(task => 
-    new Date(task.dueDate) < new Date() && task.status !== 'completed'
+    task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed'
   ).length;
 
   return (
@@ -1225,7 +1216,7 @@ const TaskTableRow: React.FC<TaskTableRowProps> = ({ task, onView, onEdit, onCom
   };
 
   const isOverdue = () => {
-    return new Date(task.dueDate) < new Date() && task.status !== 'completed';
+    return task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
   };
 
   return (
@@ -1263,7 +1254,7 @@ const TaskTableRow: React.FC<TaskTableRowProps> = ({ task, onView, onEdit, onCom
       <Table.Td>
         <Stack gap={2}>
           <Text size="sm">
-            {task.dueDate}
+            {task.dueDate ? task.dueDate.toLocaleDateString() : 'No due date'}
           </Text>
           {isOverdue() && (
             <Badge color="red" size="xs">

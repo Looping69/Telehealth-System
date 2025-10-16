@@ -51,7 +51,7 @@ export function ProtectedRoute({
 
   // Check role-based access if required
   if (requiredRole || allowedRoles) {
-    const hasAccess = canAccessRoute(user.role, requiredRole, allowedRoles);
+    const hasAccess = canAccessRoute(user.role, location.pathname);
     
     if (!hasAccess) {
       return <Navigate to="/unauthorized" replace />;

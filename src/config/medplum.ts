@@ -7,18 +7,12 @@ import { MedplumClient } from '@medplum/core';
 
 export const medplumConfig = {
   baseUrl: import.meta.env.VITE_MEDPLUM_BASE_URL?.replace(/\/$/, '') || 'http://localhost:8103',
-  clientId: import.meta.env.VITE_MEDPLUM_CLIENT_ID || 'medplum-admin',
+  clientId: import.meta.env.VITE_MEDPLUM_CLIENT_ID || 'medplum-client',
   scope: 'openid profile email',
 };
 
 export const createMedplumClient = (): MedplumClient => {
   const client = new MedplumClient(medplumConfig);
-  
-  // Add authentication handling
-  client.setAccessToken = (token: string) => {
-    client.setAccessToken(token);
-  };
-  
   return client;
 };
 
