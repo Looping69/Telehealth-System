@@ -37,7 +37,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { usePatients } from '../../hooks/useQuery';
+import { usePatients } from '../../hooks/useMockData';
 import { Patient } from '../../types';
 import { CreatePatientModal } from '../../components/CreatePatientModal';
 import { EditPatientModal } from '../../components/EditPatientModal';

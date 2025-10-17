@@ -39,7 +39,7 @@ import {
   Edit,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { useAppointments } from '../../hooks/useQuery';
+import { useAppointments } from '../../hooks/useMockData';
 import { Appointment } from '../../types';
 import CreateAppointmentModal from '../../components/CreateAppointmentModal';
 import EditAppointmentModal from '../../components/EditAppointmentModal';

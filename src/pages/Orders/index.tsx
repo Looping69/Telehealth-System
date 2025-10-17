@@ -42,7 +42,7 @@ import {
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { useOrders } from '../../hooks/useQuery';
+import { useOrders } from '../../hooks/useMockData';
 import { Order } from '../../types';
 
 /**
