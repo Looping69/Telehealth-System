@@ -1,636 +1,912 @@
-/**
- * Audit-Medplum Page Component
- * Manages audit logs using FHIR data
- */
-
-import React, { useState, useEffect, useMemo } from 'react';
 import {
+  ActionIcon,
+  Alert,
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  Card,
+  Center,
+  Code,
   Container,
   Grid,
-  Card,
-  Text,
-  Title,
   Group,
-  Stack,
-  Badge,
-  Button,
-  TextInput,
-  Select,
-  ActionIcon,
-  Modal,
-  Table,
-  ScrollArea,
-  Center,
   Loader,
+  Modal,
   Pagination,
-  Alert,
+  Progress,
+  ScrollArea,
+  SegmentedControl,
+  Select,
+  Stack,
+  Table,
   Tabs,
-  DatePickerInput,
-  Avatar,
-  Code,
+  Text,
+  TextInput,
+  Title,
 } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import {
-  Search,
-  Filter,
-  Download,
-  Eye,
-  Calendar,
-  User,
-  Shield,
   Activity,
   AlertTriangle,
-  Info,
   CheckCircle,
+  Download,
+  Eye,
+  FileText,
+  Filter,
+  Info,
+  Search,
+  Shield,
+  User,
   XCircle,
-  Clock,
-  Database,
-  AlertCircle,
 } from 'lucide-react';
-import { useDisclosure } from '@mantine/hooks';
-import { medplumClient } from '../../config/medplum';
+import React, { useEffect, useState } from 'react';
 import { AuditEvent } from '@medplum/fhirtypes';
+import { useAuditEvents } from '../../hooks/useQuery';
 
 /**
- * FHIR Audit Event Card Component
+ * Interfaces
  */
-interface FHIRAuditEventCardProps {
-  auditEvent: AuditEvent;
-  onView: (auditEvent: AuditEvent) => void;
+interface AuditLog {
+  id: string;
+  timestamp: string;
+  userName: string;
+  userRole: string;
+  userId: string;
+  action: string;
+  resource: string;
+  resourceId?: string;
+  status: 'success' | 'failure' | 'warning';
+  details: string;
+  ipAddress: string;
 }
 
-const FHIRAuditEventCard: React.FC<FHIRAuditEventCardProps> = ({ auditEvent, onView }) => {
-  const getOutcomeColor = (outcome?: string) => {
-    switch (outcome) {
-      case '0':
-        return 'green'; // Success
-      case '4':
-        return 'red'; // Minor failure
-      case '8':
-        return 'red'; // Serious failure
-      case '12':
-        return 'red'; // Major failure
+interface AuditSummary {
+  totalLogs: number;
+  successfulActions: number;
+  failedActions: number;
+  uniqueUsers: number;
+  topActions: { action: string; count: number }[];
+  topUsers: { userId: string; userName: string; count: number }[];
+}
+
+/**
+ * Mock Data
+ */
+const mockAuditLogs: AuditLog[] = [];
+
+const mockAuditSummary: AuditSummary = {
+  totalLogs: 0,
+  successfulActions: 0,
+  failedActions: 0,
+  uniqueUsers: 0,
+  topActions: [],
+  topUsers: [],
+};
+
+/**
+ * Audit Log Row Component
+ */
+interface AuditLogRowProps {
+  log: AuditLog;
+  onViewDetails: (log: AuditLog) => void;
+}
+
+const AuditLogRow: React.FC<AuditLogRowProps> = ({ log, onViewDetails }) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'success':
+        return 'green';
+      case 'failure':
+        return 'red';
+      case 'warning':
+        return 'yellow';
       default:
         return 'gray';
     }
   };
 
-  const getOutcomeText = (outcome?: string) => {
-    switch (outcome) {
-      case '0':
-        return 'Success';
-      case '4':
-        return 'Minor Failure';
-      case '8':
-        return 'Serious Failure';
-      case '12':
-        return 'Major Failure';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  const getActionText = () => {
-    return auditEvent.type?.display || 
-           auditEvent.type?.code || 
-           'Unknown Action';
-  };
-
-  const getAgentName = () => {
-    const agent = auditEvent.agent?.[0];
-    return agent?.who?.display || 
-           agent?.name || 
-           'Unknown User';
-  };
-
-  const getSourceName = () => {
-    return auditEvent.source?.observer?.display || 
-           auditEvent.source?.site || 
-           'Unknown Source';
-  };
-
-  const getEventTime = () => {
-    if (auditEvent.recorded) {
-      return new Date(auditEvent.recorded).toLocaleString();
-    }
-    return 'Unknown Time';
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString();
   };
 
   return (
-    <Card shadow="sm" padding="md" radius="md" withBorder>
-      <Stack gap="sm">
-        <Group justify="space-between" align="flex-start">
-          <Group>
-            <Badge size="xs" color="green" variant="light">
-              <Database size={10} style={{ marginRight: 4 }} />
-              FHIR AuditEvent
-            </Badge>
-          </Group>
-          <Badge color={getOutcomeColor(auditEvent.outcome)}>
-            {getOutcomeText(auditEvent.outcome)}
+    <Table.Tr>
+      <Table.Td>{formatTimestamp(log.timestamp)}</Table.Td>
+      <Table.Td>
+        <Group gap="xs">
+          <Avatar size="sm" />
+          <div>
+            <Text size="sm" fw={500}>
+              {log.userName}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {log.userRole}
+            </Text>
+          </div>
+        </Group>
+      </Table.Td>
+      <Table.Td>
+        <Code size="sm">{log.action}</Code>
+      </Table.Td>
+      <Table.Td>{log.resource}</Table.Td>
+      <Table.Td>
+        <Badge color={getStatusColor(log.status)} variant="light">
+          {log.status}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Text size="sm" lineClamp={1}>
+          {log.details}
+        </Text>
+      </Table.Td>
+      <Table.Td>{log.ipAddress}</Table.Td>
+      <Table.Td>
+        <Button
+          variant="light"
+          size="xs"
+          leftSection={<Eye size={12} />}
+          onClick={() => onViewDetails(log)}
+        >
+          View
+        </Button>
+      </Table.Td>
+    </Table.Tr>
+  );
+};
+
+/**
+ * Audit Log Details Modal
+ */
+interface AuditLogDetailsModalProps {
+  log: AuditLog | null;
+  opened: boolean;
+  onClose: () => void;
+}
+
+const AuditLogDetailsModal: React.FC<AuditLogDetailsModalProps> = ({ log, opened, onClose }) => {
+  if (!log) {
+    return null;
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'success':
+        return 'green';
+      case 'failure':
+        return 'red';
+      case 'warning':
+        return 'yellow';
+      default:
+        return 'gray';
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString();
+  };
+
+  return (
+    <Modal opened={opened} onClose={onClose} title="Audit Log Details" size="lg">
+      <Stack gap="md">
+        <Group justify="space-between">
+          <Title order={4}>{log.action}</Title>
+          <Badge color={getStatusColor(log.status)} variant="light" size="lg">
+            {log.status}
           </Badge>
         </Group>
 
-        <Group>
-          <Avatar size="sm" color="blue">
-            <Activity size={16} />
-          </Avatar>
-          <Stack gap={2}>
-            <Text fw={500} size="sm">{getActionText()}</Text>
-            <Text size="xs" c="dimmed">{getAgentName()}</Text>
-          </Stack>
-        </Group>
+        <Card withBorder padding="md">
+          <Grid>
+            <Grid.Col span={6}>
+              <Text size="sm" c="dimmed">
+                Timestamp
+              </Text>
+              <Text fw={500}>{formatTimestamp(log.timestamp)}</Text>
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <Text size="sm" c="dimmed">
+                IP Address
+              </Text>
+              <Text fw={500}>{log.ipAddress}</Text>
+            </Grid.Col>
+          </Grid>
+        </Card>
 
-        <Stack gap="xs">
-          <Group gap="xs">
-            <Clock size={12} />
-            <Text size="xs">{getEventTime()}</Text>
-          </Group>
-          <Group gap="xs">
-            <Shield size={12} />
-            <Text size="xs">Source: {getSourceName()}</Text>
-          </Group>
-        </Stack>
+        <Card withBorder padding="md">
+          <Title order={5} mb="sm">
+            User
+          </Title>
+          <Grid>
+            <Grid.Col span={6}>
+              <Text size="sm" c="dimmed">
+                Name
+              </Text>
+              <Text fw={500}>{log.userName}</Text>
+            </Grid.Col>
+            <Grid.Col span={6}>
+              <Text size="sm" c="dimmed">
+                Role
+              </Text>
+              <Text fw={500}>{log.userRole}</Text>
+            </Grid.Col>
+            <Grid.Col span={12}>
+              <Text size="sm" c="dimmed">
+                User ID
+              </Text>
+              <Code>{log.userId}</Code>
+            </Grid.Col>
+          </Grid>
+        </Card>
 
-        <Group justify="space-between" align="center">
-          <Text size="xs" fw={500}>
-            ID: {auditEvent.id}
+        <Card withBorder padding="md">
+          <Title order={5} mb="sm">
+            Resource
+          </Title>
+          <Grid>
+            <Grid.Col span={6}>
+              <Text size="sm" c="dimmed">
+                Type
+              </Text>
+              <Text fw={500}>{log.resource}</Text>
+            </Grid.Col>
+            {log.resourceId && (
+              <Grid.Col span={6}>
+                <Text size="sm" c="dimmed">
+                  Resource ID
+                </Text>
+                <Code>{log.resourceId}</Code>
+              </Grid.Col>
+            )}
+          </Grid>
+        </Card>
+
+        <div>
+          <Text size="sm" c="dimmed">
+            Details
           </Text>
-          <ActionIcon
-            variant="light"
-            color="blue"
-            size="sm"
-            onClick={() => onView(auditEvent)}
+          <Box
+            p="sm"
+            style={{
+              backgroundColor: 'var(--mantine-color-gray-0)',
+              borderRadius: 'var(--mantine-radius-sm)',
+            }}
           >
-            <Eye size={14} />
-          </ActionIcon>
-        </Group>
+            <Text>{log.details}</Text>
+          </Box>
+        </div>
+
+        <Button onClick={onClose} fullWidth mt="md">
+          Close
+        </Button>
+      </Stack>
+    </Modal>
+  );
+};
+
+/**
+ * Audit Summary Component
+ */
+const AuditSummaryComponent: React.FC<{ auditLogs: AuditLog[] }> = ({ auditLogs }) => {
+  const summary = {
+    totalLogs: auditLogs.length,
+    successfulActions: auditLogs.filter(log => log.status === 'success').length,
+    failedActions: auditLogs.filter(log => log.status === 'failure').length,
+    uniqueUsers: new Set(auditLogs.map(log => log.userId)).size,
+  };
+
+  return (
+    <Grid>
+      <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Group justify="space-between" mb="xs">
+            <Text size="sm" c="dimmed" fw={500}>
+              Total Logs
+            </Text>
+            <ActionIcon variant="light" color="blue" size="lg">
+              <Activity size={20} />
+            </ActionIcon>
+          </Group>
+          <Text fw={700} size="xl">
+            {summary.totalLogs}
+          </Text>
+        </Card>
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Group justify="space-between" mb="xs">
+            <Text size="sm" c="dimmed" fw={500}>
+              Successful Actions
+            </Text>
+            <ActionIcon variant="light" color="green" size="lg">
+              <CheckCircle size={20} />
+            </ActionIcon>
+          </Group>
+          <Text fw={700} size="xl" c="green">
+            {summary.successfulActions}
+          </Text>
+          <Progress
+            value={(summary.successfulActions / summary.totalLogs) * 100}
+            color="green"
+            size="xs"
+            mt="xs"
+          />
+        </Card>
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Group justify="space-between" mb="xs">
+            <Text size="sm" c="dimmed" fw={500}>
+              Failed Actions
+            </Text>
+            <ActionIcon variant="light" color="red" size="lg">
+              <XCircle size={20} />
+            </ActionIcon>
+          </Group>
+          <Text fw={700} size="xl" c="red">
+            {summary.failedActions}
+          </Text>
+          <Progress
+            value={(summary.failedActions / summary.totalLogs) * 100}
+            color="red"
+            size="xs"
+            mt="xs"
+          />
+        </Card>
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Group justify="space-between" mb="xs">
+            <Text size="sm" c="dimmed" fw={500}>
+              Unique Users
+            </Text>
+            <ActionIcon variant="light" color="purple" size="lg">
+              <User size={20} />
+            </ActionIcon>
+          </Group>
+          <Text fw={700} size="xl" c="purple">
+            {summary.uniqueUsers}
+          </Text>
+        </Card>
+      </Grid.Col>
+    </Grid>
+  );
+};
+
+/**
+ * Top Actions Component
+ */
+const TopActionsComponent: React.FC<{ auditLogs: AuditLog[] }> = ({ auditLogs }) => {
+  const topActions = auditLogs
+    .reduce((acc, log) => {
+      const existing = acc.find(item => item.action === log.action);
+      if (existing) {
+        existing.count++;
+      } else {
+        acc.push({ action: log.action, count: 1 });
+      }
+      return acc;
+    }, [] as { action: string; count: number }[])
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  return (
+    <Card shadow="sm" padding="lg" radius="md" withBorder>
+      <Title order={4} mb="md">
+        Top Actions
+      </Title>
+      <Stack gap="md">
+        {topActions.map((action, index) => (
+          <Group key={action.action} justify="space-between">
+            <Group gap="xs">
+              <Badge variant="light" size="sm">
+                #{index + 1}
+              </Badge>
+              <Code size="sm">{action.action}</Code>
+            </Group>
+            <Text fw={500}>{action.count}</Text>
+          </Group>
+        ))}
       </Stack>
     </Card>
   );
 };
 
 /**
- * Main Audit-Medplum Page Component
+ * Top Users Component
  */
-const AuditMedplumPage: React.FC = () => {
-  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [outcomeFilter, setOutcomeFilter] = useState<string>('all');
-  const [selectedAuditEvent, setSelectedAuditEvent] = useState<AuditEvent | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<string | null>('events');
-
-  const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
-
-  const itemsPerPage = 20;
-
-  // Fetch FHIR audit events
-  useEffect(() => {
-    const fetchAuditEvents = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await medplumClient.search('AuditEvent', {
-          _sort: '-recorded',
-          _count: '100'
-        });
-
-        if (response.entry) {
-          const auditEventData = response.entry
-            .filter(entry => entry.resource?.resourceType === 'AuditEvent')
-            .map(entry => entry.resource as AuditEvent);
-          
-          setAuditEvents(auditEventData);
-        } else {
-          setAuditEvents([]);
-        }
-      } catch (err) {
-        console.error('Error fetching FHIR audit events:', err);
-        setError('Failed to fetch audit events from FHIR server. Please check your connection.');
-        setAuditEvents([]);
-      } finally {
-        setLoading(false);
+const TopUsersComponent: React.FC<{ auditLogs: AuditLog[] }> = ({ auditLogs }) => {
+  const topUsers = auditLogs
+    .reduce((acc, log) => {
+      const existing = acc.find(item => item.userId === log.userId);
+      if (existing) {
+        existing.count++;
+      } else {
+        acc.push({ userId: log.userId, userName: log.userName, count: 1 });
       }
-    };
+      return acc;
+    }, [] as { userId: string; userName: string; count: number }[])
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
 
-    fetchAuditEvents();
-  }, []);
+  return (
+    <Card shadow="sm" padding="lg" radius="md" withBorder>
+      <Title order={4} mb="md">
+        Most Active Users
+      </Title>
+      <Stack gap="md">
+        {topUsers.map((user, index) => (
+          <Group key={user.userId} justify="space-between">
+            <Group gap="xs">
+              <Badge variant="light" size="sm">
+                #{index + 1}
+              </Badge>
+              <Avatar size="sm" />
+              <Text size="sm">{user.userName}</Text>
+            </Group>
+            <Text fw={500}>{user.count}</Text>
+          </Group>
+        ))}
+      </Stack>
+    </Card>
+  );
+};
 
-  // Filter audit events
-  const filteredAuditEvents = useMemo(() => {
-    return auditEvents.filter(auditEvent => {
-      const matchesSearch = !searchTerm || 
-        auditEvent.type?.display?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        auditEvent.type?.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        auditEvent.agent?.[0]?.who?.display?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        auditEvent.id?.toLowerCase().includes(searchTerm.toLowerCase());
+/**
+ * Main Audit Page Component
+ */
+export const AuditMedplumPage: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [actionFilter, setActionFilter] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [userFilter, setUserFilter] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
+  const { data: auditEvents, isLoading } = useAuditEvents();
 
-      const matchesOutcome = outcomeFilter === 'all' || auditEvent.outcome === outcomeFilter;
+  console.log('auditEvents', auditEvents);
 
-      return matchesSearch && matchesOutcome;
-    });
-  }, [auditEvents, searchTerm, outcomeFilter]);
+  const auditLogs: AuditLog[] = (auditEvents || []).map((event: AuditEvent) => ({
+    id: event.id || '',
+    timestamp: event.recorded,
+    userName: event.agent?.[0]?.name || 'Unknown',
+    userRole: 'N/A',
+    userId: event.agent?.[0]?.who?.reference || 'Unknown',
+    action: event.action || 'Unknown',
+    resource: event.entity?.[0]?.what?.reference || 'Unknown',
+    resourceId: event.entity?.[0]?.what?.reference?.split('/')?.[1] || undefined,
+    status: event.outcome === 0 ? 'success' : 'failure',
+    details: event.outcomeDesc || 'No details',
+    ipAddress: 'N/A',
+  })) || [];
 
-  // Paginate results
-  const paginatedEvents = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredAuditEvents.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAuditEvents, currentPage]);
-
-  const totalPages = Math.ceil(filteredAuditEvents.length / itemsPerPage);
-
-  // Get summary statistics
-  const getSummaryStats = () => {
-    const total = auditEvents.length;
-    const successful = auditEvents.filter(e => e.outcome === '0').length;
-    const failed = auditEvents.filter(e => ['4', '8', '12'].includes(e.outcome || '')).length;
-    
-    return {
-      total,
-      successful,
-      failed,
-      successRate: total > 0 ? Math.round((successful / total) * 100) : 0
-    };
-  };
-
-  const handleViewAuditEvent = (auditEvent: AuditEvent) => {
-    setSelectedAuditEvent(auditEvent);
+  const handleViewDetails = (log: AuditLog) => {
+    setSelectedLog(log);
     openDetails();
   };
 
-  if (loading) {
-    return (
-      <Container size="xl" py="xl">
-        <Center>
-          <Stack align="center" gap="md">
-            <Loader size="lg" />
-            <Text>Loading FHIR audit events...</Text>
-          </Stack>
-        </Center>
-      </Container>
-    );
-  }
+  const handleExportLogs = () => {
+    // TODO: Implement export functionality
+    console.log('Export audit logs');
+  };
 
-  const stats = getSummaryStats();
+  const filteredLogs = auditLogs
+    .filter(log =>
+      log.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.details.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .filter(log => !actionFilter || log.action === actionFilter)
+    .filter(log => !statusFilter || log.status === statusFilter)
+    .filter(log => !userFilter || log.userId === userFilter);
+
+  const paginatedLogs = filteredLogs.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+
+  // Get unique actions and users for filters
+  const uniqueActions = Array.from(new Set(auditLogs.map(log => log.action)));
+  const userOptions = Array.from(new Set(auditLogs.map(log => log.userId)))
+    .map(userId => {
+      const user = auditLogs.find(log => log.userId === userId);
+      return { value: userId, label: user ? user.userName : userId };
+    });
+
 
   return (
-    <Container size="xl" py="xl">
-      <Stack gap="xl">
+    <Container size="xl" py="md">
+      <Stack gap="lg">
         {/* Header */}
         <Group justify="space-between" align="center">
-          <Stack gap="xs">
-            <Title order={1}>Audit Logs</Title>
-            <Group gap="xs">
-              <Badge color="green" variant="light">
-                <Database size={12} style={{ marginRight: 4 }} />
-                Live FHIR Data
-              </Badge>
-              <Text c="dimmed">System audit events and compliance tracking</Text>
-            </Group>
-          </Stack>
-          <Group>
-            <Button variant="light" leftSection={<Download size={16} />}>
-              Export Logs
-            </Button>
-          </Group>
+          <div>
+            <Title order={2}>Audit Logs</Title>
+            <Text c="dimmed">Monitor system activity and user actions for compliance and security</Text>
+          </div>
+          <Button leftSection={<Download size={16} />} onClick={handleExportLogs}>
+            Export Logs
+          </Button>
         </Group>
 
-        {/* Error Alert */}
-        {error && (
-          <Alert icon={<AlertCircle size={16} />} color="red" variant="light">
-            {error}
-          </Alert>
-        )}
-
-        {/* Summary Cards */}
-        <Grid>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="md">
-              <Group>
-                <div style={{ 
-                  width: 40, 
-                  height: 40, 
-                  borderRadius: '50%', 
-                  backgroundColor: '#45B7D1',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Activity size={20} color="white" />
-                </div>
-                <Stack gap={2}>
-                  <Text size="lg" fw={700}>{stats.total}</Text>
-                  <Text size="sm" c="dimmed">Total Events</Text>
-                </Stack>
-              </Group>
-            </Card>
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="md">
-              <Group>
-                <div style={{ 
-                  width: 40, 
-                  height: 40, 
-                  borderRadius: '50%', 
-                  backgroundColor: '#51CF66',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <CheckCircle size={20} color="white" />
-                </div>
-                <Stack gap={2}>
-                  <Text size="lg" fw={700}>{stats.successful}</Text>
-                  <Text size="sm" c="dimmed">Successful</Text>
-                </Stack>
-              </Group>
-            </Card>
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="md">
-              <Group>
-                <div style={{ 
-                  width: 40, 
-                  height: 40, 
-                  borderRadius: '50%', 
-                  backgroundColor: '#FF6B6B',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <XCircle size={20} color="white" />
-                </div>
-                <Stack gap={2}>
-                  <Text size="lg" fw={700}>{stats.failed}</Text>
-                  <Text size="sm" c="dimmed">Failed</Text>
-                </Stack>
-              </Group>
-            </Card>
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="md">
-              <Group>
-                <div style={{ 
-                  width: 40, 
-                  height: 40, 
-                  borderRadius: '50%', 
-                  backgroundColor: '#96CEB4',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Shield size={20} color="white" />
-                </div>
-                <Stack gap={2}>
-                  <Text size="lg" fw={700}>{stats.successRate}%</Text>
-                  <Text size="sm" c="dimmed">Success Rate</Text>
-                </Stack>
-              </Group>
-            </Card>
-          </Grid.Col>
-        </Grid>
-
         {/* Tabs */}
-        <Tabs value={activeTab} onChange={setActiveTab}>
+        <Tabs defaultValue="logs">
           <Tabs.List>
-            <Tabs.Tab value="events" leftSection={<Activity size={16} />}>
-              Audit Events ({filteredAuditEvents.length})
+            <Tabs.Tab value="logs" leftSection={<Activity size={16} />}>
+              Audit Logs
             </Tabs.Tab>
-            <Tabs.Tab value="table" leftSection={<Database size={16} />}>
-              Table View
+            <Tabs.Tab value="summary" leftSection={<FileText size={16} />}>
+              Summary
+            </Tabs.Tab>
+            <Tabs.Tab value="compliance" leftSection={<Shield size={16} />}>
+              Compliance
             </Tabs.Tab>
           </Tabs.List>
 
-          <Tabs.Panel value="events">
-            <Stack gap="md" mt="md">
-              {/* Search and Filters */}
-              <Card withBorder padding="md">
-                <Grid>
-                  <Grid.Col span={{ base: 12, md: 6 }}>
+          <Tabs.Panel value="logs" pt="lg">
+            <Stack gap="lg">
+              {/* Summary Cards */}
+              <AuditSummaryComponent auditLogs={auditLogs} />
+
+              {/* Filters */}
+              <Card shadow="sm" padding="lg" radius="md" withBorder>
+                <Grid align="end">
+                  <Grid.Col span={{ base: 12, sm: 6, md: 2.4 }}>
                     <TextInput
-                      placeholder="Search audit events..."
+                      placeholder="Search logs..."
                       leftSection={<Search size={16} />}
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.currentTarget.value)}
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.currentTarget.value)}
                     />
                   </Grid.Col>
-                  <Grid.Col span={{ base: 12, md: 3 }}>
+                  <Grid.Col span={{ base: 12, sm: 6, md: 2.4 }}>
                     <Select
-                      placeholder="Filter by outcome"
+                      placeholder="Filter by action"
                       leftSection={<Filter size={16} />}
-                      data={[
-                        { value: 'all', label: 'All Outcomes' },
-                        { value: '0', label: 'Success' },
-                        { value: '4', label: 'Minor Failure' },
-                        { value: '8', label: 'Serious Failure' },
-                        { value: '12', label: 'Major Failure' },
-                      ]}
-                      value={outcomeFilter}
-                      onChange={(value) => setOutcomeFilter(value || 'all')}
+                      data={uniqueActions.map(action => ({ value: action, label: action }))}
+                      value={actionFilter}
+                      onChange={setActionFilter}
+                      clearable
                     />
                   </Grid.Col>
-                  <Grid.Col span={{ base: 12, md: 3 }}>
-                    <Text size="sm" c="dimmed">
-                      {filteredAuditEvents.length} events
-                    </Text>
+                  <Grid.Col span={{ base: 12, sm: 6, md: 2.4 }}>
+                    <Select
+                      placeholder="Filter by status"
+                      leftSection={<Activity size={16} />}
+                      data={[
+                        { value: 'success', label: 'Success' },
+                        { value: 'failure', label: 'Failure' },
+                        { value: 'warning', label: 'Warning' },
+                      ]}
+                      value={statusFilter}
+                      onChange={setStatusFilter}
+                      clearable
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6, md: 2.4 }}>
+                    <Select
+                      placeholder="Filter by user"
+                      leftSection={<User size={16} />}
+                      data={userOptions}
+                      value={userFilter}
+                      onChange={setUserFilter}
+                      clearable
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={{ base: 12, sm: 6, md: 2.4 }}>
+                  <SegmentedControl
+                    value={viewMode}
+                    onChange={setViewMode}
+                    data={[
+                      { label: 'Cards', value: 'cards' },
+                      { label: 'Table', value: 'table' },
+                    ]}
+                  />
                   </Grid.Col>
                 </Grid>
               </Card>
 
-              {/* Audit Events Grid */}
-              {paginatedEvents.length === 0 ? (
-                <Center py="xl">
-                  <Stack align="center" gap="md">
-                    <Activity size={48} color="gray" />
-                    <Text size="lg" c="dimmed">No audit events found</Text>
-                    <Text size="sm" c="dimmed">
-                      {error ? 'Check your FHIR server connection' : 'Try adjusting your search filters'}
-                    </Text>
-                  </Stack>
-                </Center>
-              ) : (
-                <>
-                  <Grid>
-                    {paginatedEvents.map((auditEvent) => (
-                      <Grid.Col key={auditEvent.id} span={{ base: 12, md: 6, lg: 4 }}>
-                        <FHIRAuditEventCard
-                          auditEvent={auditEvent}
-                          onView={handleViewAuditEvent}
+              {/* Audit Logs Display */}
+              <Card shadow="sm" padding="lg" radius="md" withBorder>
+                {isLoading ? (
+                  <Center py="xl">
+                    <Loader size="lg" />
+                  </Center>
+                ) : viewMode === 'cards' ? (
+                  <Stack gap="md">
+                    <Grid>
+                      {paginatedLogs.map((log) => (
+                        <Grid.Col key={log.id} span={{ base: 12, sm: 6, lg: 4 }}>
+                          <AuditLogCard
+                            log={log}
+                            onViewDetails={handleViewDetails}
+                          />
+                        </Grid.Col>
+                      ))}
+                    </Grid>
+                    {totalPages > 1 && (
+                      <Group justify="center">
+                        <Pagination
+                          value={currentPage}
+                          onChange={setCurrentPage}
+                          total={totalPages}
                         />
-                      </Grid.Col>
-                    ))}
-                  </Grid>
+                      </Group>
+                    )}
+                  </Stack>
+                ) : (
+                  <Stack gap="md">
+                    <ScrollArea>
+                      <Table striped highlightOnHover>
+                        <Table.Thead>
+                          <Table.Tr>
+                            <Table.Th>Timestamp</Table.Th>
+                            <Table.Th>User</Table.Th>
+                            <Table.Th>Action</Table.Th>
+                            <Table.Th>Resource</Table.Th>
+                            <Table.Th>Status</Table.Th>
+                            <Table.Th>Details</Table.Th>
+                            <Table.Th>IP Address</Table.Th>
+                            <Table.Th>Actions</Table.Th>
+                          </Table.Tr>
+                        </Table.Thead>
+                        <Table.Tbody>
+                          {paginatedLogs.map((log) => (
+                            <AuditLogRow
+                              key={log.id}
+                              log={log}
+                              onViewDetails={handleViewDetails}
+                            />
+                          ))}
+                        </Table.Tbody>
+                      </Table>
+                    </ScrollArea>
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <Center>
-                      <Pagination
-                        value={currentPage}
-                        onChange={setCurrentPage}
-                        total={totalPages}
-                        size="sm"
-                      />
-                    </Center>
-                  )}
-                </>
-              )}
+                    {totalPages > 1 && (
+                      <Group justify="center">
+                        <Pagination
+                          value={currentPage}
+                          onChange={setCurrentPage}
+                          total={totalPages}
+                        />
+                      </Group>
+                    )}
+                  </Stack>
+                )}
+              </Card>
             </Stack>
           </Tabs.Panel>
 
-          <Tabs.Panel value="table">
-            <Card withBorder mt="md">
-              <ScrollArea>
-                <Table>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>Time</Table.Th>
-                      <Table.Th>Action</Table.Th>
-                      <Table.Th>Agent</Table.Th>
-                      <Table.Th>Source</Table.Th>
-                      <Table.Th>Outcome</Table.Th>
-                      <Table.Th>Actions</Table.Th>
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {paginatedEvents.map((auditEvent) => (
-                      <Table.Tr key={auditEvent.id}>
-                        <Table.Td>
-                          <Text size="sm">
-                            {auditEvent.recorded ? 
-                              new Date(auditEvent.recorded).toLocaleString() : 
-                              'Unknown'
-                            }
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text size="sm">
-                            {auditEvent.type?.display || auditEvent.type?.code || 'Unknown'}
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text size="sm">
-                            {auditEvent.agent?.[0]?.who?.display || 
-                             auditEvent.agent?.[0]?.name || 
-                             'Unknown'
-                            }
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Text size="sm">
-                            {auditEvent.source?.observer?.display || 
-                             auditEvent.source?.site || 
-                             'Unknown'
-                            }
-                          </Text>
-                        </Table.Td>
-                        <Table.Td>
-                          <Badge 
-                            color={auditEvent.outcome === '0' ? 'green' : 'red'}
-                            size="sm"
-                          >
-                            {auditEvent.outcome === '0' ? 'Success' : 'Failure'}
-                          </Badge>
-                        </Table.Td>
-                        <Table.Td>
-                          <ActionIcon
-                            variant="light"
-                            color="blue"
-                            size="sm"
-                            onClick={() => handleViewAuditEvent(auditEvent)}
-                          >
-                            <Eye size={14} />
-                          </ActionIcon>
-                        </Table.Td>
-                      </Table.Tr>
-                    ))}
-                  </Table.Tbody>
-                </Table>
-              </ScrollArea>
-            </Card>
-          </Tabs.Panel>
-        </Tabs>
-
-        {/* Audit Event Details Modal */}
-        <Modal
-          opened={detailsOpened}
-          onClose={closeDetails}
-          title={`FHIR AuditEvent #${selectedAuditEvent?.id}`}
-          size="lg"
-        >
-          {selectedAuditEvent && (
-            <Stack gap="md">
-              <Alert icon={<Database size={16} />} color="green" variant="light">
-                Live FHIR Data - AuditEvent ID: {selectedAuditEvent.id}
-              </Alert>
+          <Tabs.Panel value="summary" pt="lg">
+            <Stack gap="lg">
+              <AuditSummaryComponent auditLogs={auditLogs} />
               <Grid>
                 <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Action</Text>
-                    <Text size="sm" c="dimmed">
-                      {selectedAuditEvent.type?.display || selectedAuditEvent.type?.code || 'Unknown'}
-                    </Text>
-                  </Stack>
+                  <TopActionsComponent auditLogs={auditLogs} />
                 </Grid.Col>
                 <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Outcome</Text>
-                    <Badge color={selectedAuditEvent.outcome === '0' ? 'green' : 'red'}>
-                      {selectedAuditEvent.outcome === '0' ? 'Success' : 'Failure'}
-                    </Badge>
-                  </Stack>
+                  <TopUsersComponent auditLogs={auditLogs} />
                 </Grid.Col>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Recorded</Text>
-                    <Text size="sm" c="dimmed">
-                      {selectedAuditEvent.recorded ? 
-                        new Date(selectedAuditEvent.recorded).toLocaleString() : 
-                        'Unknown'
-                      }
-                    </Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Agent</Text>
-                    <Text size="sm" c="dimmed">
-                      {selectedAuditEvent.agent?.[0]?.who?.display || 
-                       selectedAuditEvent.agent?.[0]?.name || 
-                       'Unknown'
-                      }
-                    </Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Source</Text>
-                    <Text size="sm" c="dimmed">
-                      {selectedAuditEvent.source?.observer?.display || 
-                       selectedAuditEvent.source?.site || 
-                       'Unknown'
-                      }
-                    </Text>
-                  </Stack>
-                </Grid.Col>
-                {selectedAuditEvent.entity && selectedAuditEvent.entity.length > 0 && (
-                  <Grid.Col span={12}>
-                    <Stack gap="xs">
-                      <Text size="sm" fw={500}>Entities</Text>
-                      <Code block>
-                        {JSON.stringify(selectedAuditEvent.entity, null, 2)}
-                      </Code>
-                    </Stack>
-                  </Grid.Col>
-                )}
               </Grid>
             </Stack>
-          )}
-        </Modal>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="compliance" pt="lg">
+            <Stack gap="lg">
+              <Alert icon={<Info size={16} />} color="blue">
+                Compliance reports help ensure your organization meets regulatory requirements for healthcare data management and user activity monitoring.
+              </Alert>
+
+              <Grid>
+                <Grid.Col span={6}>
+                  <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Title order={4} mb="md">
+                      HIPAA Compliance
+                    </Title>
+                    <Stack gap="md">
+                      <Group justify="space-between">
+                        <Text size="sm">Audit logging enabled</Text>
+                        <Badge color="green" leftSection={<CheckCircle size={14} />}>
+                          Compliant
+                        </Badge>
+                      </Group>
+                      <Group justify="space-between">
+                        <Text size="sm">User access tracking</Text>
+                        <Badge color="green" leftSection={<CheckCircle size={14} />}>
+                          Compliant
+                        </Badge>
+                      </Group>
+                      <Group justify="space-between">
+                        <Text size="sm">Data modification logs</Text>
+                        <Badge color="green" leftSection={<CheckCircle size={14} />}>
+                          Compliant
+                        </Badge>
+                      </Group>
+                      <Group justify="space-between">
+                        <Text size="sm">Failed access attempts</Text>
+                        <Badge color="green" leftSection={<CheckCircle size={14} />}>
+                          Compliant
+                        </Badge>
+                      </Group>
+                    </Stack>
+                  </Card>
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Title order={4} mb="md">
+                      Security Monitoring
+                    </Title>
+                    <Stack gap="md">
+                      <Group justify="space-between">
+                        <Text size="sm">Login monitoring</Text>
+                        <Badge color="green" leftSection={<CheckCircle size={14} />}>
+                          Active
+                        </Badge>
+                      </Group>
+                      <Group justify="space-between">
+                        <Text size="sm">Failed login alerts</Text>
+                        <Badge color="green" leftSection={<CheckCircle size={14} />}>
+                          Active
+                        </Badge>
+                      </Group>
+                      <Group justify="space-between">
+                        <Text size="sm">Data export tracking</Text>
+                        <Badge color="green" leftSection={<CheckCircle size={14} />}>
+                          Active
+                        </Badge>
+                      </Group>
+                      <Group justify="space-between">
+                        <Text size="sm">Privilege escalation</Text>
+                        <Badge color="green" leftSection={<CheckCircle size={14} />}>
+                          Active
+                        </Badge>
+                      </Group>
+                    </Stack>
+                  </Card>
+                </Grid.Col>
+              </Grid>
+
+              <Card shadow="sm" padding="lg" radius="md" withBorder>
+                <Group justify="space-between" align="center" mb="md">
+                  <Title order={4}>Generate Compliance Report</Title>
+                  <Button leftSection={<FileText size={16} />}>
+                    Generate Report
+                  </Button>
+                </Group>
+                <Text size="sm" c="dimmed">
+                  Generate detailed compliance reports for regulatory audits and internal reviews.
+                  Reports include user activity summaries, security events, and data access logs.
+                </Text>
+              </Card>
+            </Stack>
+          </Tabs.Panel>
+        </Tabs>
       </Stack>
+
+      {/* Audit Log Details Modal */}
+      <AuditLogDetailsModal
+        log={selectedLog}
+        opened={detailsOpened}
+        onClose={closeDetails}
+      />
     </Container>
+  );
+};
+
+/**
+ * Audit Log Card Component
+ */
+interface AuditLogCardProps {
+  log: AuditLog;
+  onViewDetails: (log: AuditLog) => void;
+}
+
+const AuditLogCard: React.FC<AuditLogCardProps> = ({ log, onViewDetails }) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'success':
+        return 'green';
+      case 'failure':
+        return 'red';
+      case 'warning':
+        return 'yellow';
+      default:
+        return 'gray';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'success':
+        return <CheckCircle size={14} />;
+      case 'failure':
+        return <XCircle size={14} />;
+      case 'warning':
+        return <AlertTriangle size={14} />;
+      default:
+        return <Info size={14} />;
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString();
+  };
+
+  return (
+    <Card shadow="sm" padding="lg" radius="md" withBorder>
+      <Stack gap="md">
+        <Group justify="space-between" align="flex-start">
+          <div>
+            <Group gap="xs" mb="xs">
+              <Code size="sm">{log.action}</Code>
+              <Badge
+                color={getStatusColor(log.status)}
+                variant="light"
+                leftSection={getStatusIcon(log.status)}
+                size="sm"
+              >
+                {log.status}
+              </Badge>
+            </Group>
+            <Text size="sm" c="dimmed">
+              {formatTimestamp(log.timestamp)}
+            </Text>
+          </div>
+          <ActionIcon
+            variant="light"
+            color="blue"
+            size="sm"
+            onClick={() => onViewDetails(log)}
+          >
+            <Eye size={14} />
+          </ActionIcon>
+        </Group>
+
+        <Group gap="xs">
+          <Avatar size="sm" />
+          <div>
+            <Text size="sm" fw={500}>
+              {log.userName}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {log.userRole}
+            </Text>
+          </div>
+        </Group>
+
+        <div>
+          <Text size="sm" fw={500} mb="xs">
+            Resource: {log.resource}
+          </Text>
+          {log.resourceId && (
+            <Text size="xs" c="dimmed" mb="xs">
+              ID: {log.resourceId}
+            </Text>
+          )}
+          <Text size="sm" lineClamp={2}>
+            {log.details}
+          </Text>
+        </div>
+
+        <Group justify="space-between" align="center">
+          <Text size="xs" c="dimmed">
+            IP: {log.ipAddress}
+          </Text>
+          <Button
+            variant="light"
+            size="xs"
+            leftSection={<Eye size={12} />}
+            onClick={() => onViewDetails(log)}
+          >
+            View Details
+          </Button>
+        </Group>
+      </Stack>
+    </Card>
   );
 };
 

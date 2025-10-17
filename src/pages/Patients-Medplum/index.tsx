@@ -39,9 +39,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { useQuery } from '@tanstack/react-query';
-// import { medplumClient } from '../../config/medplum'; // Removed - using direct fetch instead
-import { formatHumanName } from '../../utils/fhir';
+import { usePatients } from '../../hooks/useQuery';
 import { CreatePatientModal } from '../../components/CreatePatientModal';
 import { EditPatientModal } from '../../components/EditPatientModal';
 
@@ -142,114 +140,7 @@ const getMockPatients = (params?: {
   };
 };
 
-/**
- * Custom hook for fetching patients from FHIR server
- */
-const usePatientsMedplum = (params?: {
-  search?: string;
-  status?: string | null;
-  page?: number;
-  limit?: number;
-}) => {
-  return useQuery({
-    queryKey: ['patients-medplum', params],
-    queryFn: async () => {
-      try {
-        const searchParams: Record<string, string> = {
-          _sort: '-_lastUpdated',
-          _count: String(params?.limit || 12),
-        };
 
-        if (params?.search) {
-          searchParams.name = params.search;
-        }
-
-        if (params?.status) {
-          searchParams.active = params.status === 'active' ? 'true' : 'false';
-        }
-
-        if (params?.page && params.page > 1) {
-          searchParams._offset = String((params.page - 1) * (params?.limit || 12));
-        }
-
-        // Use direct HTTP fetch to bypass authentication
-        const queryString = new URLSearchParams(searchParams).toString();
-        const response = await fetch(`http://localhost:8103/fhir/R4/Patient?${queryString}`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/fhir+json',
-            'Content-Type': 'application/fhir+json',
-          },
-        });
-
-        if (!response.ok) {
-          // If unauthorized, fall back to mock data
-          if (response.status === 401) {
-            console.warn('FHIR server requires authentication - using mock data for development');
-            return getMockPatients(params);
-          }
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const bundle = await response.json();
-        
-        const patients = bundle.entry?.map(entry => {
-          const patient = entry.resource;
-          return {
-            id: patient.id,
-            firstName: patient.name?.[0]?.given?.[0] || 'Unknown',
-            lastName: patient.name?.[0]?.family || 'Unknown',
-            dateOfBirth: patient.birthDate || '',
-            gender: patient.gender || 'unknown',
-            phone: patient.telecom?.find(t => t.system === 'phone')?.value || '',
-            email: patient.telecom?.find(t => t.system === 'email')?.value || '',
-            address: patient.address?.[0] ? {
-              street: patient.address[0].line?.join(', ') || '',
-              city: patient.address[0].city || '',
-              state: patient.address[0].state || '',
-              zipCode: patient.address[0].postalCode || '',
-            } : '',
-            status: patient.active ? 'active' : 'inactive',
-            lastVisit: patient.meta?.lastUpdated || null,
-            emergencyContact: patient.contact?.[0]?.name?.text || '',
-            insurance: patient.extension?.find(ext => ext.url?.includes('insurance'))?.valueString || '',
-            fhirResource: patient, // Keep reference to original FHIR resource
-          };
-        }) || [];
-
-        return {
-          data: patients,
-          total: bundle.total || 0,
-        };
-      } catch (error) {
-        console.error('Error fetching patients from FHIR server:', error);
-        
-        // Enhanced error handling - fall back to mock data for auth issues
-        if (error?.response?.status === 401 || error?.message?.includes('Unauthorized') || 
-            error?.message?.includes('401')) {
-          console.warn('FHIR server authentication failed - using mock data for development');
-          return getMockPatients(params);
-        }
-        
-        if (error?.code === 'ECONNREFUSED' || error?.message?.includes('ECONNREFUSED')) {
-          console.warn('FHIR server connection refused - using mock data for development');
-          return getMockPatients(params);
-        }
-        
-        if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network Error')) {
-          console.warn('FHIR server network error - using mock data for development');
-          return getMockPatients(params);
-        }
-        
-        // For any other error, also fall back to mock data
-        console.warn('FHIR server error - using mock data for development');
-        return getMockPatients(params);
-      }
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: 2,
-  });
-};
 
 /**
  * Patient Card Component
@@ -513,7 +404,7 @@ const PatientsMedplumPage: React.FC = () => {
   const [createModalOpened, { open: openCreateModal, close: closeCreateModal }] = useDisclosure(false);
   const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
 
-  const { data: patients, isLoading, error } = usePatientsMedplum({
+  const { data: patients, isLoading, error } = usePatients({
     search: searchQuery,
     status: statusFilter,
     page: currentPage,
@@ -534,8 +425,8 @@ const PatientsMedplumPage: React.FC = () => {
     openCreateModal();
   };
 
-  const filteredPatients = patients?.data || [];
-  const totalPages = Math.ceil((patients?.total || 0) / 12);
+  const filteredPatients = patients || [];
+  const totalPages = Math.ceil((patients?.length || 0) / 12);
 
   if (error) {
     return (

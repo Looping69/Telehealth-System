@@ -6,8 +6,11 @@
 import { MedplumClient } from '@medplum/core';
 
 export const medplumConfig = {
-  baseUrl: import.meta.env.VITE_MEDPLUM_BASE_URL?.replace(/\/$/, '') || 'http://localhost:8103',
+  // Use localhost for MedplumClient constructor, but proxy will handle the actual requests
+  baseUrl: import.meta.env.DEV ? 'http://localhost:5173' : (import.meta.env.VITE_MEDPLUM_BASE_URL?.replace(/\/$/, '') || 'http://localhost:8103'),
   clientId: import.meta.env.VITE_MEDPLUM_CLIENT_ID || 'medplum-client',
+  clientSecret: import.meta.env.VITE_MEDPLUM_CLIENT_SECRET,
+  redirectUri: import.meta.env.VITE_MEDPLUM_REDIRECT_URI || 'http://localhost:5173',
   scope: 'openid profile email',
 };
 
@@ -25,20 +28,6 @@ export const medplumClient = createMedplumClient();
  */
 export const initializeMedplumAuth = async (): Promise<boolean> => {
   try {
-    // First, check if the Medplum server is accessible
-    try {
-      await fetch(`${medplumConfig.baseUrl}/fhir/R4/metadata`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/fhir+json',
-        },
-      });
-    } catch (serverError) {
-      console.warn('Medplum server is not accessible at', medplumConfig.baseUrl);
-      console.warn('Please start your Medplum server using: docker-compose -f docker-compose.full-stack.yml up -d');
-      return false;
-    }
-
     // Check if we have stored credentials
     const storedToken = localStorage.getItem('medplum_access_token');
     
@@ -57,14 +46,46 @@ export const initializeMedplumAuth = async (): Promise<boolean> => {
       }
     }
     
-    // For development, we'll skip authentication and use the server directly
-    // This is because the Medplum server is running in first-boot mode
-    // and doesn't have proper OAuth clients configured yet
-    console.log('Using Medplum server without authentication (development mode)');
-    
-    // Test if we can access FHIR endpoints without authentication
+    // Try OAuth2 client credentials flow for authentication
     try {
-      const response = await fetch(`${medplumConfig.baseUrl}/fhir/R4/Patient?_summary=count`, {
+      console.log('Attempting OAuth2 client credentials authentication...');
+      
+      const tokenResponse = await fetch('/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+        },
+        body: new URLSearchParams({
+          grant_type: 'client_credentials',
+          client_id: medplumConfig.clientId,
+          client_secret: medplumConfig.clientSecret || '',
+          scope: medplumConfig.scope,
+        }),
+      });
+      
+      if (tokenResponse.ok) {
+        const tokenData = await tokenResponse.json();
+        const accessToken = tokenData.access_token;
+        
+        if (accessToken) {
+          medplumClient.setAccessToken(accessToken);
+          localStorage.setItem('medplum_access_token', accessToken);
+          console.log('Medplum OAuth2 authentication successful');
+          return true;
+        }
+      } else {
+        const errorText = await tokenResponse.text();
+        console.warn('OAuth2 authentication failed:', tokenResponse.status, errorText);
+      }
+    } catch (oauthError) {
+      console.warn('OAuth2 authentication error:', oauthError);
+    }
+    
+    // Fallback: Test if we can access FHIR endpoints without authentication (development mode)
+    console.log('Trying development mode without authentication...');
+    try {
+      const response = await fetch(`/fhir/R4/Patient?_summary=count`, {
         method: 'GET',
         headers: {
           'Accept': 'application/fhir+json',
@@ -72,7 +93,7 @@ export const initializeMedplumAuth = async (): Promise<boolean> => {
       });
       
       if (response.ok) {
-        console.log('Medplum server accessible without authentication');
+        console.log('Medplum server accessible without authentication (development mode)');
         return true;
       } else {
         console.warn('Medplum server requires authentication');

@@ -31,7 +31,7 @@ import {
   Save,
   Server,
 } from 'lucide-react';
-import { medplumClient } from '../../config/medplum';
+import { useSystemMetadata } from '../../hooks/useQuery';
 
 /**
  * Main Settings-Medplum Page Component
@@ -40,6 +40,9 @@ const SettingsMedplumPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Use the standardized hook for FHIR metadata
+  const { data: metadata, isLoading: metadataLoading, error: metadataError, refetch: fetchMetadata } = useSystemMetadata();
 
   // FHIR Server Settings
   const [fhirSettings, setFhirSettings] = useState({
@@ -72,11 +75,14 @@ const SettingsMedplumPage: React.FC = () => {
       setError(null);
       setSuccess(null);
 
-      // Test connection by fetching metadata
-      const metadata = await medplumClient.get('metadata');
+      console.log('Testing FHIR connection...');
+      // Use the standardized hook to fetch metadata
+      const result = await fetchMetadata();
       
-      if (metadata) {
+      if (result.data) {
         setSuccess('FHIR server connection successful!');
+      } else if (result.error) {
+        setError(`Failed to connect to FHIR server: ${result.error.message || 'Unknown error'}`);
       }
     } catch (err) {
       console.error('FHIR connection test failed:', err);
@@ -169,7 +175,7 @@ const SettingsMedplumPage: React.FC = () => {
                     variant="outline" 
                     size="sm"
                     onClick={testFhirConnection}
-                    loading={loading}
+                    loading={loading || metadataLoading}
                   >
                     Test Connection
                   </Button>

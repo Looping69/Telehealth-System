@@ -37,10 +37,10 @@ import {
   CheckCircle,
   Plus,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { medplumClient } from '../../config/medplum';
 import { formatHumanName, getReferenceDisplay, convertAppointmentFromFHIR, convertTaskFromFHIR } from '../../utils/fhir';
 import { useAuthStore } from '../../store/authStore';
+import { useDashboardMetrics, useAppointments } from '../../hooks/useQuery';
+import { useTasks } from '../../hooks/useMedplum';
 
 /**
  * Metric Card Component
@@ -96,129 +96,18 @@ const MetricCard: React.FC<MetricCardProps> = ({
   );
 };
 
-/**
- * Custom hook for dashboard metrics using real FHIR data
- */
-const useDashboardMetricsMedplum = () => {
-  return useQuery({
-    queryKey: ['dashboard-metrics-medplum'],
-    queryFn: async () => {
-      try {
-        const baseUrl = 'http://localhost:8103/fhir/R4';
-        
-        // Get total patients count using direct fetch
-        const patientsResponse = await fetch(`${baseUrl}/Patient?_summary=count`, {
-          headers: { 'Accept': 'application/fhir+json' }
-        });
-        const patientsBundle = await patientsResponse.json();
-        const totalPatients = patientsBundle.total || 0;
 
-        // Get today's appointments
-        const today = new Date().toISOString().split('T')[0];
-        const appointmentsResponse = await fetch(`${baseUrl}/Appointment?date=${today}&_summary=count`, {
-          headers: { 'Accept': 'application/fhir+json' }
-        });
-        const appointmentsBundle = await appointmentsResponse.json();
-        const todayAppointments = appointmentsBundle.total || 0;
 
-        // Get active tasks
-        const tasksResponse = await fetch(`${baseUrl}/Task?status=in-progress,requested,accepted&_summary=count`, {
-          headers: { 'Accept': 'application/fhir+json' }
-        });
-        const tasksBundle = await tasksResponse.json();
-        const activeTasks = tasksBundle.total || 0;
 
-        // Get pending orders
-        const ordersResponse = await fetch(`${baseUrl}/ServiceRequest?status=active,on-hold&_summary=count`, {
-          headers: { 'Accept': 'application/fhir+json' }
-        });
-        const ordersBundle = await ordersResponse.json();
-        const pendingOrders = ordersBundle.total || 0;
 
-        return {
-          totalPatients,
-          todayAppointments,
-          activeTasks,
-          pendingOrders,
-        };
-      } catch (error) {
-        console.error('Error fetching dashboard metrics:', error);
-        throw error;
-      }
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 2,
-  });
-};
 
-/**
- * Custom hook for recent tasks using real FHIR data
- */
-const useTasksMedplum = (params?: Record<string, string>) => {
-  return useQuery({
-    queryKey: ['tasks-medplum', params],
-    queryFn: async () => {
-      try {
-        const baseUrl = 'http://localhost:8103/fhir/R4';
-        const queryParams = new URLSearchParams({
-          _sort: '-_lastUpdated',
-          _count: '5',
-          ...params,
-        });
-        
-        const response = await fetch(`${baseUrl}/Task?${queryParams}`, {
-          headers: { 'Accept': 'application/fhir+json' }
-        });
-        const bundle = await response.json();
-        return bundle.entry?.map(entry => entry.resource) || [];
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-        throw error;
-      }
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: 2,
-  });
-};
-
-/**
- * Custom hook for appointments using real FHIR data
- */
-const useAppointmentsMedplum = () => {
-  return useQuery({
-    queryKey: ['appointments-medplum'],
-    queryFn: async () => {
-      try {
-        const baseUrl = 'http://localhost:8103/fhir/R4';
-        const today = new Date().toISOString().split('T')[0];
-        const queryParams = new URLSearchParams({
-          date: today,
-          _sort: 'date',
-          _count: '10',
-          _include: 'Appointment:patient',
-        });
-        
-        const response = await fetch(`${baseUrl}/Appointment?${queryParams}`, {
-          headers: { 'Accept': 'application/fhir+json' }
-        });
-        const bundle = await response.json();
-        return bundle.entry?.map(entry => entry.resource).filter(resource => resource.resourceType === 'Appointment') || [];
-      } catch (error) {
-        console.error('Error fetching appointments:', error);
-        throw error;
-      }
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: 2,
-  });
-};
 
 /**
  * Recent Activity Component
  * Shows recent patient activities and appointments using real FHIR data
  */
 const RecentActivity: React.FC = () => {
-  const { data: tasks, isLoading: tasksLoading, error } = useTasksMedplum({
+  const { data: tasks, isLoading: tasksLoading, error } = useTasks({
     _sort: '-_lastUpdated',
     _count: '5',
   });
@@ -312,7 +201,7 @@ const RecentActivity: React.FC = () => {
  * Displays today's upcoming appointments using real FHIR data
  */
 const UpcomingAppointments: React.FC = () => {
-  const { data: appointments, isLoading: appointmentsLoading, error } = useAppointmentsMedplum();
+  const { data: appointments, isLoading: appointmentsLoading, error } = useAppointments();
 
   if (appointmentsLoading) {
     return (
@@ -395,7 +284,7 @@ const UpcomingAppointments: React.FC = () => {
  * Main Dashboard Page Component - Medplum Integration
  */
 const DashboardMedplumPage: React.FC = () => {
-  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useDashboardMetricsMedplum();
+  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useDashboardMetrics();
 
   if (metricsLoading) {
     return (
@@ -414,7 +303,7 @@ const DashboardMedplumPage: React.FC = () => {
     return (
       <Container size="xl" py="md">
         <Alert icon={<AlertCircle size={16} />} title="FHIR Server Error" color="red">
-          Failed to load dashboard metrics from the Medplum FHIR server. Please check your connection and server status.
+          Failed to load dashboard metrics: {metricsError.message || 'Please check your connection and server status.'}
         </Alert>
       </Container>
     );
@@ -450,27 +339,27 @@ const DashboardMedplumPage: React.FC = () => {
             color="blue"
           />
           <MetricCard
-            title="Today's Appointments"
-            value={metrics?.todayAppointments || 0}
+            title="Total Appointments"
+            value={metrics?.totalAppointments || 0}
             change="Live updates"
             changeType="neutral"
             icon={<Calendar size={20} />}
             color="green"
           />
           <MetricCard
-            title="Active Tasks"
-            value={metrics?.activeTasks || 0}
+            title="Pending Appointments"
+            value={metrics?.pendingAppointments || 0}
             change="FHIR integrated"
             changeType="neutral"
             icon={<Activity size={20} />}
             color="orange"
           />
           <MetricCard
-            title="Pending Orders"
-            value={metrics?.pendingOrders || 0}
+            title="Total Revenue"
+            value={`$${metrics?.totalRevenue || 0}`}
             change="Real-time updates"
             changeType="neutral"
-            icon={<FileText size={20} />}
+            icon={<DollarSign size={20} />}
             color="teal"
           />
         </SimpleGrid>

@@ -345,6 +345,11 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
 export const PatientsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [genderFilter, setGenderFilter] = useState<string | null>(null);
+  const [insuranceFilter, setInsuranceFilter] = useState<string | null>(null);
+  const [ageRangeFilter, setAgeRangeFilter] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<string>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [editPatient, setEditPatient] = useState<Patient | null>(null);
@@ -356,6 +361,11 @@ export const PatientsPage: React.FC = () => {
   const { data: patients, isLoading, error } = usePatients({
     search: searchQuery,
     status: statusFilter,
+    gender: genderFilter,
+    insurance: insuranceFilter,
+    ageRange: ageRangeFilter,
+    sortBy: sortBy,
+    sortOrder: sortOrder,
     page: currentPage,
     limit: 12,
   });
@@ -378,6 +388,18 @@ export const PatientsPage: React.FC = () => {
   const handleCreatePatient = () => {
     openCreateModal();
   };
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter(null);
+    setGenderFilter(null);
+    setInsuranceFilter(null);
+    setAgeRangeFilter(null);
+    setSortBy('name');
+    setSortOrder('asc');
+    setCurrentPage(1);
+  };
+
   const filteredPatients = patients?.data || [];
   const totalPages = Math.ceil((patients?.total || 0) / 12);
 
@@ -403,49 +425,124 @@ export const PatientsPage: React.FC = () => {
           </Button>
         </Group>
 
-        {/* Filters and Search */}
+        {/* Enhanced Filters and Search */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Grid align="end">
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-              <TextInput
-                placeholder="Search patients..."
-                leftSection={<Search size={16} />}
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.currentTarget.value)}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-              <Select
-                placeholder="Filter by status"
-                leftSection={<Filter size={16} />}
-                data={[
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
-                ]}
-                value={statusFilter}
-                onChange={setStatusFilter}
-                clearable
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, md: 5 }}>
-              <Group justify="flex-end">
-                <Button.Group>
-                  <Button
-                    variant={viewMode === 'cards' ? 'filled' : 'light'}
-                    onClick={() => setViewMode('cards')}
-                  >
-                    Cards
+          <Stack gap="md">
+            {/* Primary Search Row */}
+            <Grid align="end">
+              <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+                <TextInput
+                  placeholder="Search patients..."
+                  leftSection={<Search size={16} />}
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.currentTarget.value)}
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+                <Select
+                  placeholder="Filter by status"
+                  leftSection={<Filter size={16} />}
+                  data={[
+                    { value: 'active', label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' },
+                  ]}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  clearable
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, md: 5 }}>
+                <Group justify="flex-end">
+                  <Button variant="light" onClick={handleClearFilters}>
+                    Clear Filters
                   </Button>
+                  <Button.Group>
+                    <Button
+                      variant={viewMode === 'cards' ? 'filled' : 'light'}
+                      onClick={() => setViewMode('cards')}
+                    >
+                      Cards
+                    </Button>
+                    <Button
+                      variant={viewMode === 'table' ? 'filled' : 'light'}
+                      onClick={() => setViewMode('table')}
+                    >
+                      Table
+                    </Button>
+                  </Button.Group>
+                </Group>
+              </Grid.Col>
+            </Grid>
+
+            {/* Advanced Filters Row */}
+            <Grid align="end">
+              <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+                <Select
+                  placeholder="Filter by gender"
+                  data={[
+                    { value: 'male', label: 'Male' },
+                    { value: 'female', label: 'Female' },
+                  ]}
+                  value={genderFilter}
+                  onChange={setGenderFilter}
+                  clearable
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+                <Select
+                  placeholder="Filter by age range"
+                  data={[
+                    { value: '0-18', label: '0-18 years' },
+                    { value: '19-35', label: '19-35 years' },
+                    { value: '36-50', label: '36-50 years' },
+                    { value: '51-65', label: '51-65 years' },
+                    { value: '65+', label: '65+ years' },
+                  ]}
+                  value={ageRangeFilter}
+                  onChange={setAgeRangeFilter}
+                  clearable
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+                <Select
+                  placeholder="Filter by insurance"
+                  data={[
+                    { value: 'Blue Cross Blue Shield', label: 'Blue Cross Blue Shield' },
+                    { value: 'Aetna', label: 'Aetna' },
+                    { value: 'United Healthcare', label: 'United Healthcare' },
+                    { value: 'Cigna', label: 'Cigna' },
+                    { value: 'Kaiser Permanente', label: 'Kaiser Permanente' },
+                    { value: 'Harvard Pilgrim', label: 'Harvard Pilgrim' },
+                    { value: 'Anthem', label: 'Anthem' },
+                  ]}
+                  value={insuranceFilter}
+                  onChange={setInsuranceFilter}
+                  clearable
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+                <Group>
+                  <Select
+                    placeholder="Sort by"
+                    data={[
+                      { value: 'name', label: 'Name' },
+                      { value: 'age', label: 'Age' },
+                      { value: 'lastVisit', label: 'Last Visit' },
+                      { value: 'createdAt', label: 'Date Added' },
+                    ]}
+                    value={sortBy}
+                    onChange={(value) => setSortBy(value || 'name')}
+                  />
                   <Button
-                    variant={viewMode === 'table' ? 'filled' : 'light'}
-                    onClick={() => setViewMode('table')}
+                    variant="light"
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   >
-                    Table
+                    {sortOrder === 'asc' ? '↑' : '↓'}
                   </Button>
-                </Button.Group>
-              </Group>
-            </Grid.Col>
-          </Grid>
+                </Group>
+              </Grid.Col>
+            </Grid>
+          </Stack>
         </Card>
 
         {/* Loading State */}

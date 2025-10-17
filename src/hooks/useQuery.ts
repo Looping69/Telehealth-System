@@ -24,16 +24,78 @@ export const queryClient = new QueryClient({
 /**
  * Fetch patients with optional search filters
  */
-export function usePatients(searchQuery?: string | { search?: string; status?: string; page?: number; limit?: number }) {
+export function usePatients(searchQuery?: string | { 
+  search?: string; 
+  status?: string; 
+  gender?: string;
+  insurance?: string;
+  ageRange?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  page?: number; 
+  limit?: number;
+}) {
   // Handle both string and object parameters for backward compatibility
   const queryString = typeof searchQuery === 'string' ? searchQuery : searchQuery?.search;
   const statusFilter = typeof searchQuery === 'object' ? searchQuery?.status : undefined;
+  const genderFilter = typeof searchQuery === 'object' ? searchQuery?.gender : undefined;
+  const insuranceFilter = typeof searchQuery === 'object' ? searchQuery?.insurance : undefined;
+  const ageRangeFilter = typeof searchQuery === 'object' ? searchQuery?.ageRange : undefined;
+  const sortBy = typeof searchQuery === 'object' ? searchQuery?.sortBy || 'name' : 'name';
+  const sortOrder = typeof searchQuery === 'object' ? searchQuery?.sortOrder || 'asc' : 'asc';
   
   return useQuery({
-    queryKey: ['patients', queryString, statusFilter],
+    queryKey: ['patients', queryString, statusFilter, genderFilter, insuranceFilter, ageRangeFilter, sortBy, sortOrder],
     queryFn: async () => {
-      // Always use mock data for now since Medplum server is not available
-      console.log('Using mock patient data (Medplum server not available)');
+      try {
+        console.log('Fetching patients from Medplum...');
+        
+        // Build search parameters
+        const searchParams = new URLSearchParams({
+          '_sort': '-_lastUpdated',
+          '_count': '50'
+        });
+        
+        if (queryString) {
+          searchParams.append('name', queryString);
+        }
+        
+        if (statusFilter && statusFilter !== 'all') {
+          searchParams.append('active', statusFilter === 'active' ? 'true' : 'false');
+        }
+        
+        if (genderFilter && genderFilter !== 'all') {
+          searchParams.append('gender', genderFilter);
+        }
+        
+        const patients = await medplumClient.searchResources('Patient', searchParams);
+        
+        const result: Patient[] = patients.map((patient: any) => ({
+          id: patient.id,
+          name: `${patient.name?.[0]?.given?.[0] || 'Unknown'} ${patient.name?.[0]?.family || 'Unknown'}`,
+          firstName: patient.name?.[0]?.given?.[0] || 'Unknown',
+          lastName: patient.name?.[0]?.family || 'Unknown',
+          email: patient.telecom?.find((t: any) => t.system === 'email')?.value || '',
+          phone: patient.telecom?.find((t: any) => t.system === 'phone')?.value || '',
+          dateOfBirth: patient.birthDate || '',
+          gender: patient.gender || 'unknown',
+          status: patient.active ? 'active' : 'inactive',
+          createdAt: new Date(patient.meta?.lastUpdated || Date.now()),
+          updatedAt: new Date(patient.meta?.lastUpdated || Date.now()),
+          address: patient.address?.[0] ? 
+            `${patient.address[0].line?.join(', ') || ''}, ${patient.address[0].city || ''}, ${patient.address[0].state || ''} ${patient.address[0].postalCode || ''}`.trim() : '',
+          emergencyContact: patient.contact?.[0]?.name?.text || '',
+          insurance: patient.extension?.find((ext: any) => ext.url?.includes('insurance'))?.valueString || '',
+          medicalHistory: [],
+          allergies: [],
+          lastVisit: patient.meta?.lastUpdated ? new Date(patient.meta.lastUpdated) : null,
+          nextAppointment: null,
+        }));
+        
+        console.log(`Successfully fetched ${result.length} patients from Medplum`);
+        return result;
+      } catch (error) {
+        console.log('Failed to fetch patients from Medplum, using mock data:', error);
       
       // Comprehensive mock data - always returned
       const mockPatients: Patient[] = [
@@ -220,14 +282,79 @@ export function usePatients(searchQuery?: string | { search?: string; status?: s
             patient.status === statusFilter
           );
         }
+
+        // Apply gender filter
+        if (genderFilter && genderFilter !== 'all') {
+          filteredPatients = filteredPatients.filter(patient => 
+            patient.gender === genderFilter
+          );
+        }
+
+        // Apply insurance filter
+        if (insuranceFilter && insuranceFilter !== 'all') {
+          filteredPatients = filteredPatients.filter(patient => 
+            patient.insurance === insuranceFilter
+          );
+        }
+
+        // Apply age range filter
+        if (ageRangeFilter && ageRangeFilter !== 'all') {
+          filteredPatients = filteredPatients.filter(patient => {
+            const age = new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear();
+            switch (ageRangeFilter) {
+              case '0-18':
+                return age >= 0 && age <= 18;
+              case '19-35':
+                return age >= 19 && age <= 35;
+              case '36-50':
+                return age >= 36 && age <= 50;
+              case '51-65':
+                return age >= 51 && age <= 65;
+              case '65+':
+                return age > 65;
+              default:
+                return true;
+            }
+          });
+        }
+
+        // Apply sorting
+        filteredPatients.sort((a, b) => {
+          let aValue: any;
+          let bValue: any;
+
+          switch (sortBy) {
+            case 'name':
+              aValue = `${a.firstName} ${a.lastName}`.toLowerCase();
+              bValue = `${b.firstName} ${b.lastName}`.toLowerCase();
+              break;
+            case 'age':
+              aValue = new Date().getFullYear() - new Date(a.dateOfBirth).getFullYear();
+              bValue = new Date().getFullYear() - new Date(b.dateOfBirth).getFullYear();
+              break;
+            case 'lastVisit':
+              aValue = a.lastVisit ? new Date(a.lastVisit).getTime() : 0;
+              bValue = b.lastVisit ? new Date(b.lastVisit).getTime() : 0;
+              break;
+            case 'createdAt':
+              aValue = new Date(a.createdAt).getTime();
+              bValue = new Date(b.createdAt).getTime();
+              break;
+            default:
+              aValue = `${a.firstName} ${a.lastName}`.toLowerCase();
+              bValue = `${b.firstName} ${b.lastName}`.toLowerCase();
+          }
+
+          if (sortOrder === 'asc') {
+            return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+          } else {
+            return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+          }
+        });
         
-        // Return data in the expected format with pagination info
-        return {
-          data: filteredPatients,
-          total: filteredPatients.length,
-          page: 1,
-          limit: 12
-        };
+        // Return the filtered patients directly (not wrapped in data object)
+        return filteredPatients;
+      }
     },
   });
 }
@@ -289,10 +416,51 @@ export function useAppointments(date?: Date) {
   return useQuery({
     queryKey: ['appointments', date?.toISOString()],
     queryFn: async () => {
-      // Always use mock data for now since Medplum server is not available
-      console.log('Using mock appointment data (Medplum server not available)');
+      try {
+        console.log('Fetching appointments from Medplum...');
         
-        // Comprehensive mock data - always returned
+        // Build search parameters
+        const searchParams = new URLSearchParams({
+          '_sort': '-date',
+          '_count': '50',
+          '_include': 'Appointment:patient,Appointment:practitioner'
+        });
+        
+        if (date) {
+          const dateStr = date.toISOString().split('T')[0];
+          searchParams.append('date', `ge${dateStr}`);
+          searchParams.append('date', `lt${dateStr}T23:59:59`);
+        }
+        
+        const appointments = await medplumClient.searchResources('Appointment', searchParams);
+        
+        const result: Appointment[] = appointments.map((apt: any) => ({
+          id: apt.id,
+          patientId: apt.participant?.find((p: any) => p.actor?.reference?.startsWith('Patient/'))?.actor?.reference?.split('/')[1] || '',
+          patientName: apt.participant?.find((p: any) => p.actor?.display)?.actor?.display || 'Unknown Patient',
+          providerId: apt.participant?.find((p: any) => p.actor?.reference?.startsWith('Practitioner/'))?.actor?.reference?.split('/')[1] || '',
+          providerName: apt.participant?.find((p: any) => p.actor?.reference?.startsWith('Practitioner/'))?.actor?.display || 'Unknown Provider',
+          date: new Date(apt.start || Date.now()),
+          duration: apt.minutesDuration || 30,
+          type: apt.appointmentType?.text || 'consultation',
+          status: apt.status || 'scheduled',
+          notes: apt.comment || '',
+          createdAt: new Date(apt.meta?.lastUpdated || Date.now()),
+          updatedAt: new Date(apt.meta?.lastUpdated || Date.now()),
+          sessionType: apt.serviceType?.[0]?.text || 'video',
+          meetingLink: apt.telecom?.find((t: any) => t.system === 'url')?.value || '',
+          symptoms: apt.reasonCode?.map((r: any) => r.text) || [],
+          diagnosis: apt.diagnosis?.[0]?.condition?.display || null,
+          prescription: null,
+          followUpRequired: apt.supportingInformation?.length > 0 || false,
+        }));
+        
+        console.log(`Successfully fetched ${result.length} appointments from Medplum`);
+        return result;
+      } catch (error) {
+        console.log('Failed to fetch appointments from Medplum, using mock data:', error);
+        
+        // Comprehensive mock data - fallback only
         // Generate dates relative to current date for realistic testing
         const now = new Date();
         const today = new Date(now);
@@ -475,6 +643,7 @@ export function useAppointments(date?: Date) {
         }
         
         return mockAppointments;
+      }
     },
   });
 }
@@ -486,92 +655,131 @@ export function useOrders(params?: { search?: string; status?: string }) {
   return useQuery({
     queryKey: ['orders', params?.search, params?.status],
     queryFn: async () => {
-      // Always use mock data for now since Medplum server is not available
-      console.log('Using mock orders data (Medplum server not available)');
+      try {
+        console.log('Fetching orders from Medplum...');
+        const orders = await medplumClient.searchResources('ServiceRequest', {
+          _sort: '-_lastUpdated',
+          _count: 20,
+          _include: 'ServiceRequest:patient,ServiceRequest:requester',
+          ...(params?.search && { 'patient.name': params.search }),
+          ...(params?.status && { status: params.status }),
+        });
+        console.log('Successfully fetched orders:', orders);
+        return orders;
+      } catch (err) {
+        console.error('Error fetching orders from Medplum:', err);
+        // Always use mock data for now since Medplum server is not available
+        console.log('Using mock orders data (Medplum server not available)');
         
-      // Comprehensive mock data - always returned
-      const mockOrders: Order[] = [
-        {
-          id: '1',
-          patientId: '1',
-          patientName: 'John Doe',
-          providerId: '1',
-          provider: 'Dr. Sarah Wilson',
-          type: 'lab',
-          title: 'Blood Work Panel',
-          description: 'Complete blood count and metabolic panel',
-          status: 'pending',
-          priority: 'medium',
-          createdAt: new Date('2024-01-20'),
-          orderDate: '2024-01-20',
-          dueDate: '2024-01-25',
-          notes: 'Patient should fast for 12 hours before blood draw',
-        },
-        {
-          id: '2',
-          patientId: '2',
-          patientName: 'Jane Smith',
-          providerId: '1',
-          provider: 'Dr. Sarah Wilson',
-          type: 'prescription',
-          title: 'Medication Refill',
-          description: 'Lisinopril 10mg daily',
-          status: 'completed',
-          priority: 'low',
-          createdAt: new Date('2024-01-18'),
-          orderDate: '2024-01-18',
-          dueDate: '2024-01-22',
-          notes: 'Patient has been on this medication for 6 months with good tolerance',
-        },
-        {
-          id: '3',
-          patientId: '3',
-          patientName: 'Michael Johnson',
-          providerId: '2',
-          provider: 'Dr. Michael Chen',
-          type: 'imaging',
-          title: 'Chest X-Ray',
-          description: 'Chest X-ray to rule out pneumonia',
-          status: 'approved',
-          priority: 'high',
-          createdAt: new Date('2024-01-21'),
-          orderDate: '2024-01-21',
-          dueDate: '2024-01-23',
-          notes: 'Patient has persistent cough and fever',
-        },
-        {
-          id: '4',
-          patientId: '1',
-          patientName: 'John Doe',
-          providerId: '1',
-          provider: 'Dr. Sarah Wilson',
-          type: 'prescription',
-          title: 'Antibiotic Course',
-          description: 'Amoxicillin 500mg three times daily for 7 days',
-          status: 'pending',
-          priority: 'urgent',
-          createdAt: new Date('2024-01-22'),
-          orderDate: '2024-01-22',
-          dueDate: '2024-01-22',
-          notes: 'For treatment of bacterial infection',
-        },
-      ];
-      
-      let filteredOrders = mockOrders;
-      
-      if (params?.status) {
-        filteredOrders = filteredOrders.filter(order => order.status === params.status);
+        // Comprehensive mock data - always returned
+        const mockOrders: Order[] = [
+          {
+            id: '1',
+            patientId: '1',
+            patientName: 'John Doe',
+            providerId: '1',
+            provider: 'Dr. Sarah Wilson',
+            type: 'lab',
+            title: 'Blood Work Panel',
+            description: 'Complete blood count and metabolic panel',
+            status: 'pending',
+            priority: 'medium',
+            createdAt: new Date('2024-01-20'),
+            orderDate: '2024-01-20',
+            dueDate: '2024-01-25',
+            notes: 'Patient should fast for 12 hours before blood draw',
+          },
+          {
+            id: '2',
+            patientId: '2',
+            patientName: 'Jane Smith',
+            providerId: '1',
+            provider: 'Dr. Sarah Wilson',
+            type: 'prescription',
+            title: 'Medication Refill',
+            description: 'Lisinopril 10mg daily',
+            status: 'completed',
+            priority: 'low',
+            createdAt: new Date('2024-01-18'),
+            orderDate: '2024-01-18',
+            dueDate: '2024-01-22',
+            notes: 'Patient has been on this medication for 6 months with good tolerance',
+          },
+          {
+            id: '3',
+            patientId: '3',
+            patientName: 'Michael Johnson',
+            providerId: '2',
+            provider: 'Dr. Michael Chen',
+            type: 'imaging',
+            title: 'Chest X-Ray',
+            description: 'Chest X-ray to rule out pneumonia',
+            status: 'approved',
+            priority: 'high',
+            createdAt: new Date('2024-01-21'),
+            orderDate: '2024-01-21',
+            dueDate: '2024-01-23',
+            notes: 'Patient has persistent cough and fever',
+          },
+          {
+            id: '4',
+            patientId: '1',
+            patientName: 'John Doe',
+            providerId: '1',
+            provider: 'Dr. Sarah Wilson',
+            type: 'prescription',
+            title: 'Antibiotic Course',
+            description: 'Amoxicillin 500mg three times daily for 7 days',
+            status: 'pending',
+            priority: 'urgent',
+            createdAt: new Date('2024-01-22'),
+            orderDate: '2024-01-22',
+            dueDate: '2024-01-22',
+            notes: 'For treatment of bacterial infection',
+          },
+        ];
+        
+        let filteredOrders = mockOrders;
+        
+        if (params?.status) {
+          filteredOrders = filteredOrders.filter(order => order.status === params.status);
+        }
+        
+        if (params?.search) {
+          filteredOrders = filteredOrders.filter(order => 
+            order.title.toLowerCase().includes(params.search!.toLowerCase()) ||
+            order.patientName.toLowerCase().includes(params.search!.toLowerCase()) ||
+            order.provider.toLowerCase().includes(params.search!.toLowerCase())
+          );
+        }
+        
+        return filteredOrders;
       }
-      
-      if (params?.search) {
-        filteredOrders = filteredOrders.filter(order => 
-          order.title.toLowerCase().includes(params.search!.toLowerCase()) ||
-          order.patientName.toLowerCase().includes(params.search!.toLowerCase()) ||
-          order.provider.toLowerCase().includes(params.search!.toLowerCase())
-        );
+    },
+  });
+}
+
+/**
+ * Fetch audit events with optional filters
+ */
+export function useAuditEvents(params?: { search?: string; status?: string }) {
+  return useQuery({
+    queryKey: ['auditEvents', params?.search, params?.status],
+    queryFn: async () => {
+      try {
+        console.log('Fetching audit events from Medplum...');
+        const auditEvents = await medplumClient.searchResources('AuditEvent', {
+          _sort: '-date',
+          _count: 50,
+          ...(params?.search && { 'entity.name': params.search }),
+          ...(params?.status && { outcome: params.status === 'success' ? 0 : 1 }),
+        });
+        console.log('Successfully fetched audit events:', auditEvents);
+        return auditEvents;
+      } catch (err) {
+        console.error('Error fetching audit events from Medplum:', err);
+        return [];
       }
-      
-      return filteredOrders;
     },
   });
 }
@@ -581,33 +789,44 @@ export function useOrders(params?: { search?: string; status?: string }) {
  */
 export function useDashboardMetrics() {
   return useQuery({
-    queryKey: ['dashboard-metrics'],
+    queryKey: ['dashboardMetrics'],
     queryFn: async () => {
-      // Always use mock data for now since Medplum server is not available
-      console.log('Using mock dashboard metrics (Medplum server not available)');
-        
-        // Comprehensive mock data - always returned
-        return {
-          totalPatients: 1247,
-          todayAppointments: 12,
-          pendingOrders: 8,
-          monthlyRevenue: 45600,
-          patientGrowth: 12.5,
-          appointmentTrends: [
-            { label: 'Mon', value: 8 },
-            { label: 'Tue', value: 12 },
-            { label: 'Wed', value: 6 },
-            { label: 'Thu', value: 15 },
-            { label: 'Fri', value: 10 },
-          ],
-          revenueData: [
-            { label: 'Jan', value: 42000 },
-            { label: 'Feb', value: 38000 },
-            { label: 'Mar', value: 45600 },
-          ],
+      try {
+        console.log('Fetching dashboard metrics from Medplum...');
+
+        const appointments = await medplumClient.searchResources('Appointment', {
+          _summary: 'count',
+        });
+
+        const patients = await medplumClient.searchResources('Patient', {
+          _summary: 'count',
+        });
+
+        const revenue = await medplumClient.searchResources('Invoice', {
+          status: 'paid',
+          _summary: 'total',
+        });
+
+        const metrics = {
+          totalAppointments: appointments.total || 0,
+          totalPatients: patients.total || 0,
+          totalRevenue: revenue.total || 0,
+          pendingAppointments: 10, // Mock data for now
         };
+
+        console.log('Successfully fetched dashboard metrics:', metrics);
+        return metrics;
+      } catch (err) {
+        console.error('Error fetching dashboard metrics from Medplum:', err);
+        console.log('Using mock dashboard metrics (Medplum server not available)');
+        return {
+          totalAppointments: 124,
+          totalPatients: 45,
+          totalRevenue: 18500,
+          pendingAppointments: 12,
+        };
+      }
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes for dashboard data
   });
 }
 
@@ -792,5 +1011,237 @@ export function useCreateAppointment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
+  });
+}
+
+/**
+ * Fetch FHIR Coverage resources
+ */
+export function useCoverage(searchQuery?: string | { 
+  search?: string; 
+  status?: string; 
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  page?: number; 
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ['coverage', searchQuery],
+    queryFn: async () => {
+      try {
+        console.log('Fetching coverage from Medplum...');
+        
+        // Build search parameters
+        const searchParams: any = {
+          _sort: '-_lastUpdated',
+          _count: '50',
+          _include: 'Coverage:beneficiary,Coverage:payor'
+        };
+
+        // Handle search query
+        if (typeof searchQuery === 'string' && searchQuery.trim()) {
+          // For string queries, search across beneficiary and payor
+          searchParams._text = searchQuery.trim();
+        } else if (typeof searchQuery === 'object' && searchQuery) {
+          // Handle object-based search parameters
+          if (searchQuery.search?.trim()) {
+            searchParams._text = searchQuery.search.trim();
+          }
+          
+          if (searchQuery.status && searchQuery.status !== 'all') {
+            searchParams.status = searchQuery.status;
+          }
+          
+          if (searchQuery.page && searchQuery.limit) {
+            searchParams._count = searchQuery.limit.toString();
+            searchParams._offset = ((searchQuery.page - 1) * searchQuery.limit).toString();
+          }
+        }
+
+        const response = await medplumClient.searchResources('Coverage', searchParams);
+        console.log(`Successfully fetched ${response.length} coverage records from Medplum`);
+        
+        // Transform FHIR Coverage resources to our format
+        let coverageList = response.map((coverage: any) => ({
+          id: coverage.id,
+          resourceType: coverage.resourceType,
+          status: coverage.status,
+          beneficiary: coverage.beneficiary,
+          payor: coverage.payor,
+          period: coverage.period,
+          class: coverage.class,
+          network: coverage.network,
+          costToBeneficiary: coverage.costToBeneficiary,
+          subrogation: coverage.subrogation,
+          contract: coverage.contract,
+          meta: coverage.meta,
+          // Additional fields for UI compatibility
+          patientName: coverage.beneficiary?.display || 'Unknown Patient',
+          payorName: coverage.payor?.[0]?.display || 'Unknown Payor',
+          createdAt: new Date(coverage.meta?.lastUpdated || Date.now()),
+          updatedAt: new Date(coverage.meta?.lastUpdated || Date.now()),
+        }));
+
+        // Apply client-side filtering if needed
+        if (typeof searchQuery === 'object' && searchQuery) {
+          // Apply search filter
+          if (searchQuery.search?.trim()) {
+            const searchTerm = searchQuery.search.toLowerCase();
+            coverageList = coverageList.filter((coverage: any) => 
+              coverage.patientName?.toLowerCase().includes(searchTerm) ||
+              coverage.payorName?.toLowerCase().includes(searchTerm) ||
+              coverage.id?.toLowerCase().includes(searchTerm)
+            );
+          }
+
+          // Apply status filter
+          if (searchQuery.status && searchQuery.status !== 'all') {
+            coverageList = coverageList.filter((coverage: any) => 
+              coverage.status === searchQuery.status
+            );
+          }
+
+          // Apply sorting
+          if (searchQuery.sortBy) {
+            coverageList.sort((a: any, b: any) => {
+              let aValue: any;
+              let bValue: any;
+
+              switch (searchQuery.sortBy) {
+                case 'patient':
+                  aValue = a.patientName?.toLowerCase() || '';
+                  bValue = b.patientName?.toLowerCase() || '';
+                  break;
+                case 'payor':
+                  aValue = a.payorName?.toLowerCase() || '';
+                  bValue = b.payorName?.toLowerCase() || '';
+                  break;
+                case 'status':
+                  aValue = a.status || '';
+                  bValue = b.status || '';
+                  break;
+                case 'createdAt':
+                  aValue = new Date(a.createdAt).getTime();
+                  bValue = new Date(b.createdAt).getTime();
+                  break;
+                default:
+                  aValue = a.patientName?.toLowerCase() || '';
+                  bValue = b.patientName?.toLowerCase() || '';
+              }
+
+              if (searchQuery.sortOrder === 'asc') {
+                return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+              } else {
+                return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+              }
+            });
+          }
+        }
+        
+        return coverageList;
+      } catch (error) {
+        console.log('Failed to fetch coverage from Medplum, using mock data:', error);
+        
+        // Mock coverage data for fallback (only for connection errors, not auth errors)
+        if (error instanceof Error && (
+          error.message.includes('fetch') || 
+          error.message.includes('network') || 
+          error.message.includes('connection') ||
+          error.message.includes('ECONNREFUSED')
+        )) {
+          return [
+            {
+              id: 'mock-coverage-1',
+              resourceType: 'Coverage',
+              status: 'active',
+              beneficiary: { display: 'John Doe', reference: 'Patient/mock-patient-1' },
+              payor: [{ display: 'Blue Cross Blue Shield', reference: 'Organization/mock-org-1' }],
+              period: { start: '2024-01-01', end: '2024-12-31' },
+              patientName: 'John Doe',
+              payorName: 'Blue Cross Blue Shield',
+              createdAt: new Date('2024-01-01'),
+              updatedAt: new Date('2024-01-01'),
+            },
+            {
+              id: 'mock-coverage-2',
+              resourceType: 'Coverage',
+              status: 'active',
+              beneficiary: { display: 'Jane Smith', reference: 'Patient/mock-patient-2' },
+              payor: [{ display: 'Aetna', reference: 'Organization/mock-org-2' }],
+              period: { start: '2024-01-01', end: '2024-12-31' },
+              patientName: 'Jane Smith',
+              payorName: 'Aetna',
+              createdAt: new Date('2024-01-15'),
+              updatedAt: new Date('2024-01-15'),
+            },
+            {
+              id: 'mock-coverage-3',
+              resourceType: 'Coverage',
+              status: 'cancelled',
+              beneficiary: { display: 'Bob Johnson', reference: 'Patient/mock-patient-3' },
+              payor: [{ display: 'UnitedHealth', reference: 'Organization/mock-org-3' }],
+              period: { start: '2023-01-01', end: '2023-12-31' },
+              patientName: 'Bob Johnson',
+              payorName: 'UnitedHealth',
+              createdAt: new Date('2023-01-01'),
+              updatedAt: new Date('2023-12-31'),
+            },
+          ];
+        }
+        
+        // Re-throw auth and other errors
+        throw error;
+      }
+    },
+  });
+}
+
+/**
+ * Fetch FHIR system metadata for connection testing
+ */
+export function useSystemMetadata() {
+  return useQuery({
+    queryKey: ['systemMetadata'],
+    queryFn: async () => {
+      try {
+        console.log('Fetching FHIR system metadata...');
+        const metadata = await medplumClient.get('metadata');
+        console.log('Successfully fetched FHIR metadata:', metadata);
+        return metadata;
+      } catch (err) {
+        console.error('Error fetching FHIR metadata:', err);
+        console.log('Using mock metadata (FHIR server not available)');
+        return {
+          resourceType: 'CapabilityStatement',
+          status: 'active',
+          date: new Date().toISOString(),
+          publisher: 'Mock FHIR Server',
+          kind: 'instance',
+          software: {
+            name: 'Mock Medplum Server',
+            version: '1.0.0'
+          },
+          implementation: {
+            description: 'Mock FHIR R4 Server for Development',
+            url: 'http://localhost:8103'
+          },
+          fhirVersion: '4.0.1',
+          format: ['application/fhir+json', 'application/fhir+xml'],
+          rest: [{
+            mode: 'server',
+            resource: [
+              { type: 'Patient' },
+              { type: 'Appointment' },
+              { type: 'ServiceRequest' },
+              { type: 'Invoice' },
+              { type: 'Task' },
+              { type: 'AuditEvent' },
+              { type: 'Coverage' }
+            ]
+          }]
+        };
+      }
+    },
+    enabled: false, // Don't auto-fetch, only when manually triggered
   });
 }

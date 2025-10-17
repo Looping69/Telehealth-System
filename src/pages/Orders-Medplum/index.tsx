@@ -3,7 +3,7 @@
  * Manages medical orders, prescriptions, and lab requests using FHIR data
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Container,
   Grid,
@@ -45,8 +45,8 @@ import {
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { medplumClient } from '../../config/medplum';
 import { ServiceRequest, MedicationRequest } from '@medplum/fhirtypes';
+import { useOrders } from '../../hooks/useQuery';
 
 type FHIROrder = ServiceRequest | MedicationRequest;
 
@@ -367,9 +367,6 @@ const FHIROrderDetailsModal: React.FC<FHIROrderDetailsModalProps> = ({
  * Main Orders-Medplum Page Component
  */
 const OrdersMedplumPage: React.FC = () => {
-  const [orders, setOrders] = useState<FHIROrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -379,71 +376,11 @@ const OrdersMedplumPage: React.FC = () => {
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
   const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
 
-  // Fetch FHIR orders (ServiceRequest and MedicationRequest)
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch both ServiceRequest and MedicationRequest resources
-        const [serviceRequests, medicationRequests] = await Promise.all([
-          medplumClient.search('ServiceRequest', {
-            _sort: '-authored',
-            _count: '25',
-            _include: 'ServiceRequest:patient,ServiceRequest:requester'
-          }),
-          medplumClient.search('MedicationRequest', {
-            _sort: '-authored',
-            _count: '25',
-            _include: 'MedicationRequest:patient,MedicationRequest:requester'
-          })
-        ]);
-
-        const allOrders: FHIROrder[] = [];
-
-        if (serviceRequests.entry) {
-          const serviceRequestData = serviceRequests.entry
-            .filter(entry => entry.resource?.resourceType === 'ServiceRequest')
-            .map(entry => entry.resource as ServiceRequest);
-          allOrders.push(...serviceRequestData);
-        }
-
-        if (medicationRequests.entry) {
-          const medicationRequestData = medicationRequests.entry
-            .filter(entry => entry.resource?.resourceType === 'MedicationRequest')
-            .map(entry => entry.resource as MedicationRequest);
-          allOrders.push(...medicationRequestData);
-        }
-
-        // Sort by authored date
-        allOrders.sort((a, b) => {
-          const dateA = a.resourceType === 'MedicationRequest' 
-            ? (a as MedicationRequest).authoredOn 
-            : (a as ServiceRequest).authoredOn;
-          const dateB = b.resourceType === 'MedicationRequest' 
-            ? (b as MedicationRequest).authoredOn 
-            : (b as ServiceRequest).authoredOn;
-          
-          if (!dateA && !dateB) return 0;
-          if (!dateA) return 1;
-          if (!dateB) return -1;
-          
-          return new Date(dateB).getTime() - new Date(dateA).getTime();
-        });
-
-        setOrders(allOrders);
-      } catch (err) {
-        console.error('Error fetching FHIR orders:', err);
-        setError('Failed to fetch orders from FHIR server. Please check your connection.');
-        setOrders([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, []);
+  // Use the standardized useOrders hook
+  const { data: orders = [], isLoading: loading, error } = useOrders({
+    search: searchTerm || undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined
+  });
 
   // Filter orders
   const filteredOrders = useMemo(() => {
@@ -518,7 +455,7 @@ const OrdersMedplumPage: React.FC = () => {
         {/* Error Alert */}
         {error && (
           <Alert icon={<AlertCircle size={16} />} color="red" variant="light">
-            {error}
+            Failed to fetch orders: {error.message || 'Please check your connection.'}
           </Alert>
         )}
 

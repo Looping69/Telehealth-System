@@ -32,6 +32,7 @@ import {
   Progress,
   Avatar,
   Divider,
+  SegmentedControl,
 } from '@mantine/core';
 import {
   Search,
@@ -626,7 +627,12 @@ export const AuditPage: React.FC = () => {
 
   // Get unique actions and users for filters
   const uniqueActions = Array.from(new Set(auditLogs.map(log => log.action)));
-  const uniqueUsers = Array.from(new Set(auditLogs.map(log => ({ id: log.userId, name: log.userName }))));
+  const userOptions = Array.from(new Set(auditLogs.map(log => log.userId)))
+    .map(userId => {
+      const user = auditLogs.find(log => log.userId === userId);
+      return { value: userId, label: user ? user.userName : userId };
+    });
+
 
   return (
     <Container size="xl" py="md">
@@ -700,29 +706,21 @@ export const AuditPage: React.FC = () => {
                     <Select
                       placeholder="Filter by user"
                       leftSection={<User size={16} />}
-                      data={uniqueUsers.map(user => ({ value: user.id, label: user.name }))}
+                      data={userOptions}
                       value={userFilter}
                       onChange={setUserFilter}
                       clearable
                     />
                   </Grid.Col>
                   <Grid.Col span={{ base: 12, sm: 6, md: 2.4 }}>
-                    <Button.Group>
-                      <Button
-                        variant={viewMode === 'cards' ? 'filled' : 'light'}
-                        onClick={() => setViewMode('cards')}
-                        size="sm"
-                      >
-                        Cards
-                      </Button>
-                      <Button
-                        variant={viewMode === 'table' ? 'filled' : 'light'}
-                        onClick={() => setViewMode('table')}
-                        size="sm"
-                      >
-                        Table
-                      </Button>
-                    </Button.Group>
+                  <SegmentedControl
+                    value={viewMode}
+                    onChange={setViewMode}
+                    data={[
+                      { label: 'Cards', value: 'cards' },
+                      { label: 'Table', value: 'table' },
+                    ]}
+                  />
                   </Grid.Col>
                 </Grid>
               </Card>
@@ -1026,7 +1024,3 @@ const AuditLogCard: React.FC<AuditLogCardProps> = ({ log, onViewDetails }) => {
     </Card>
   );
 };
-
-/**
- * Audit Log Row Component
- */

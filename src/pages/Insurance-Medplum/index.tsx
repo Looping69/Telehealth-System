@@ -3,7 +3,7 @@
  * Manages insurance coverage using FHIR data
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Container,
   Grid,
@@ -35,8 +35,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { medplumClient } from '../../config/medplum';
 import { Coverage } from '@medplum/fhirtypes';
+import { useCoverage } from '../../hooks/useQuery';
 
 /**
  * FHIR Coverage Card Component
@@ -147,9 +147,6 @@ const FHIRCoverageCard: React.FC<FHIRCoverageCardProps> = ({ coverage, onView, o
  * Main Insurance-Medplum Page Component
  */
 const InsuranceMedplumPage: React.FC = () => {
-  const [coverages, setCoverages] = useState<Coverage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedCoverage, setSelectedCoverage] = useState<Coverage | null>(null);
@@ -158,53 +155,14 @@ const InsuranceMedplumPage: React.FC = () => {
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
   const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
 
-  // Fetch FHIR coverages
-  useEffect(() => {
-    const fetchCoverages = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Use the standardized useCoverage hook
+  const { data: coverages = [], isLoading: loading, error } = useCoverage({
+    search: searchTerm,
+    status: statusFilter,
+  });
 
-        const response = await medplumClient.search('Coverage', {
-          _sort: '-period',
-          _count: '50',
-          _include: 'Coverage:beneficiary,Coverage:payor'
-        });
-
-        if (response.entry) {
-          const coverageData = response.entry
-            .filter(entry => entry.resource?.resourceType === 'Coverage')
-            .map(entry => entry.resource as Coverage);
-          
-          setCoverages(coverageData);
-        } else {
-          setCoverages([]);
-        }
-      } catch (err) {
-        console.error('Error fetching FHIR coverages:', err);
-        setError('Failed to fetch insurance coverage from FHIR server. Please check your connection.');
-        setCoverages([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCoverages();
-  }, []);
-
-  // Filter coverages
-  const filteredCoverages = useMemo(() => {
-    return coverages.filter(coverage => {
-      const matchesSearch = !searchTerm || 
-        coverage.beneficiary?.display?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        coverage.payor?.[0]?.display?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        coverage.id?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus = statusFilter === 'all' || coverage.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [coverages, searchTerm, statusFilter]);
+  // The useCoverage hook already handles filtering, so we can use the data directly
+  const filteredCoverages = coverages;
 
   const handleViewCoverage = (coverage: Coverage) => {
     setSelectedCoverage(coverage);
@@ -252,7 +210,7 @@ const InsuranceMedplumPage: React.FC = () => {
         {/* Error Alert */}
         {error && (
           <Alert icon={<AlertCircle size={16} />} color="red" variant="light">
-            {error}
+            {error.message || 'Failed to fetch insurance coverage from FHIR server. Please check your connection.'}
           </Alert>
         )}
 
