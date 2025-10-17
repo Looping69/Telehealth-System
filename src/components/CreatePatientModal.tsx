@@ -19,6 +19,7 @@ import {
 import { DateInput } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
+import { useCreatePatient } from '../hooks/useQuery';
 
 interface CreatePatientModalProps {
   opened: boolean;
@@ -51,8 +52,10 @@ interface PatientFormData {
 export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({
   opened,
   onClose,
+  onPatientCreated,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const createPatientMutation = useCreatePatient();
 
   const form = useForm<PatientFormData>({
     initialValues: {
@@ -97,11 +100,26 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({
   const handleSubmit = async (values: PatientFormData) => {
     setIsSubmitting(true);
     try {
-      // TODO: Implement actual patient creation API call
-      console.log('Creating patient:', values);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Transform form data to match Patient interface
+      const patientData = {
+        name: `${values.firstName} ${values.lastName}`,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        phone: values.phone,
+        dateOfBirth: values.dateOfBirth?.toISOString().split('T')[0] || '',
+        gender: values.gender,
+        status: 'active' as const,
+        address: `${values.address.street}, ${values.address.city}, ${values.address.state} ${values.address.zipCode}`,
+        emergencyContact: values.emergencyContact,
+        insurance: values.insurance.provider,
+        medicalHistory: [],
+        allergies: [],
+        lastVisit: null,
+        nextAppointment: null,
+      };
+
+      const createdPatient = await createPatientMutation.mutateAsync(patientData);
       
       notifications.show({
         title: 'Success',
@@ -109,12 +127,18 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({
         color: 'green',
       });
       
+      // Call the callback if provided
+      if (onPatientCreated) {
+        onPatientCreated(createdPatient);
+      }
+      
       form.reset();
       onClose();
     } catch (error) {
+      console.error('Failed to create patient:', error);
       notifications.show({
         title: 'Error',
-        message: 'Failed to create patient',
+        message: 'Failed to create patient. Please try again.',
         color: 'red',
       });
     } finally {

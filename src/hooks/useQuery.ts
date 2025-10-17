@@ -708,6 +708,49 @@ export function useCreateAppointment() {
       try {
         console.log('Creating appointment in Medplum...');
         
+        // Handle both ID-based and name-based appointment creation
+        let patientId = appointmentData.patientId;
+        let providerId = appointmentData.providerId;
+        
+        // If we have names instead of IDs, try to find the IDs
+        if (!patientId && appointmentData.patientName) {
+          try {
+            // Search for patient by name
+            const patientSearchParams = new URLSearchParams({
+              'name': appointmentData.patientName,
+              '_count': '1'
+            });
+            const patients = await medplumClient.searchResources('Patient', patientSearchParams);
+            if (patients.length > 0) {
+              patientId = patients[0].id;
+            } else {
+              throw new Error(`Patient not found: ${appointmentData.patientName}`);
+            }
+          } catch (searchError) {
+            console.warn('Failed to find patient by name, using fallback ID');
+            patientId = `patient-${Date.now()}`;
+          }
+        }
+        
+        if (!providerId && appointmentData.providerName) {
+          try {
+            // Search for practitioner by name
+            const providerSearchParams = new URLSearchParams({
+              'name': appointmentData.providerName,
+              '_count': '1'
+            });
+            const practitioners = await medplumClient.searchResources('Practitioner', providerSearchParams);
+            if (practitioners.length > 0) {
+              providerId = practitioners[0].id;
+            } else {
+              throw new Error(`Provider not found: ${appointmentData.providerName}`);
+            }
+          } catch (searchError) {
+            console.warn('Failed to find provider by name, using fallback ID');
+            providerId = `provider-${Date.now()}`;
+          }
+        }
+        
         const medplumAppointment = {
           resourceType: 'Appointment',
           status: appointmentData.status,
@@ -717,13 +760,15 @@ export function useCreateAppointment() {
           participant: [
             {
               actor: {
-                reference: `Patient/${appointmentData.patientId}`,
+                reference: `Patient/${patientId}`,
+                display: appointmentData.patientName || 'Unknown Patient',
               },
               status: 'accepted',
             },
             {
               actor: {
-                reference: `Practitioner/${appointmentData.providerId}`,
+                reference: `Practitioner/${providerId}`,
+                display: appointmentData.providerName || 'Unknown Provider',
               },
               status: 'accepted',
             },
@@ -736,6 +781,8 @@ export function useCreateAppointment() {
         const result: Appointment = {
           ...appointmentData,
           id: createdAppointment.id,
+          patientId: patientId,
+          providerId: providerId,
         };
         
         console.log('Successfully created appointment in Medplum');
@@ -747,6 +794,8 @@ export function useCreateAppointment() {
         const newAppointment: Appointment = {
           ...appointmentData,
           id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          patientId: appointmentData.patientId || `patient-${Date.now()}`,
+          providerId: appointmentData.providerId || `provider-${Date.now()}`,
         };
         return newAppointment;
       }

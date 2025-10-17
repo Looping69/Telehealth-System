@@ -101,9 +101,10 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
       form.reset();
       onClose();
     } catch (error) {
+      console.error('Failed to create appointment:', error);
       notifications.show({
         title: 'Error',
-        message: 'Failed to schedule appointment. Please try again.',
+        message: error instanceof Error ? error.message : 'Failed to schedule appointment. Please try again.',
         color: 'red',
       });
     } finally {
