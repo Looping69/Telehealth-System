@@ -38,7 +38,8 @@ import {
   Send,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { medplumClient } from '../../config/medplum';
+import { useCommunications, useCreateCommunication } from '../../hooks/useQuery';
+import { CreateMessageModal } from '../../components/CreateMessageModal';
 import { Communication } from '@medplum/fhirtypes';
 
 /**
@@ -158,9 +159,6 @@ const FHIRCommunicationCard: React.FC<FHIRCommunicationCardProps> = ({ communica
  * Main Messages-Medplum Page Component
  */
 const MessagesMedplumPage: React.FC = () => {
-  const [communications, setCommunications] = useState<Communication[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedCommunication, setSelectedCommunication] = useState<Communication | null>(null);
@@ -170,53 +168,25 @@ const MessagesMedplumPage: React.FC = () => {
   const [composeOpened, { open: openCompose, close: closeCompose }] = useDisclosure(false);
   const [replyOpened, { open: openReply, close: closeReply }] = useDisclosure(false);
 
-  // Fetch FHIR communications
-  useEffect(() => {
-    const fetchCommunications = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Use the new hooks for data fetching
+  const { 
+    data: communications = [], 
+    isLoading: loading, 
+    error: queryError 
+  } = useCommunications({
+    search: searchTerm,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    _sort: '-sent',
+    _count: '50',
+  });
 
-        const response = await medplumClient.search('Communication', {
-          _sort: '-sent',
-          _count: '50',
-          _include: 'Communication:sender,Communication:recipient'
-        });
+  const createCommunication = useCreateCommunication();
 
-        if (response.entry) {
-          const communicationData = response.entry
-            .filter(entry => entry.resource?.resourceType === 'Communication')
-            .map(entry => entry.resource as Communication);
-          
-          setCommunications(communicationData);
-        } else {
-          setCommunications([]);
-        }
-      } catch (err) {
-        console.error('Error fetching FHIR communications:', err);
-        setError('Failed to fetch messages from FHIR server. Please check your connection.');
-        setCommunications([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Convert query error to string for display
+  const error = queryError ? 'Failed to fetch messages. Please check your connection.' : null;
 
-    fetchCommunications();
-  }, []);
-
-  // Filter communications
-  const filteredCommunications = useMemo(() => {
-    return communications.filter(communication => {
-      const matchesSearch = !searchTerm || 
-        communication.sender?.display?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        communication.recipient?.[0]?.display?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        communication.payload?.[0]?.contentString?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus = statusFilter === 'all' || communication.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [communications, searchTerm, statusFilter]);
+  // Filter communications (filtering is now handled by the hook, but we keep this for additional client-side filtering if needed)
+  const filteredCommunications = communications;
 
   const handleViewCommunication = (communication: Communication) => {
     setSelectedCommunication(communication);
@@ -233,58 +203,22 @@ const MessagesMedplumPage: React.FC = () => {
     if (!selectedCommunication || !replyMessage.trim()) return;
 
     try {
-      // Create a new Communication resource as a reply
-      const replyData: Communication = {
-        resourceType: 'Communication',
-        status: 'completed',
-        category: [
-          {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/communication-category',
-                code: 'notification',
-                display: 'Notification'
-              }
-            ]
-          }
-        ],
-        subject: selectedCommunication.subject,
-        sender: selectedCommunication.recipient?.[0],
-        recipient: [selectedCommunication.sender!],
-        sent: new Date().toISOString(),
-        payload: [
-          {
-            contentString: replyMessage
-          }
-        ],
-        inResponseTo: [
-          {
-            reference: `Communication/${selectedCommunication.id}`
-          }
-        ]
-      };
-
-      await medplumClient.createResource(replyData);
-      
-      // Refresh communications list
-      const response = await medplumClient.search('Communication', {
-        _sort: '-sent',
-        _count: '50'
+      // Use the createCommunication hook to send reply
+      await createCommunication.mutateAsync({
+        recipientId: selectedCommunication.sender?.reference?.split('/')[1] || '',
+        recipientName: selectedCommunication.sender?.display || 'Unknown',
+        recipientType: selectedCommunication.sender?.reference?.startsWith('Patient/') ? 'Patient' : 'Practitioner',
+        message: replyMessage.trim(),
+        category: 'notification',
+        priority: 'routine',
+        senderName: 'Healthcare Provider',
+        senderId: 'practitioner-1',
       });
-
-      if (response.entry) {
-        const communicationData = response.entry
-          .filter(entry => entry.resource?.resourceType === 'Communication')
-          .map(entry => entry.resource as Communication);
-        
-        setCommunications(communicationData);
-      }
 
       closeReply();
       setReplyMessage('');
     } catch (err) {
       console.error('Error sending reply:', err);
-      setError('Failed to send reply. Please try again.');
     }
   };
 
@@ -446,16 +380,10 @@ const MessagesMedplumPage: React.FC = () => {
         </Modal>
 
         {/* Compose Message Modal */}
-        <Modal
+        <CreateMessageModal
           opened={composeOpened}
           onClose={closeCompose}
-          title="Compose New FHIR Communication"
-          size="lg"
-        >
-          <Alert icon={<AlertCircle size={16} />} color="blue" variant="light">
-            FHIR communication creation requires specific implementation for Communication resources.
-          </Alert>
-        </Modal>
+        />
 
         {/* Reply Modal */}
         <Modal
@@ -485,6 +413,7 @@ const MessagesMedplumPage: React.FC = () => {
                   leftSection={<Send size={16} />}
                   onClick={handleSendReply}
                   disabled={!replyMessage.trim()}
+                  loading={createCommunication.isPending}
                 >
                   Send Reply
                 </Button>

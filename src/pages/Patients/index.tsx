@@ -74,11 +74,11 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onView, onEdit }) =>
         <Group justify="space-between" align="flex-start">
           <Group>
             <Avatar size="lg" radius="xl" color="blue">
-              {getInitials(patient.firstName, patient.lastName)}
+              {getInitials(patient.firstName || '', patient.lastName || '')}
             </Avatar>
             <Stack gap={4}>
               <Text fw={500} size="lg">
-                {patient.firstName} {patient.lastName}
+                {patient.firstName || ''} {patient.lastName || ''}
               </Text>
               <Group gap="xs">
                 <Text size="sm" c="dimmed">
@@ -174,17 +174,17 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={`${patient.firstName} ${patient.lastName}`}
+      title={`${patient.firstName || ''} ${patient.lastName || ''}`}
       size="lg"
     >
       <Stack gap="md">
         <Group>
           <Avatar size="xl" radius="xl" color="blue">
-            {patient.firstName.charAt(0)}{patient.lastName.charAt(0)}
+            {(patient.firstName || '').charAt(0)}{(patient.lastName || '').charAt(0)}
           </Avatar>
           <Stack gap={4}>
             <Title order={3}>
-              {patient.firstName} {patient.lastName}
+              {patient.firstName || ''} {patient.lastName || ''}
             </Title>
             <Group gap="xs">
               <Badge color={patient.status === 'active' ? 'green' : 'gray'}>
@@ -587,10 +587,10 @@ export const PatientsPage: React.FC = () => {
                         <Table.Td>
                           <Group gap="sm">
                             <Avatar size="sm" radius="xl" color="blue">
-                              {patient.firstName.charAt(0)}{patient.lastName.charAt(0)}
+                              {(patient.firstName || '').charAt(0)}{(patient.lastName || '').charAt(0)}
                             </Avatar>
                             <Text size="sm" fw={500}>
-                              {patient.firstName} {patient.lastName}
+                              {patient.firstName || ''} {patient.lastName || ''}
                             </Text>
                           </Group>
                         </Table.Td>

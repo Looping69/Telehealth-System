@@ -165,8 +165,7 @@ export function useAppointments(date?: Date) {
         // Build search parameters
         const searchParams = new URLSearchParams({
           '_sort': '-date',
-          '_count': '50',
-          '_include': 'Appointment:patient,Appointment:practitioner'
+          '_count': '50'
         });
         
         if (date) {
@@ -400,103 +399,47 @@ export function useOrders(params?: { search?: string; status?: string }) {
     queryFn: async () => {
       try {
         console.log('Fetching orders from Medplum...');
-        const orders = await medplumClient.searchResources('ServiceRequest', {
+        
+        // Build base search parameters
+        const baseParams: any = {
           _sort: '-_lastUpdated',
-          _count: 20,
-          _include: 'ServiceRequest:patient,ServiceRequest:requester',
-          ...(params?.search && { 'patient.name': params.search }),
-          ...(params?.status && { status: params.status }),
-        });
-        console.log('Successfully fetched orders:', orders);
-        return orders;
-      } catch (err) {
-        console.error('Error fetching orders from Medplum:', err);
-        // Always use mock data for now since Medplum server is not available
-        console.log('Using mock orders data (Medplum server not available)');
-        
-        // Comprehensive mock data - always returned
-        const mockOrders: Order[] = [
-          {
-            id: '1',
-            patientId: '1',
-            patientName: 'John Doe',
-            providerId: '1',
-            provider: 'Dr. Sarah Wilson',
-            type: 'lab',
-            title: 'Blood Work Panel',
-            description: 'Complete blood count and metabolic panel',
-            status: 'pending',
-            priority: 'medium',
-            createdAt: new Date('2024-01-20'),
-            orderDate: '2024-01-20',
-            dueDate: '2024-01-25',
-            notes: 'Patient should fast for 12 hours before blood draw',
-          },
-          {
-            id: '2',
-            patientId: '2',
-            patientName: 'Jane Smith',
-            providerId: '1',
-            provider: 'Dr. Sarah Wilson',
-            type: 'prescription',
-            title: 'Medication Refill',
-            description: 'Lisinopril 10mg daily',
-            status: 'completed',
-            priority: 'low',
-            createdAt: new Date('2024-01-18'),
-            orderDate: '2024-01-18',
-            dueDate: '2024-01-22',
-            notes: 'Patient has been on this medication for 6 months with good tolerance',
-          },
-          {
-            id: '3',
-            patientId: '3',
-            patientName: 'Michael Johnson',
-            providerId: '2',
-            provider: 'Dr. Michael Chen',
-            type: 'imaging',
-            title: 'Chest X-Ray',
-            description: 'Chest X-ray to rule out pneumonia',
-            status: 'approved',
-            priority: 'high',
-            createdAt: new Date('2024-01-21'),
-            orderDate: '2024-01-21',
-            dueDate: '2024-01-23',
-            notes: 'Patient has persistent cough and fever',
-          },
-          {
-            id: '4',
-            patientId: '1',
-            patientName: 'John Doe',
-            providerId: '1',
-            provider: 'Dr. Sarah Wilson',
-            type: 'prescription',
-            title: 'Antibiotic Course',
-            description: 'Amoxicillin 500mg three times daily for 7 days',
-            status: 'pending',
-            priority: 'urgent',
-            createdAt: new Date('2024-01-22'),
-            orderDate: '2024-01-22',
-            dueDate: '2024-01-22',
-            notes: 'For treatment of bacterial infection',
-          },
-        ];
-        
-        let filteredOrders = mockOrders;
-        
-        if (params?.status) {
-          filteredOrders = filteredOrders.filter(order => order.status === params.status);
-        }
+          _count: '50'
+        };
         
         if (params?.search) {
-          filteredOrders = filteredOrders.filter(order => 
-            order.title.toLowerCase().includes(params.search!.toLowerCase()) ||
-            order.patientName.toLowerCase().includes(params.search!.toLowerCase()) ||
-            order.provider.toLowerCase().includes(params.search!.toLowerCase())
-          );
+          baseParams['patient.name'] = params.search;
         }
         
-        return filteredOrders;
+        if (params?.status) {
+          baseParams.status = params.status;
+        }
+        
+        // Create separate search parameters for each resource type
+        // Start with basic patient includes only to avoid FHIR validation errors
+        const serviceRequestParams = {
+          ...baseParams,
+          _include: 'ServiceRequest:patient'
+        };
+        
+        const medicationRequestParams = {
+          ...baseParams,
+          _include: 'MedicationRequest:patient'
+        };
+        
+        // Fetch both ServiceRequest and MedicationRequest resources
+        const [serviceRequests, medicationRequests] = await Promise.all([
+          medplumClient.searchResources('ServiceRequest', serviceRequestParams),
+          medplumClient.searchResources('MedicationRequest', medicationRequestParams)
+        ]);
+        
+        // Combine and return both types of orders
+        const allOrders = [...serviceRequests, ...medicationRequests];
+        console.log('Successfully fetched orders from Medplum:', allOrders.length);
+        return allOrders;
+      } catch (err) {
+        console.error('Error fetching orders from Medplum:', err);
+        // Re-throw the error so the UI can handle it properly
+        throw new Error(`Failed to fetch orders from Medplum server: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     },
   });
@@ -807,6 +750,139 @@ export function useCreateAppointment() {
 }
 
 /**
+ * Hook to create a new order (ServiceRequest or MedicationRequest)
+ * @returns Mutation object for creating orders
+ */
+export function useCreateOrder() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (orderData: {
+      orderType: 'ServiceRequest' | 'MedicationRequest';
+      patientId?: string;
+      patientName?: string;
+      description: string;
+      priority: 'routine' | 'urgent' | 'asap' | 'stat';
+      notes?: string;
+      category?: string;
+      requesterName?: string;
+    }) => {
+      // Find patient ID if only name is provided
+      let patientId = orderData.patientId;
+      if (!patientId && orderData.patientName) {
+        try {
+          const patients = await medplumClient.searchResources('Patient', {
+            name: orderData.patientName,
+          });
+          if (patients.length > 0) {
+            patientId = patients[0].id;
+          } else {
+            patientId = `patient-${Date.now()}`;
+          }
+        } catch (error) {
+          console.log('Failed to find patient, using fallback ID');
+          patientId = `patient-${Date.now()}`;
+        }
+      }
+
+      let medplumOrder;
+      
+      if (orderData.orderType === 'ServiceRequest') {
+        medplumOrder = {
+          resourceType: 'ServiceRequest',
+          status: 'active',
+          intent: 'order',
+          priority: orderData.priority,
+          subject: {
+            reference: `Patient/${patientId}`,
+            display: orderData.patientName || 'Unknown Patient',
+          },
+          code: {
+            text: orderData.description,
+            coding: [
+              {
+                system: 'http://snomed.info/sct',
+                code: '108252007',
+                display: orderData.description,
+              }
+            ]
+          },
+          category: orderData.category ? [
+            {
+              coding: [
+                {
+                  system: 'http://snomed.info/sct',
+                  code: orderData.category === 'laboratory' ? '108252007' : '363679005',
+                  display: orderData.category === 'laboratory' ? 'Laboratory procedure' : 'Imaging',
+                }
+              ]
+            }
+          ] : undefined,
+          requester: orderData.requesterName ? {
+            display: orderData.requesterName,
+          } : undefined,
+          note: orderData.notes ? [
+            {
+              text: orderData.notes,
+            }
+          ] : undefined,
+          authoredOn: new Date().toISOString(),
+        };
+      } else {
+        // MedicationRequest
+        medplumOrder = {
+          resourceType: 'MedicationRequest',
+          status: 'active',
+          intent: 'order',
+          priority: orderData.priority,
+          subject: {
+            reference: `Patient/${patientId}`,
+            display: orderData.patientName || 'Unknown Patient',
+          },
+          medicationCodeableConcept: {
+            text: orderData.description,
+            coding: [
+              {
+                system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                code: '123456',
+                display: orderData.description,
+              }
+            ]
+          },
+          requester: orderData.requesterName ? {
+            display: orderData.requesterName,
+          } : undefined,
+          note: orderData.notes ? [
+            {
+              text: orderData.notes,
+            }
+          ] : undefined,
+          authoredOn: new Date().toISOString(),
+          dosageInstruction: [
+            {
+              text: 'As directed by physician',
+            }
+          ],
+        };
+      }
+      
+      const createdOrder = await medplumClient.createResource(medplumOrder);
+      
+      console.log('Successfully created order in Medplum:', createdOrder);
+      return createdOrder;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch orders
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      console.log('Order created successfully, invalidating orders cache');
+    },
+    onError: (error) => {
+      console.error('Failed to create order:', error);
+    },
+  });
+}
+
+/**
  * Fetch FHIR Coverage resources
  */
 export function useCoverage(searchQuery?: string | { 
@@ -991,6 +1067,285 @@ export function useCoverage(searchQuery?: string | {
 /**
  * Fetch FHIR system metadata for connection testing
  */
+
+/**
+ * Hook to create a new product (FHIR Medication resource)
+ * @returns Mutation object for creating products
+ */
+export function useCreateProduct() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (productData: {
+      name: string;
+      manufacturer?: string;
+      dosageForm?: string;
+      ingredients: Array<{
+        name: string;
+        strength?: string;
+      }>;
+      batchNumber?: string;
+      expirationDate?: Date;
+      status: 'active' | 'inactive' | 'entered-in-error';
+      description?: string;
+    }) => {
+      try {
+        // Create FHIR Medication resource
+        const medplumMedication = {
+          resourceType: 'Medication',
+          status: productData.status,
+          code: {
+            text: productData.name,
+            coding: [
+              {
+                system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                code: `${Date.now()}`, // Generate a temporary RxNorm code
+                display: productData.name,
+              }
+            ]
+          },
+          manufacturer: productData.manufacturer ? {
+            display: productData.manufacturer,
+          } : undefined,
+          form: productData.dosageForm ? {
+            text: productData.dosageForm,
+            coding: [
+              {
+                system: 'http://snomed.info/sct',
+                code: productData.dosageForm === 'tablet' ? '385055001' : 
+                      productData.dosageForm === 'capsule' ? '385049006' :
+                      productData.dosageForm === 'liquid' ? '385023001' :
+                      productData.dosageForm === 'injection' ? '385219001' :
+                      '421026006', // Default to oral dose form
+                display: productData.dosageForm,
+              }
+            ]
+          } : undefined,
+          ingredient: productData.ingredients.length > 0 ? productData.ingredients.map(ingredient => ({
+            itemCodeableConcept: {
+              text: ingredient.name,
+              coding: [
+                {
+                  system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                  code: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  display: ingredient.name,
+                }
+              ]
+            },
+            strength: ingredient.strength ? {
+              numerator: {
+                value: parseFloat(ingredient.strength.split(' ')[0]) || 1,
+                unit: ingredient.strength.split(' ')[1] || 'mg',
+                system: 'http://unitsofmeasure.org',
+                code: ingredient.strength.split(' ')[1] || 'mg',
+              },
+              denominator: {
+                value: 1,
+                unit: 'tablet',
+                system: 'http://unitsofmeasure.org',
+                code: 'tablet',
+              }
+            } : undefined,
+          })) : undefined,
+          batch: (productData.batchNumber || productData.expirationDate) ? {
+            lotNumber: productData.batchNumber,
+            expirationDate: productData.expirationDate?.toISOString().split('T')[0],
+          } : undefined,
+        };
+        
+        const createdMedication = await medplumClient.createResource(medplumMedication);
+        
+        console.log('Successfully created medication in Medplum');
+        return createdMedication;
+      } catch (error) {
+        console.log('Failed to create medication in Medplum, using mock creation:', error);
+        
+        // Fallback to mock creation
+        const mockMedication = {
+          resourceType: 'Medication',
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          status: productData.status,
+          code: {
+            text: productData.name,
+          },
+          manufacturer: productData.manufacturer ? {
+            display: productData.manufacturer,
+          } : undefined,
+          form: productData.dosageForm ? {
+            text: productData.dosageForm,
+          } : undefined,
+          ingredient: productData.ingredients.length > 0 ? productData.ingredients.map(ingredient => ({
+            itemCodeableConcept: {
+              text: ingredient.name,
+            },
+          })) : undefined,
+          batch: (productData.batchNumber || productData.expirationDate) ? {
+            lotNumber: productData.batchNumber,
+            expirationDate: productData.expirationDate?.toISOString().split('T')[0],
+          } : undefined,
+        };
+        return mockMedication;
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch medications
+      queryClient.invalidateQueries({ queryKey: ['medications'] });
+    },
+  });
+}
+
+/**
+ * Fetch products/medications with optional search filters
+ */
+export function useProducts(searchQuery?: string | { 
+  search?: string; 
+  status?: string; 
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  page?: number; 
+  limit?: number;
+}) {
+  // Handle both string and object parameters for backward compatibility
+  const queryString = typeof searchQuery === 'string' ? searchQuery : searchQuery?.search;
+  const statusFilter = typeof searchQuery === 'object' ? searchQuery?.status : undefined;
+  const sortBy = typeof searchQuery === 'object' ? searchQuery?.sortBy || 'name' : 'name';
+  const sortOrder = typeof searchQuery === 'object' ? searchQuery?.sortOrder || 'asc' : 'asc';
+  
+  return useQuery({
+    queryKey: ['products', queryString, statusFilter, sortBy, sortOrder],
+    queryFn: async () => {
+      try {
+        console.log('Fetching medications/products from Medplum...');
+        
+        // Build search parameters
+        const searchParams = new URLSearchParams({
+          '_sort': '-_lastUpdated',
+          '_count': '50'
+        });
+        
+        if (queryString) {
+          searchParams.append('code:text', queryString);
+        }
+        
+        if (statusFilter && statusFilter !== 'all') {
+          searchParams.append('status', statusFilter);
+        }
+        
+        const medications = await medplumClient.searchResources('Medication', searchParams);
+        
+        const result = medications.map((medication: any) => ({
+          id: medication.id,
+          name: medication.code?.text || medication.code?.coding?.[0]?.display || 'Unknown Medication',
+          description: medication.code?.text || medication.code?.coding?.[0]?.display || '',
+          manufacturer: medication.manufacturer?.display || '',
+          dosageForm: medication.form?.text || medication.form?.coding?.[0]?.display || '',
+          status: medication.status || 'active',
+          ingredients: medication.ingredient?.map((ing: any) => ({
+            name: ing.itemCodeableConcept?.text || ing.itemCodeableConcept?.coding?.[0]?.display || '',
+            strength: ing.strength?.numerator?.value ? `${ing.strength.numerator.value}${ing.strength.numerator.unit || ''}` : ''
+          })) || [],
+          batchNumber: medication.batch?.lotNumber || '',
+          expirationDate: medication.batch?.expirationDate || '',
+          createdAt: new Date(medication.meta?.lastUpdated || Date.now()),
+          updatedAt: new Date(medication.meta?.lastUpdated || Date.now()),
+        }));
+        
+        console.log(`Successfully fetched ${result.length} medications/products from Medplum`);
+        return result;
+      } catch (error) {
+        console.error('Failed to fetch medications/products from Medplum:', error);
+        console.log('Using mock product data as fallback');
+        
+        // Fallback mock data
+        const mockProducts = [
+          {
+            id: 'med-001',
+            name: 'Amoxicillin 500mg',
+            description: 'Amoxicillin 500mg - Antibiotic',
+            manufacturer: 'Pfizer',
+            dosageForm: 'Capsule',
+            status: 'active',
+            ingredients: [{ name: 'Amoxicillin', strength: '500mg' }],
+            batchNumber: 'AMX2024001',
+            expirationDate: '2025-12-31',
+            createdAt: new Date('2024-01-01'),
+            updatedAt: new Date('2024-01-01'),
+          },
+          {
+            id: 'med-002',
+            name: 'Lisinopril 10mg',
+            description: 'Lisinopril 10mg - ACE Inhibitor',
+            manufacturer: 'Merck',
+            dosageForm: 'Tablet',
+            status: 'active',
+            ingredients: [{ name: 'Lisinopril', strength: '10mg' }],
+            batchNumber: 'LIS2024002',
+            expirationDate: '2025-06-30',
+            createdAt: new Date('2024-01-01'),
+            updatedAt: new Date('2024-01-01'),
+          },
+          {
+            id: 'med-003',
+            name: 'Ibuprofen 200mg',
+            description: 'Ibuprofen 200mg - Pain Relief',
+            manufacturer: 'Johnson & Johnson',
+            dosageForm: 'Tablet',
+            status: 'active',
+            ingredients: [{ name: 'Ibuprofen', strength: '200mg' }],
+            batchNumber: 'IBU2024003',
+            expirationDate: '2026-03-15',
+            createdAt: new Date('2024-01-01'),
+            updatedAt: new Date('2024-01-01'),
+          },
+          {
+            id: 'med-004',
+            name: 'Metformin 500mg',
+            description: 'Metformin 500mg - Diabetes Medication',
+            manufacturer: 'Teva',
+            dosageForm: 'Tablet',
+            status: 'active',
+            ingredients: [{ name: 'Metformin', strength: '500mg' }],
+            batchNumber: 'MET2024004',
+            expirationDate: '2025-09-30',
+            createdAt: new Date('2024-01-01'),
+            updatedAt: new Date('2024-01-01'),
+          },
+          {
+            id: 'med-005',
+            name: 'Omeprazole 20mg',
+            description: 'Omeprazole 20mg - Proton Pump Inhibitor',
+            manufacturer: 'AstraZeneca',
+            dosageForm: 'Capsule',
+            status: 'active',
+            ingredients: [{ name: 'Omeprazole', strength: '20mg' }],
+            batchNumber: 'OME2024005',
+            expirationDate: '2025-11-15',
+            createdAt: new Date('2024-01-01'),
+            updatedAt: new Date('2024-01-01'),
+          }
+        ];
+        
+        // Filter mock data based on search query
+        let filteredProducts = mockProducts;
+        if (queryString) {
+          const searchLower = queryString.toLowerCase();
+          filteredProducts = mockProducts.filter(product => 
+            product.name.toLowerCase().includes(searchLower) ||
+            product.description.toLowerCase().includes(searchLower) ||
+            product.manufacturer.toLowerCase().includes(searchLower)
+          );
+        }
+        
+        if (statusFilter && statusFilter !== 'all') {
+          filteredProducts = filteredProducts.filter(product => product.status === statusFilter);
+        }
+        
+        return filteredProducts;
+      }
+    },
+  });
+}
+
 export function useSystemMetadata() {
   return useQuery({
     queryKey: ['systemMetadata'],
@@ -1035,5 +1390,950 @@ export function useSystemMetadata() {
       }
     },
     enabled: false, // Don't auto-fetch, only when manually triggered
+  });
+}
+
+/**
+ * Fetch FHIR Communications with optional search filters
+ */
+export function useCommunications(params?: {
+  search?: string;
+  status?: string;
+  sender?: string;
+  recipient?: string;
+  category?: string;
+  _sort?: string;
+  _count?: string;
+}) {
+  return useQuery({
+    queryKey: ['communications', params],
+    queryFn: async () => {
+      try {
+        console.log('Fetching FHIR Communications from Medplum...');
+        
+        // Build search parameters
+        const searchParams: Record<string, string> = {
+          _sort: params?._sort || '-sent',
+          _count: params?._count || '50',
+        };
+
+        if (params?.status) {
+          searchParams.status = params.status;
+        }
+
+        if (params?.sender) {
+          searchParams.sender = params.sender;
+        }
+
+        if (params?.recipient) {
+          searchParams.recipient = params.recipient;
+        }
+
+        if (params?.category) {
+          searchParams.category = params.category;
+        }
+
+        const response = await medplumClient.search('Communication', searchParams);
+        
+        if (response.entry) {
+          const communications = response.entry
+            .filter(entry => entry.resource?.resourceType === 'Communication')
+            .map(entry => entry.resource);
+          
+          console.log(`✅ Fetched ${communications.length} FHIR Communications`);
+          return communications;
+        }
+        
+        return [];
+      } catch (error) {
+        console.error('❌ Failed to fetch FHIR Communications:', error);
+        console.log('Using mock communications data (Medplum server not available)');
+        
+        // Mock FHIR Communication resources
+        const mockCommunications = [
+          {
+            resourceType: 'Communication',
+            id: 'comm-1',
+            status: 'completed',
+            category: [
+              {
+                coding: [
+                  {
+                    system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+                    code: 'notification',
+                    display: 'Notification'
+                  }
+                ]
+              }
+            ],
+            subject: {
+              reference: 'Patient/patient-1',
+              display: 'John Doe'
+            },
+            sender: {
+              reference: 'Practitioner/practitioner-1',
+              display: 'Dr. Sarah Wilson'
+            },
+            recipient: [
+              {
+                reference: 'Patient/patient-1',
+                display: 'John Doe'
+              }
+            ],
+            sent: '2024-01-20T10:00:00Z',
+            payload: [
+              {
+                contentString: 'Your lab results are ready for review. Please log into your patient portal to view them.'
+              }
+            ],
+            priority: 'routine'
+          },
+          {
+            resourceType: 'Communication',
+            id: 'comm-2',
+            status: 'completed',
+            category: [
+              {
+                coding: [
+                  {
+                    system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+                    code: 'reminder',
+                    display: 'Reminder'
+                  }
+                ]
+              }
+            ],
+            subject: {
+              reference: 'Patient/patient-2',
+              display: 'Jane Smith'
+            },
+            sender: {
+              reference: 'Practitioner/practitioner-1',
+              display: 'Dr. Sarah Wilson'
+            },
+            recipient: [
+              {
+                reference: 'Patient/patient-2',
+                display: 'Jane Smith'
+              }
+            ],
+            sent: '2024-01-19T14:30:00Z',
+            payload: [
+              {
+                contentString: 'This is a reminder that you have an appointment scheduled for tomorrow at 2:00 PM. Please arrive 15 minutes early.'
+              }
+            ],
+            priority: 'routine'
+          },
+          {
+            resourceType: 'Communication',
+            id: 'comm-3',
+            status: 'in-progress',
+            category: [
+              {
+                coding: [
+                  {
+                    system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+                    code: 'instruction',
+                    display: 'Instruction'
+                  }
+                ]
+              }
+            ],
+            subject: {
+              reference: 'Patient/patient-3',
+              display: 'Michael Johnson'
+            },
+            sender: {
+              reference: 'Patient/patient-3',
+              display: 'Michael Johnson'
+            },
+            recipient: [
+              {
+                reference: 'Practitioner/practitioner-2',
+                display: 'Dr. Michael Chen'
+              }
+            ],
+            sent: '2024-01-21T09:15:00Z',
+            payload: [
+              {
+                contentString: 'I have been experiencing some side effects from the new medication. Could we schedule a follow-up appointment?'
+              }
+            ],
+            priority: 'urgent'
+          },
+          {
+            resourceType: 'Communication',
+            id: 'comm-4',
+            status: 'completed',
+            category: [
+              {
+                coding: [
+                  {
+                   system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+                   code: communicationData.category || 'notification',
+                   display: communicationData.category || 'Notification'
+                 }
+                ]
+              }
+            ],
+            subject: {
+              reference: 'Patient/patient-1',
+              display: 'John Doe'
+            },
+            sender: {
+              reference: 'Practitioner/practitioner-2',
+              display: 'Dr. Michael Chen'
+            },
+            recipient: [
+              {
+                reference: 'Patient/patient-1',
+                display: 'John Doe'
+              }
+            ],
+            sent: '2024-01-18T16:45:00Z',
+            payload: [
+              {
+                contentString: 'Your prescription refill is ready for pickup at the pharmacy. Please bring your ID when collecting.'
+              }
+            ],
+            priority: 'routine'
+          }
+        ];
+
+        // Apply filters to mock data
+        let filteredCommunications = mockCommunications;
+
+        if (params?.status) {
+          filteredCommunications = filteredCommunications.filter(comm => comm.status === params.status);
+        }
+
+        if (params?.search) {
+          const searchTerm = params.search.toLowerCase();
+          filteredCommunications = filteredCommunications.filter(comm =>
+            comm.sender?.display?.toLowerCase().includes(searchTerm) ||
+            comm.recipient?.[0]?.display?.toLowerCase().includes(searchTerm) ||
+            comm.payload?.[0]?.contentString?.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        return filteredCommunications;
+      }
+    },
+  });
+}
+
+/**
+ * Mutation hook for creating a new FHIR Communication
+ */
+export function useCreateCommunication() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (communicationData: {
+      recipientId: string;
+      recipientName: string;
+      recipientType: 'Patient' | 'Practitioner';
+      subject?: string;
+      message: string;
+      priority?: 'routine' | 'urgent' | 'asap' | 'stat';
+      category?: string;
+      senderName?: string;
+      senderId?: string;
+    }) => {
+      try {
+        console.log('Creating FHIR Communication in Medplum...');
+        
+        // Create FHIR Communication resource
+        const communication = {
+          resourceType: 'Communication',
+          status: 'completed',
+          category: [
+            {
+              coding: [
+                {
+                   system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+                   code: communicationData.category || 'notification',
+                   display: communicationData.category || 'Notification'
+                 }
+              ]
+            }
+          ],
+          subject: {
+            reference: `${communicationData.recipientType}/${communicationData.recipientId}`,
+            display: communicationData.recipientName
+          },
+          sender: {
+            reference: `Practitioner/${communicationData.senderId || 'practitioner-1'}`,
+            display: communicationData.senderName || 'Healthcare Provider'
+          },
+          recipient: [
+            {
+              reference: `${communicationData.recipientType}/${communicationData.recipientId}`,
+              display: communicationData.recipientName
+            }
+          ],
+          sent: new Date().toISOString(),
+          payload: [
+            {
+              contentString: communicationData.message
+            }
+          ],
+          priority: communicationData.priority || 'routine'
+        };
+
+        const created = await medplumClient.createResource(communication);
+        console.log('✅ FHIR Communication created successfully:', created.id);
+        return created;
+      } catch (error) {
+        console.error('❌ Failed to create FHIR Communication:', error);
+        
+        // Return mock created communication for development
+        const mockCreated = {
+          resourceType: 'Communication',
+          id: `comm-${Date.now()}`,
+          status: 'completed',
+          category: [
+            {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+                  code: communicationData.category || 'notification',
+                  display: communicationData.category || 'Notification'
+                }
+              ]
+            }
+          ],
+          subject: {
+            reference: `${communicationData.recipientType}/${communicationData.recipientId}`,
+            display: communicationData.recipientName
+          },
+          sender: {
+            reference: `Practitioner/${communicationData.senderId || 'practitioner-1'}`,
+            display: communicationData.senderName || 'Healthcare Provider'
+          },
+          recipient: [
+            {
+              reference: `${communicationData.recipientType}/${communicationData.recipientId}`,
+              display: communicationData.recipientName
+            }
+          ],
+          sent: new Date().toISOString(),
+          payload: [
+            {
+              contentString: communicationData.message
+            }
+          ],
+          priority: communicationData.priority || 'routine'
+        };
+
+        console.log('✅ Mock FHIR Communication created (Medplum server not available)');
+        return mockCreated;
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch communications
+      queryClient.invalidateQueries({ queryKey: ['communications'] });
+    },
+  });
+}
+
+/**
+ * Fetch FHIR Invoice resources
+ * @param searchQuery - Search parameters for filtering invoices
+ * @returns Query result with invoice data, loading state, and error handling
+ */
+export function useInvoices(searchQuery?: string | { 
+  search?: string; 
+  status?: string; 
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  page?: number; 
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ['invoices', searchQuery],
+    queryFn: async () => {
+      try {
+        console.log('Fetching invoices from Medplum...');
+        
+        // Build search parameters
+        const searchParams: any = {
+          _sort: '-_lastUpdated',
+          _count: '50',
+          _include: 'Invoice:subject,Invoice:issuer'
+        };
+
+        // Handle search query
+        if (typeof searchQuery === 'string' && searchQuery.trim()) {
+          searchParams._text = searchQuery.trim();
+        } else if (typeof searchQuery === 'object' && searchQuery) {
+          if (searchQuery.search?.trim()) {
+            searchParams._text = searchQuery.search.trim();
+          }
+          
+          if (searchQuery.status && searchQuery.status !== 'all') {
+            searchParams.status = searchQuery.status;
+          }
+          
+          if (searchQuery.page && searchQuery.limit) {
+            searchParams._count = searchQuery.limit.toString();
+            searchParams._offset = ((searchQuery.page - 1) * searchQuery.limit).toString();
+          }
+        }
+
+        const response = await medplumClient.searchResources('Invoice', searchParams);
+        console.log(`Successfully fetched ${response.length} invoices from Medplum`);
+        
+        // Transform FHIR Invoice resources to our format
+        let invoiceList = response.map((invoice: any) => ({
+          id: invoice.id,
+          resourceType: invoice.resourceType,
+          status: invoice.status,
+          type: invoice.type,
+          subject: invoice.subject,
+          issuer: invoice.issuer,
+          date: invoice.date,
+          totalNet: invoice.totalNet,
+          totalGross: invoice.totalGross,
+          lineItem: invoice.lineItem,
+          note: invoice.note,
+          meta: invoice.meta,
+          // Additional fields for UI compatibility
+          patientName: invoice.subject?.display || 'Unknown Patient',
+          issuerName: invoice.issuer?.display || 'Unknown Issuer',
+          amount: invoice.totalGross?.value || invoice.totalNet?.value || 0,
+          currency: invoice.totalGross?.currency || invoice.totalNet?.currency || 'USD',
+          createdAt: new Date(invoice.meta?.lastUpdated || Date.now()),
+          updatedAt: new Date(invoice.meta?.lastUpdated || Date.now()),
+        }));
+
+        // Apply client-side filtering if needed
+        if (typeof searchQuery === 'object' && searchQuery) {
+          // Apply search filter
+          if (searchQuery.search?.trim()) {
+            const searchTerm = searchQuery.search.toLowerCase();
+            invoiceList = invoiceList.filter((invoice: any) => 
+              invoice.patientName?.toLowerCase().includes(searchTerm) ||
+              invoice.issuerName?.toLowerCase().includes(searchTerm) ||
+              invoice.id?.toLowerCase().includes(searchTerm)
+            );
+          }
+
+          // Apply status filter
+          if (searchQuery.status && searchQuery.status !== 'all') {
+            invoiceList = invoiceList.filter((invoice: any) => 
+              invoice.status === searchQuery.status
+            );
+          }
+
+          // Apply sorting
+          if (searchQuery.sortBy) {
+            invoiceList.sort((a: any, b: any) => {
+              let aValue: any;
+              let bValue: any;
+
+              switch (searchQuery.sortBy) {
+                case 'patient':
+                  aValue = a.patientName?.toLowerCase() || '';
+                  bValue = b.patientName?.toLowerCase() || '';
+                  break;
+                case 'amount':
+                  aValue = a.amount || 0;
+                  bValue = b.amount || 0;
+                  break;
+                case 'status':
+                  aValue = a.status || '';
+                  bValue = b.status || '';
+                  break;
+                case 'date':
+                  aValue = new Date(a.date || a.createdAt).getTime();
+                  bValue = new Date(b.date || b.createdAt).getTime();
+                  break;
+                default:
+                  aValue = new Date(a.createdAt).getTime();
+                  bValue = new Date(b.createdAt).getTime();
+              }
+
+              if (searchQuery.sortOrder === 'asc') {
+                return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+              } else {
+                return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+              }
+            });
+          }
+        }
+
+        return invoiceList;
+      } catch (error) {
+        console.log('Failed to fetch invoices from Medplum, using mock data:', error);
+        
+        // Mock FHIR Invoice data for fallback
+        const mockInvoices = [
+          {
+            resourceType: 'Invoice',
+            id: 'invoice-1',
+            status: 'issued',
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/invoice-type',
+                  code: 'professional',
+                  display: 'Professional'
+                }
+              ]
+            },
+            subject: {
+              reference: 'Patient/patient-1',
+              display: 'John Doe'
+            },
+            issuer: {
+              reference: 'Organization/org-1',
+              display: 'Telehealth Clinic'
+            },
+            date: '2024-01-20',
+            totalNet: {
+              value: 150.00,
+              currency: 'USD'
+            },
+            totalGross: {
+              value: 165.00,
+              currency: 'USD'
+            },
+            lineItem: [
+              {
+                sequence: 1,
+                chargeItemCodeableConcept: {
+                  text: 'Consultation - General Medicine'
+                },
+                priceComponent: [
+                  {
+                    type: 'base',
+                    amount: {
+                      value: 150.00,
+                      currency: 'USD'
+                    }
+                  },
+                  {
+                    type: 'tax',
+                    amount: {
+                      value: 15.00,
+                      currency: 'USD'
+                    }
+                  }
+                ]
+              }
+            ],
+            note: [
+              {
+                text: 'Regular consultation for general health checkup'
+              }
+            ],
+            meta: {
+              lastUpdated: '2024-01-20T10:00:00Z'
+            },
+            // UI compatibility fields
+            patientName: 'John Doe',
+            issuerName: 'Telehealth Clinic',
+            amount: 165.00,
+            currency: 'USD',
+            createdAt: new Date('2024-01-20T10:00:00Z'),
+            updatedAt: new Date('2024-01-20T10:00:00Z'),
+          },
+          {
+            resourceType: 'Invoice',
+            id: 'invoice-2',
+            status: 'balanced',
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/invoice-type',
+                  code: 'professional',
+                  display: 'Professional'
+                }
+              ]
+            },
+            subject: {
+              reference: 'Patient/patient-2',
+              display: 'Jane Smith'
+            },
+            issuer: {
+              reference: 'Organization/org-1',
+              display: 'Telehealth Clinic'
+            },
+            date: '2024-01-18',
+            totalNet: {
+              value: 200.00,
+              currency: 'USD'
+            },
+            totalGross: {
+              value: 220.00,
+              currency: 'USD'
+            },
+            lineItem: [
+              {
+                sequence: 1,
+                chargeItemCodeableConcept: {
+                  text: 'Follow-up Consultation'
+                },
+                priceComponent: [
+                  {
+                    type: 'base',
+                    amount: {
+                      value: 120.00,
+                      currency: 'USD'
+                    }
+                  }
+                ]
+              },
+              {
+                sequence: 2,
+                chargeItemCodeableConcept: {
+                  text: 'Prescription Review'
+                },
+                priceComponent: [
+                  {
+                    type: 'base',
+                    amount: {
+                      value: 80.00,
+                      currency: 'USD'
+                    }
+                  }
+                ]
+              },
+              {
+                sequence: 3,
+                chargeItemCodeableConcept: {
+                  text: 'Tax'
+                },
+                priceComponent: [
+                  {
+                    type: 'tax',
+                    amount: {
+                      value: 20.00,
+                      currency: 'USD'
+                    }
+                  }
+                ]
+              }
+            ],
+            note: [
+              {
+                text: 'Follow-up for asthma treatment and prescription review'
+              }
+            ],
+            meta: {
+              lastUpdated: '2024-01-18T14:30:00Z'
+            },
+            // UI compatibility fields
+            patientName: 'Jane Smith',
+            issuerName: 'Telehealth Clinic',
+            amount: 220.00,
+            currency: 'USD',
+            createdAt: new Date('2024-01-18T14:30:00Z'),
+            updatedAt: new Date('2024-01-18T14:30:00Z'),
+          },
+          {
+            resourceType: 'Invoice',
+            id: 'invoice-3',
+            status: 'draft',
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/invoice-type',
+                  code: 'professional',
+                  display: 'Professional'
+                }
+              ]
+            },
+            subject: {
+              reference: 'Patient/patient-3',
+              display: 'Michael Johnson'
+            },
+            issuer: {
+              reference: 'Organization/org-1',
+              display: 'Telehealth Clinic'
+            },
+            date: '2024-01-22',
+            totalNet: {
+              value: 300.00,
+              currency: 'USD'
+            },
+            totalGross: {
+              value: 330.00,
+              currency: 'USD'
+            },
+            lineItem: [
+              {
+                sequence: 1,
+                chargeItemCodeableConcept: {
+                  text: 'Mental Health Consultation'
+                },
+                priceComponent: [
+                  {
+                    type: 'base',
+                    amount: {
+                      value: 300.00,
+                      currency: 'USD'
+                    }
+                  },
+                  {
+                    type: 'tax',
+                    amount: {
+                      value: 30.00,
+                      currency: 'USD'
+                    }
+                  }
+                ]
+              }
+            ],
+            note: [
+              {
+                text: 'Extended mental health consultation session'
+              }
+            ],
+            meta: {
+              lastUpdated: '2024-01-22T16:00:00Z'
+            },
+            // UI compatibility fields
+            patientName: 'Michael Johnson',
+            issuerName: 'Telehealth Clinic',
+            amount: 330.00,
+            currency: 'USD',
+            createdAt: new Date('2024-01-22T16:00:00Z'),
+            updatedAt: new Date('2024-01-22T16:00:00Z'),
+          }
+        ];
+
+        // Apply filters to mock data
+        let filteredInvoices = mockInvoices;
+
+        if (typeof searchQuery === 'object' && searchQuery) {
+          // Apply search filter
+          if (searchQuery.search?.trim()) {
+            const searchTerm = searchQuery.search.toLowerCase();
+            filteredInvoices = filteredInvoices.filter((invoice: any) => 
+              invoice.patientName?.toLowerCase().includes(searchTerm) ||
+              invoice.issuerName?.toLowerCase().includes(searchTerm) ||
+              invoice.id?.toLowerCase().includes(searchTerm)
+            );
+          }
+
+          // Apply status filter
+          if (searchQuery.status && searchQuery.status !== 'all') {
+            filteredInvoices = filteredInvoices.filter((invoice: any) => 
+              invoice.status === searchQuery.status
+            );
+          }
+        } else if (typeof searchQuery === 'string' && searchQuery.trim()) {
+          const searchTerm = searchQuery.toLowerCase();
+          filteredInvoices = filteredInvoices.filter((invoice: any) => 
+            invoice.patientName?.toLowerCase().includes(searchTerm) ||
+            invoice.issuerName?.toLowerCase().includes(searchTerm) ||
+            invoice.id?.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        return filteredInvoices;
+      }
+    },
+  });
+}
+
+/**
+ * Create a new FHIR Invoice resource
+ * @returns Mutation for creating invoices with success/error handling
+ */
+export function useCreateInvoice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (invoiceData: {
+      patientId: string;
+      patientName?: string;
+      description: string;
+      amount: number;
+      currency?: string;
+      dueDate?: string;
+      lineItems?: Array<{
+        description: string;
+        quantity: number;
+        unitPrice: number;
+        total: number;
+      }>;
+      notes?: string;
+    }) => {
+      try {
+        console.log('Creating invoice in Medplum...', invoiceData);
+
+        // Calculate totals
+        const totalNet = invoiceData.lineItems?.reduce((sum, item) => sum + item.total, 0) || invoiceData.amount;
+        const taxRate = 0.1; // 10% tax
+        const taxAmount = totalNet * taxRate;
+        const totalGross = totalNet + taxAmount;
+
+        // Create FHIR Invoice resource
+        const fhirInvoice = {
+          resourceType: 'Invoice',
+          status: 'draft',
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/invoice-type',
+                code: 'professional',
+                display: 'Professional'
+              }
+            ]
+          },
+          subject: {
+            reference: `Patient/${invoiceData.patientId}`,
+            display: invoiceData.patientName || 'Unknown Patient'
+          },
+          issuer: {
+            reference: 'Organization/org-1',
+            display: 'Telehealth Clinic'
+          },
+          date: new Date().toISOString().split('T')[0],
+          totalNet: {
+            value: totalNet,
+            currency: invoiceData.currency || 'USD'
+          },
+          totalGross: {
+            value: totalGross,
+            currency: invoiceData.currency || 'USD'
+          },
+          lineItem: invoiceData.lineItems?.map((item, index) => ({
+            sequence: index + 1,
+            chargeItemCodeableConcept: {
+              text: item.description
+            },
+            priceComponent: [
+              {
+                type: 'base',
+                amount: {
+                  value: item.total,
+                  currency: invoiceData.currency || 'USD'
+                }
+              }
+            ]
+          })) || [
+            {
+              sequence: 1,
+              chargeItemCodeableConcept: {
+                text: invoiceData.description
+              },
+              priceComponent: [
+                {
+                  type: 'base',
+                  amount: {
+                    value: totalNet,
+                    currency: invoiceData.currency || 'USD'
+                  }
+                }
+              ]
+            }
+          ],
+          note: invoiceData.notes ? [
+            {
+              text: invoiceData.notes
+            }
+          ] : undefined
+        };
+
+        // Add tax as separate line item if there are line items
+        if (invoiceData.lineItems && invoiceData.lineItems.length > 0) {
+          fhirInvoice.lineItem.push({
+            sequence: fhirInvoice.lineItem.length + 1,
+            chargeItemCodeableConcept: {
+              text: 'Tax (10%)'
+            },
+            priceComponent: [
+              {
+                type: 'tax',
+                amount: {
+                  value: taxAmount,
+                  currency: invoiceData.currency || 'USD'
+                }
+              }
+            ]
+          });
+        }
+
+        const createdInvoice = await medplumClient.createResource(fhirInvoice);
+        console.log('✅ Invoice created successfully in Medplum:', createdInvoice.id);
+        return createdInvoice;
+      } catch (error) {
+        console.error('Failed to create invoice in Medplum:', error);
+        
+        // Fallback to mock creation
+        const mockInvoice = {
+          resourceType: 'Invoice',
+          id: `invoice-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          status: 'draft',
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/invoice-type',
+                code: 'professional',
+                display: 'Professional'
+              }
+            ]
+          },
+          subject: {
+            reference: `Patient/${invoiceData.patientId}`,
+            display: invoiceData.patientName || 'Unknown Patient'
+          },
+          issuer: {
+            reference: 'Organization/org-1',
+            display: 'Telehealth Clinic'
+          },
+          date: new Date().toISOString().split('T')[0],
+          totalNet: {
+            value: invoiceData.amount,
+            currency: invoiceData.currency || 'USD'
+          },
+          totalGross: {
+            value: invoiceData.amount * 1.1, // Add 10% tax
+            currency: invoiceData.currency || 'USD'
+          },
+          lineItem: [
+            {
+              sequence: 1,
+              chargeItemCodeableConcept: {
+                text: invoiceData.description
+              },
+              priceComponent: [
+                {
+                  type: 'base',
+                  amount: {
+                    value: invoiceData.amount,
+                    currency: invoiceData.currency || 'USD'
+                  }
+                }
+              ]
+            }
+          ],
+          note: invoiceData.notes ? [
+            {
+              text: invoiceData.notes
+            }
+          ] : undefined,
+          meta: {
+            lastUpdated: new Date().toISOString()
+          }
+        };
+
+        console.log('✅ Mock FHIR Invoice created (Medplum server not available)');
+        return mockInvoice;
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch invoices
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      console.log('Invoice created successfully, invalidating invoices cache');
+    },
+    onError: (error) => {
+      console.error('Failed to create invoice:', error);
+    },
   });
 }

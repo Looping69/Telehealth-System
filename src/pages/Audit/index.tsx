@@ -26,7 +26,7 @@ import {
   Tooltip,
   Code,
   Tabs,
-  DatePickerInput,
+  DateInput,
   MultiSelect,
   Alert,
   Progress,

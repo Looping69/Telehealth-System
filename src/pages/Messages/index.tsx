@@ -69,7 +69,7 @@ const mockMessages: Message[] = [
     content: 'Hi Sarah, your recent blood work results are in. Overall, everything looks good. Your cholesterol levels have improved since your last visit. Please schedule a follow-up appointment in 3 months.',
     timestamp: '2024-01-15T10:30:00Z',
     status: 'delivered',
-    priority: 'normal',
+    priority: 'medium',
     isRead: false,
     attachments: [],
     messageType: 'clinical',
@@ -87,7 +87,7 @@ const mockMessages: Message[] = [
     content: 'Thank you for the update, Dr. Smith. I\'m glad to hear the results are good. Should I continue with my current medication regimen?',
     timestamp: '2024-01-15T14:20:00Z',
     status: 'delivered',
-    priority: 'normal',
+    priority: 'medium',
     isRead: true,
     attachments: [],
     messageType: 'clinical',
@@ -105,7 +105,7 @@ const mockMessages: Message[] = [
     content: 'This is a reminder that you have an appointment scheduled for tomorrow, January 16th at 2:00 PM with Dr. Johnson. Please arrive 15 minutes early for check-in.',
     timestamp: '2024-01-15T16:00:00Z',
     status: 'delivered',
-    priority: 'normal',
+    priority: 'medium',
     isRead: false,
     attachments: [],
     messageType: 'administrative',
@@ -403,7 +403,7 @@ const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
     recipientName: replyTo?.senderName || '',
     subject: replyTo ? `Re: ${replyTo.subject}` : '',
     content: '',
-    priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
     messageType: 'clinical' as 'clinical' | 'administrative' | 'general',
   });
 
@@ -477,7 +477,7 @@ const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
       recipientName: '',
       subject: '',
       content: '',
-      priority: 'normal',
+      priority: 'medium',
       messageType: 'clinical',
     });
     setAttachments([]);
@@ -558,7 +558,7 @@ const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
                 { value: 'urgent', label: 'Urgent' },
               ]}
               value={formData.priority}
-              onChange={(value) => setFormData(prev => ({ ...prev, priority: value as any || 'normal' }))}
+              onChange={(value) => setFormData(prev => ({ ...prev, priority: value as any || 'medium' }))}
             />
           </Grid.Col>
           <Grid.Col span={6}>
@@ -890,7 +890,7 @@ const MessagesPage: React.FC = () => {
       content: newMessage,
       timestamp: new Date().toISOString(),
       status: 'sent',
-      priority: 'normal',
+      priority: 'medium',
       isRead: false,
       attachments: [],
       messageType: 'general',

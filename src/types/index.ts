@@ -131,7 +131,7 @@ export interface Task {
   assignedTo?: string;
   createdBy?: string;
   status: 'todo' | 'in_progress' | 'completed' | 'pending';
-  priority: 'low' | 'medium' | 'high' | 'normal';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   dueDate?: Date | string;
   createdDate?: Date | string;
   completedDate?: Date | string;
@@ -161,12 +161,23 @@ export interface ProviderAvailability {
 
 export interface Message {
   id: string;
-  threadId: string;
+  threadId?: string;
+  conversationId?: string;
   senderId: string;
+  senderName?: string;
+  senderRole?: string;
   recipientId: string;
+  recipientName?: string;
+  recipientRole?: string;
+  subject?: string;
   content: string;
   type: 'text' | 'file' | 'image';
+  timestamp?: string;
+  status?: 'delivered' | 'read' | 'pending';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   isRead: boolean;
+  attachments?: any[];
+  messageType?: 'clinical' | 'administrative';
   createdAt: Date;
 }
 

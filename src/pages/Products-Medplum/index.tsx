@@ -39,6 +39,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { medplumClient } from '../../config/medplum';
 import { Medication } from '@medplum/fhirtypes';
+import CreateProductModal from '../../components/CreateProductModal';
 
 /**
  * FHIR Product Card Component
@@ -411,17 +412,36 @@ const ProductsMedplumPage: React.FC = () => {
           )}
         </Modal>
 
-        {/* Create and Edit Modals */}
-        <Modal
+        {/* Create Product Modal */}
+        <CreateProductModal
           opened={createOpened}
           onClose={closeCreate}
-          title="Add New FHIR Product"
-          size="lg"
-        >
-          <Alert icon={<AlertCircle size={16} />} color="blue" variant="light">
-            FHIR product creation requires specific implementation for Medication resources.
-          </Alert>
-        </Modal>
+          onProductCreated={() => {
+            // Refresh the medications list after creating a new product
+            const fetchMedications = async () => {
+              try {
+                setLoading(true);
+                const response = await medplumClient.search('Medication', {
+                  _sort: 'code',
+                  _count: '50'
+                });
+
+                if (response.entry) {
+                  const medicationData = response.entry
+                    .filter(entry => entry.resource?.resourceType === 'Medication')
+                    .map(entry => entry.resource as Medication);
+                  
+                  setMedications(medicationData);
+                }
+              } catch (err) {
+                console.error('Error refreshing medications:', err);
+              } finally {
+                setLoading(false);
+              }
+            };
+            fetchMedications();
+          }}
+        />
 
         <Modal
           opened={editOpened}

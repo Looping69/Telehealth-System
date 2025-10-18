@@ -288,7 +288,7 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({ order, opened, onClose,
     type: '',
     patientName: '',
     description: '',
-    priority: 'normal',
+    priority: 'medium',
     dueDate: '',
     notes: '',
   });
@@ -393,7 +393,7 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({ order, opened, onClose,
             { value: 'urgent', label: 'Urgent' },
           ]}
           value={formData.priority}
-          onChange={(value) => setFormData({ ...formData, priority: value || 'normal' })}
+          onChange={(value) => setFormData({ ...formData, priority: value || 'medium' })}
         />
 
         <TextInput
@@ -438,7 +438,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ opened, onClose, on
     type: '',
     patientName: '',
     description: '',
-    priority: 'normal',
+    priority: 'medium',
     dueDate: '',
     notes: '',
   });
@@ -485,7 +485,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ opened, onClose, on
       type: '',
       patientName: '',
       description: '',
-      priority: 'normal',
+      priority: 'medium',
       dueDate: '',
       notes: '',
     });
@@ -540,7 +540,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ opened, onClose, on
             { value: 'urgent', label: 'Urgent' },
           ]}
           value={formData.priority}
-          onChange={(value) => setFormData({ ...formData, priority: value || 'normal' })}
+          onChange={(value) => setFormData({ ...formData, priority: value || 'medium' })}
         />
 
         <TextInput

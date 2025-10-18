@@ -6,8 +6,8 @@
 import { MedplumClient } from '@medplum/core';
 
 export const medplumConfig = {
-  // Use localhost for MedplumClient constructor, but proxy will handle the actual requests
-  baseUrl: import.meta.env.DEV ? 'http://localhost:5173' : (import.meta.env.VITE_MEDPLUM_BASE_URL?.replace(/\/$/, '') || 'http://localhost:8103'),
+  // Use the actual Medplum API URL for proper authentication
+  baseUrl: import.meta.env.VITE_MEDPLUM_BASE_URL?.replace(/\/$/, '') || 'https://api.medplum.com',
   clientId: import.meta.env.VITE_MEDPLUM_CLIENT_ID || 'medplum-client',
   clientSecret: import.meta.env.VITE_MEDPLUM_CLIENT_SECRET,
   redirectUri: import.meta.env.VITE_MEDPLUM_REDIRECT_URI || 'http://localhost:5173',
@@ -50,33 +50,20 @@ export const initializeMedplumAuth = async (): Promise<boolean> => {
     try {
       console.log('Attempting OAuth2 client credentials authentication...');
       
-      const tokenResponse = await fetch('/oauth2/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json',
-        },
-        body: new URLSearchParams({
-          grant_type: 'client_credentials',
-          client_id: medplumConfig.clientId,
-          client_secret: medplumConfig.clientSecret || '',
-          scope: medplumConfig.scope,
-        }),
-      });
+      // Use the Medplum client's built-in authentication method
+      const authResult = await medplumClient.startClientLogin(
+        medplumConfig.clientId,
+        medplumConfig.clientSecret || ''
+      );
       
-      if (tokenResponse.ok) {
-        const tokenData = await tokenResponse.json();
-        const accessToken = tokenData.access_token;
-        
-        if (accessToken) {
-          medplumClient.setAccessToken(accessToken);
-          localStorage.setItem('medplum_access_token', accessToken);
-          console.log('Medplum OAuth2 authentication successful');
+      if (authResult) {
+        console.log('Medplum OAuth2 authentication successful');
+        // Store the access token for future use
+        const profile = await medplumClient.getProfile();
+        if (profile) {
+          localStorage.setItem('medplum_access_token', medplumClient.getAccessToken() || '');
           return true;
         }
-      } else {
-        const errorText = await tokenResponse.text();
-        console.warn('OAuth2 authentication failed:', tokenResponse.status, errorText);
       }
     } catch (oauthError) {
       console.warn('OAuth2 authentication error:', oauthError);
@@ -85,14 +72,9 @@ export const initializeMedplumAuth = async (): Promise<boolean> => {
     // Fallback: Test if we can access FHIR endpoints without authentication (development mode)
     console.log('Trying development mode without authentication...');
     try {
-      const response = await fetch(`/fhir/R4/Patient?_summary=count`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/fhir+json',
-        },
-      });
+      const response = await medplumClient.get('Patient?_summary=count');
       
-      if (response.ok) {
+      if (response) {
         console.log('Medplum server accessible without authentication (development mode)');
         return true;
       } else {

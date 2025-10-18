@@ -37,8 +37,8 @@ interface AppointmentFormData {
   providerName: string;
   date: Date | null;
   duration: number;
-  type: string;
-  sessionType: string;
+  type: 'consultation' | 'follow-up' | 'emergency' | 'mental-health' | 'chronic-care' | 'specialist' | 'sports-medicine' | 'pain-management';
+  sessionType: 'video' | 'phone' | 'in-person';
   notes: string;
 }
 

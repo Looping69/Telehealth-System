@@ -47,6 +47,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ServiceRequest, MedicationRequest } from '@medplum/fhirtypes';
 import { useOrders } from '../../hooks/useQuery';
+import CreateOrderModal from '../../components/CreateOrderModal';
 
 type FHIROrder = ServiceRequest | MedicationRequest;
 
@@ -400,7 +401,7 @@ const OrdersMedplumPage: React.FC = () => {
       const matchesSearch = !searchTerm || 
         getOrderDescription().toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.subject?.display?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.id?.toLowerCase().includes(searchTerm.toLowerCase());
+        (order.id && order.id.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
       const matchesType = typeFilter === 'all' || order.resourceType === typeFilter;
@@ -538,17 +539,14 @@ const OrdersMedplumPage: React.FC = () => {
           onClose={closeDetails}
         />
 
-        {/* Note: Create and Edit modals would need FHIR-specific implementations */}
-        <Modal
+        {/* Create Order Modal */}
+        <CreateOrderModal
           opened={createOpened}
           onClose={closeCreate}
-          title="Create New FHIR Order"
-          size="lg"
-        >
-          <Alert icon={<AlertCircle size={16} />} color="blue" variant="light">
-            FHIR order creation requires specific implementation for ServiceRequest or MedicationRequest resources.
-          </Alert>
-        </Modal>
+          onOrderCreated={() => {
+            // Orders will be automatically refreshed due to query invalidation
+          }}
+        />
 
         <Modal
           opened={editOpened}

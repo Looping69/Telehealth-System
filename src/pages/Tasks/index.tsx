@@ -65,7 +65,7 @@ const mockTasks: Task[] = [
     title: 'Insurance verification for Michael Chen',
     description: 'Verify insurance coverage for upcoming procedure',
     status: 'in_progress',
-    priority: 'normal',
+    priority: 'medium',
     assignedTo: 'Jane Doe',
     dueDate: '2024-01-18',
     createdDate: '2024-01-12',
@@ -78,7 +78,7 @@ const mockTasks: Task[] = [
     title: 'Follow-up call for Emma Davis',
     description: 'Post-treatment follow-up call to check patient status',
     status: 'completed',
-    priority: 'normal',
+    priority: 'medium',
     assignedTo: 'Dr. Johnson',
     dueDate: '2024-01-12',
     createdDate: '2024-01-08',
@@ -331,7 +331,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose, onTa
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    priority: 'normal',
+    priority: 'medium',
     assignedTo: '',
     dueDate: '',
     category: 'clinical',
@@ -392,7 +392,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose, onTa
     setFormData({
       title: '',
       description: '',
-      priority: 'normal',
+      priority: 'medium',
       assignedTo: '',
       dueDate: '',
       category: 'clinical',
@@ -447,7 +447,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose, onTa
                 { value: 'urgent', label: 'Urgent' },
               ]}
               value={formData.priority}
-              onChange={(value) => setFormData({ ...formData, priority: value || 'normal' })}
+              onChange={(value) => setFormData({ ...formData, priority: value || 'medium' })}
             />
           </Grid.Col>
           <Grid.Col span={6}>
@@ -522,7 +522,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, opened, onClose, on
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    priority: 'normal' as 'low' | 'medium' | 'high' | 'normal',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
     assignedTo: '',
     dueDate: '',
     category: 'clinical',
@@ -643,7 +643,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, opened, onClose, on
                 { value: 'urgent', label: 'Urgent' },
               ]}
               value={formData.priority}
-              onChange={(value) => setFormData({ ...formData, priority: value || 'normal' })}
+              onChange={(value) => setFormData({ ...formData, priority: value || 'medium' })}
             />
           </Grid.Col>
           <Grid.Col span={6}>

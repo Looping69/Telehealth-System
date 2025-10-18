@@ -1,9 +1,9 @@
 /**
  * Invoices-Medplum Page Component
- * Manages invoices using FHIR data
+ * Manages invoices using FHIR data with proper hooks integration
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Container,
   Grid,
@@ -36,8 +36,9 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { medplumClient } from '../../config/medplum';
 import { Invoice } from '@medplum/fhirtypes';
+import { useInvoices } from '../../hooks/useQuery';
+import { CreateInvoiceModal } from '../../components/CreateInvoiceModal';
 
 /**
  * FHIR Invoice Card Component
@@ -148,9 +149,6 @@ const FHIRInvoiceCard: React.FC<FHIRInvoiceCardProps> = ({ invoice, onView, onEd
  * Main Invoices-Medplum Page Component
  */
 const InvoicesMedplumPage: React.FC = () => {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -159,52 +157,21 @@ const InvoicesMedplumPage: React.FC = () => {
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
   const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
 
-  // Fetch FHIR invoices
-  useEffect(() => {
-    const fetchInvoices = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Use the new hooks for invoice management
+  const { 
+    data: invoices = [], 
+    isLoading: loading, 
+    error,
+    isError 
+  } = useInvoices({
+    search: searchTerm,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    sortBy: 'date',
+    sortOrder: 'desc'
+  });
 
-        const response = await medplumClient.search('Invoice', {
-          _sort: '-date',
-          _count: '50',
-          _include: 'Invoice:subject'
-        });
-
-        if (response.entry) {
-          const invoiceData = response.entry
-            .filter(entry => entry.resource?.resourceType === 'Invoice')
-            .map(entry => entry.resource as Invoice);
-          
-          setInvoices(invoiceData);
-        } else {
-          setInvoices([]);
-        }
-      } catch (err) {
-        console.error('Error fetching FHIR invoices:', err);
-        setError('Failed to fetch invoices from FHIR server. Please check your connection.');
-        setInvoices([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInvoices();
-  }, []);
-
-  // Filter invoices
-  const filteredInvoices = useMemo(() => {
-    return invoices.filter(invoice => {
-      const matchesSearch = !searchTerm || 
-        invoice.subject?.display?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.id?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [invoices, searchTerm, statusFilter]);
+  // Invoices are already filtered by the hook, so we can use them directly
+  const filteredInvoices = invoices;
 
   const handleViewInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
@@ -250,54 +217,48 @@ const InvoicesMedplumPage: React.FC = () => {
         </Group>
 
         {/* Error Alert */}
-        {error && (
+        {isError && (
           <Alert icon={<AlertCircle size={16} />} color="red" variant="light">
-            {error}
+            {error?.message || 'Failed to fetch invoices. Using mock data as fallback.'}
           </Alert>
         )}
 
-        {/* Filters */}
-        <Card withBorder padding="md">
-          <Grid>
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <TextInput
-                placeholder="Search invoices..."
-                leftSection={<Search size={16} />}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.currentTarget.value)}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, md: 4 }}>
-              <Select
-                placeholder="Filter by status"
-                leftSection={<Filter size={16} />}
-                value={statusFilter}
-                onChange={(value) => setStatusFilter(value || 'all')}
-                data={[
-                  { value: 'all', label: 'All Statuses' },
-                  { value: 'draft', label: 'Draft' },
-                  { value: 'issued', label: 'Issued' },
-                  { value: 'balanced', label: 'Balanced' },
-                  { value: 'cancelled', label: 'Cancelled' },
-                ]}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, md: 2 }}>
-              <Text size="sm" c="dimmed">
-                {filteredInvoices.length} invoices
-              </Text>
-            </Grid.Col>
-          </Grid>
-        </Card>
+        {/* Search and Filters */}
+        <Group>
+          <TextInput
+            placeholder="Search invoices..."
+            leftSection={<Search size={16} />}
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.currentTarget.value)}
+            style={{ flex: 1 }}
+          />
+          <Select
+            placeholder="Filter by status"
+            leftSection={<Filter size={16} />}
+            data={[
+              { value: 'all', label: 'All Statuses' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'issued', label: 'Issued' },
+              { value: 'balanced', label: 'Balanced' },
+              { value: 'cancelled', label: 'Cancelled' },
+              { value: 'entered-in-error', label: 'Error' },
+            ]}
+            value={statusFilter}
+            onChange={(value) => setStatusFilter(value || 'all')}
+            w={200}
+          />
+        </Group>
 
         {/* Invoices Grid */}
         {filteredInvoices.length === 0 ? (
           <Center py="xl">
             <Stack align="center" gap="md">
               <Receipt size={48} color="gray" />
-              <Text size="lg" c="dimmed">No invoices found</Text>
-              <Text size="sm" c="dimmed">
-                {error ? 'Check your FHIR server connection' : 'Try adjusting your filters or create new invoices'}
+              <Text size="lg" fw={500} c="dimmed">
+                {isError ? 'No invoices available' : 'No invoices found'}
+              </Text>
+              <Text size="sm" c="dimmed" ta="center">
+                {isError ? 'Check your FHIR server connection' : 'Try adjusting your filters or create new invoices'}
               </Text>
             </Stack>
           </Center>
@@ -366,16 +327,10 @@ const InvoicesMedplumPage: React.FC = () => {
         </Modal>
 
         {/* Create and Edit Modals */}
-        <Modal
+        <CreateInvoiceModal
           opened={createOpened}
           onClose={closeCreate}
-          title="Create New FHIR Invoice"
-          size="lg"
-        >
-          <Alert icon={<AlertCircle size={16} />} color="blue" variant="light">
-            FHIR invoice creation requires specific implementation for Invoice resources.
-          </Alert>
-        </Modal>
+        />
 
         <Modal
           opened={editOpened}
