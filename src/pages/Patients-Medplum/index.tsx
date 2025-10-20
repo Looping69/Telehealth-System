@@ -406,7 +406,7 @@ const PatientsMedplumPage: React.FC = () => {
 
   const { data: patients, isLoading, error } = usePatients({
     search: searchQuery,
-    status: statusFilter,
+    status: statusFilter || undefined,
     page: currentPage,
     limit: 12,
   });

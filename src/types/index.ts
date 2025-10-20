@@ -72,6 +72,8 @@ export interface Appointment {
   title?: string;
   description?: string;
   date: Date;
+  start?: string; // ISO string for FHIR compatibility
+  end?: string; // ISO string for FHIR compatibility
   startTime?: Date;
   endTime?: Date;
   duration?: number;
@@ -86,6 +88,10 @@ export interface Appointment {
   diagnosis?: string | null;
   prescription?: string | null;
   followUpRequired?: boolean;
+  participant?: Array<{
+    actor: { reference: string; display: string };
+    status: string;
+  }>;
 }
 
 export interface Order {
@@ -144,12 +150,26 @@ export interface Task {
 
 export interface Provider {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  name?: string; // Computed from firstName + lastName
   email: string;
   phone: string;
-  specialization: string;
+  specialties: string[];
+  specialization?: string; // For backward compatibility
   licenseNumber: string;
-  isActive: boolean;
+  npiNumber: string;
+  status: 'active' | 'inactive';
+  department: string;
+  title: string;
+  bio?: string;
+  education?: string[];
+  certifications?: string[];
+  languages?: string[];
+  rating?: number;
+  totalPatients?: number;
+  yearsExperience?: number;
+  isActive?: boolean; // For backward compatibility
   availability?: ProviderAvailability[];
 }
 

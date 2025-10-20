@@ -423,7 +423,7 @@ const FormsMedplumPage: React.FC = () => {
                 <Stack gap="xs">
                   <Text size="sm" fw={500}>Questions Preview</Text>
                   <ScrollArea h={200}>
-                    <Table size="sm">
+                    <Table>
                       <Table.Thead>
                         <Table.Tr>
                           <Table.Th>Link ID</Table.Th>

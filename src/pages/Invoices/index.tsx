@@ -52,55 +52,51 @@ import { Invoice } from '../../types';
 const mockInvoices: Invoice[] = [
   {
     id: 'INV-2024-001',
-    patientName: 'Sarah Johnson',
+    patientId: 'PAT-001',
     amount: 250.00,
     status: 'paid',
-    dueDate: '2024-01-15',
-    issueDate: '2024-01-01',
+    createdAt: new Date('2024-01-01'),
+    dueDate: new Date('2024-01-15'),
+    paidAt: new Date('2024-01-14'),
     items: [
-      { description: 'Consultation', quantity: 1, unitPrice: 150.00, total: 150.00 },
-      { description: 'Lab Test', quantity: 1, unitPrice: 100.00, total: 100.00 },
+      { id: 'ITEM-001', description: 'Consultation', quantity: 1, unitPrice: 150.00, total: 150.00 },
+      { id: 'ITEM-002', description: 'Lab Test', quantity: 1, unitPrice: 100.00, total: 100.00 },
     ],
-    paymentMethod: 'Credit Card',
-    notes: 'Regular checkup and blood work',
   },
   {
     id: 'INV-2024-002',
-    patientName: 'Michael Chen',
+    patientId: 'PAT-002',
     amount: 180.00,
-    status: 'pending',
-    dueDate: '2024-01-20',
-    issueDate: '2024-01-05',
+    status: 'sent',
+    createdAt: new Date('2024-01-05'),
+    dueDate: new Date('2024-01-20'),
     items: [
-      { description: 'Follow-up Visit', quantity: 1, unitPrice: 120.00, total: 120.00 },
-      { description: 'Prescription', quantity: 1, unitPrice: 60.00, total: 60.00 },
+      { id: 'ITEM-003', description: 'Follow-up Visit', quantity: 1, unitPrice: 120.00, total: 120.00 },
+      { id: 'ITEM-004', description: 'Prescription', quantity: 1, unitPrice: 60.00, total: 60.00 },
     ],
-    notes: 'Follow-up for previous treatment',
   },
   {
     id: 'INV-2024-003',
-    patientName: 'Emma Davis',
+    patientId: 'PAT-003',
     amount: 320.00,
     status: 'overdue',
-    dueDate: '2024-01-10',
-    issueDate: '2023-12-25',
+    createdAt: new Date('2023-12-25'),
+    dueDate: new Date('2024-01-10'),
     items: [
-      { description: 'Specialist Consultation', quantity: 1, unitPrice: 200.00, total: 200.00 },
-      { description: 'Imaging Study', quantity: 1, unitPrice: 120.00, total: 120.00 },
+      { id: 'ITEM-005', description: 'Specialist Consultation', quantity: 1, unitPrice: 200.00, total: 200.00 },
+      { id: 'ITEM-006', description: 'Imaging Study', quantity: 1, unitPrice: 120.00, total: 120.00 },
     ],
-    notes: 'Specialist referral and MRI scan',
   },
   {
     id: 'INV-2024-004',
-    patientName: 'John Smith',
+    patientId: 'PAT-004',
     amount: 150.00,
     status: 'draft',
-    dueDate: '2024-02-01',
-    issueDate: '2024-01-15',
+    createdAt: new Date('2024-01-15'),
+    dueDate: new Date('2024-02-01'),
     items: [
-      { description: 'Consultation', quantity: 1, unitPrice: 150.00, total: 150.00 },
+      { id: 'ITEM-007', description: 'Consultation', quantity: 1, unitPrice: 150.00, total: 150.00 },
     ],
-    notes: 'Initial consultation - draft',
   },
 ];
 
@@ -129,7 +125,7 @@ const InvoiceTableRow: React.FC<InvoiceTableRowProps> = ({ invoice, onView, onEd
     switch (status) {
       case 'paid':
         return 'green';
-      case 'pending':
+      case 'sent':
         return 'yellow';
       case 'overdue':
         return 'red';
@@ -141,7 +137,7 @@ const InvoiceTableRow: React.FC<InvoiceTableRowProps> = ({ invoice, onView, onEd
   };
 
   const isOverdue = () => {
-    return new Date(invoice.dueDate) < new Date() && invoice.status !== 'paid';
+    return invoice.dueDate < new Date() && invoice.status !== 'paid';
   };
 
   return (
@@ -149,7 +145,7 @@ const InvoiceTableRow: React.FC<InvoiceTableRowProps> = ({ invoice, onView, onEd
       <Table.Td>
         <Stack gap={4}>
           <Text fw={500}>{invoice.id}</Text>
-          <Text size="sm" c="dimmed">{invoice.patientName}</Text>
+          <Text size="sm" c="dimmed">Patient ID: {invoice.patientId}</Text>
         </Stack>
       </Table.Td>
       <Table.Td>
@@ -161,17 +157,15 @@ const InvoiceTableRow: React.FC<InvoiceTableRowProps> = ({ invoice, onView, onEd
         </Badge>
       </Table.Td>
       <Table.Td>
-        <Text size="sm">{invoice.issueDate}</Text>
+        <Text size="sm">{invoice.createdAt.toLocaleDateString()}</Text>
       </Table.Td>
       <Table.Td>
         <Text size="sm" c={isOverdue() ? 'red' : undefined}>
-          {invoice.dueDate}
+          {invoice.dueDate.toLocaleDateString()}
         </Text>
       </Table.Td>
       <Table.Td>
-        {invoice.paymentMethod && (
-          <Text size="sm">{invoice.paymentMethod}</Text>
-        )}
+        <Text size="sm">Credit Card</Text>
       </Table.Td>
       <Table.Td>
         <Group gap="xs">
@@ -215,7 +209,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({ invoice, onView, onEdit, onSe
     switch (status) {
       case 'paid':
         return 'green';
-      case 'pending':
+      case 'sent':
         return 'yellow';
       case 'overdue':
         return 'red';
@@ -230,7 +224,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({ invoice, onView, onEdit, onSe
     switch (status) {
       case 'paid':
         return <CheckCircle size={16} />;
-      case 'pending':
+      case 'sent':
         return <Clock size={16} />;
       case 'overdue':
         return <AlertCircle size={16} />;
@@ -240,7 +234,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({ invoice, onView, onEdit, onSe
   };
 
   const isOverdue = () => {
-    return new Date(invoice.dueDate) < new Date() && invoice.status !== 'paid';
+    return invoice.dueDate < new Date() && invoice.status !== 'paid';
   };
 
   return (
@@ -252,7 +246,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({ invoice, onView, onEdit, onSe
               {invoice.id}
             </Text>
             <Text size="sm" c="dimmed">
-              {invoice.patientName}
+              Patient ID: {invoice.patientId}
             </Text>
           </Stack>
           <Badge 
@@ -269,7 +263,7 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({ invoice, onView, onEdit, onSe
               ${invoice.amount.toFixed(2)}
             </Text>
             <Text size="xs" c="dimmed">
-              Due: {invoice.dueDate}
+              Due: {invoice.dueDate.toLocaleDateString()}
             </Text>
           </Stack>
           {isOverdue() && (
@@ -282,21 +276,17 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({ invoice, onView, onEdit, onSe
         <Stack gap="xs">
           <Group gap="xs">
             <Calendar size={14} />
-            <Text size="sm">Issued: {invoice.issueDate}</Text>
+            <Text size="sm">Issued: {invoice.createdAt.toLocaleDateString()}</Text>
           </Group>
-          {invoice.paymentMethod && (
-            <Group gap="xs">
-              <CreditCard size={14} />
-              <Text size="sm">{invoice.paymentMethod}</Text>
-            </Group>
-          )}
+          <Group gap="xs">
+            <CreditCard size={14} />
+            <Text size="sm">Credit Card</Text>
+          </Group>
         </Stack>
 
-        {invoice.notes && (
-          <Text size="sm" c="dimmed" lineClamp={2}>
-            {invoice.notes}
-          </Text>
-        )}
+        <Text size="sm" c="dimmed" lineClamp={2}>
+          Standard consultation and treatment
+        </Text>
 
         <Group justify="space-between" align="center">
           <Group gap="xs">
@@ -364,7 +354,7 @@ const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({
         <Group justify="space-between" align="flex-start">
           <Stack gap={4}>
             <Title order={3}>{invoice.id}</Title>
-            <Text c="dimmed">Patient: {invoice.patientName}</Text>
+            <Text c="dimmed">Patient ID: {invoice.patientId}</Text>
           </Stack>
           <Badge color={invoice.status === 'paid' ? 'green' : 'yellow'} size="lg">
             {invoice.status}
@@ -378,16 +368,14 @@ const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({
             <Stack gap="xs">
               <Text fw={500}>Invoice Information</Text>
               <Text size="sm">
-                <strong>Issue Date:</strong> {invoice.issueDate}
+                <strong>Issue Date:</strong> {invoice.createdAt.toLocaleDateString()}
               </Text>
               <Text size="sm">
-                <strong>Due Date:</strong> {invoice.dueDate}
+                <strong>Due Date:</strong> {invoice.dueDate.toLocaleDateString()}
               </Text>
-              {invoice.paymentMethod && (
-                <Text size="sm">
-                  <strong>Payment Method:</strong> {invoice.paymentMethod}
-                </Text>
-              )}
+              <Text size="sm">
+                <strong>Payment Method:</strong> Credit Card
+              </Text>
             </Stack>
           </Grid.Col>
           <Grid.Col span={6}>
@@ -440,12 +428,10 @@ const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({
           </Stack>
         </Stack>
 
-        {invoice.notes && (
-          <Stack gap="xs">
-            <Text fw={500}>Notes</Text>
-            <Text size="sm">{invoice.notes}</Text>
-          </Stack>
-        )}
+        <Stack gap="xs">
+          <Text fw={500}>Notes</Text>
+          <Text size="sm">Standard consultation and treatment</Text>
+        </Stack>
 
         <Group justify="flex-end" mt="md">
           <Button variant="light" onClick={onClose}>
@@ -480,30 +466,34 @@ interface EditInvoiceModalProps {
 }
 
 const EditInvoiceModal: React.FC<EditInvoiceModalProps> = ({ invoice, opened, onClose, onSave }) => {
-  const [formData, setFormData] = useState({
-    patientName: '',
+  const [formData, setFormData] = useState<{
+    patientId: string;
+    dueDate: string;
+    notes: string;
+  }>({
+    patientId: '',
     dueDate: '',
     notes: '',
   });
 
   const [items, setItems] = useState([
-    { description: '', quantity: 1, unitPrice: 0, total: 0 },
+    { id: '', description: '', quantity: 1, unitPrice: 0, total: 0 },
   ]);
 
   // Pre-populate form when invoice changes
   React.useEffect(() => {
     if (invoice) {
       setFormData({
-        patientName: invoice.patientName,
-        dueDate: invoice.dueDate,
-        notes: invoice.notes || '',
+        patientId: invoice.patientId,
+        dueDate: invoice.dueDate.toISOString().split('T')[0],
+        notes: '',
       });
-      setItems(invoice.items || [{ description: '', quantity: 1, unitPrice: 0, total: 0 }]);
+      setItems(invoice.items || [{ id: '', description: '', quantity: 1, unitPrice: 0, total: 0 }]);
     }
   }, [invoice]);
 
   const addItem = () => {
-    setItems([...items, { description: '', quantity: 1, unitPrice: 0, total: 0 }]);
+    setItems([...items, { id: '', description: '', quantity: 1, unitPrice: 0, total: 0 }]);
   };
 
   const updateItem = (index: number, field: string, value: any) => {
@@ -530,10 +520,9 @@ const EditInvoiceModal: React.FC<EditInvoiceModalProps> = ({ invoice, opened, on
 
     const updatedInvoice: Invoice = {
       ...invoice,
-      patientName: formData.patientName,
-      dueDate: formData.dueDate,
-      notes: formData.notes,
-      items: items,
+      patientId: formData.patientId,
+      dueDate: new Date(formData.dueDate),
+      items: items.filter(item => item.description.trim() !== ''),
       amount: calculateTotal(),
     };
 
@@ -557,10 +546,10 @@ const EditInvoiceModal: React.FC<EditInvoiceModalProps> = ({ invoice, opened, on
         <Grid>
           <Grid.Col span={6}>
             <TextInput
-              label="Patient Name"
-              placeholder="Enter patient name"
-              value={formData.patientName}
-              onChange={(event) => setFormData({ ...formData, patientName: event.currentTarget.value })}
+              label="Patient ID"
+              placeholder="Enter patient ID"
+              value={formData.patientId}
+              onChange={(event) => setFormData({ ...formData, patientId: event.currentTarget.value })}
               required
             />
           </Grid.Col>
@@ -637,12 +626,7 @@ const EditInvoiceModal: React.FC<EditInvoiceModalProps> = ({ invoice, opened, on
           ))}
         </Stack>
 
-        <TextInput
-          label="Notes"
-          placeholder="Additional notes (optional)"
-          value={formData.notes}
-          onChange={(event) => setFormData({ ...formData, notes: event.currentTarget.value })}
-        />
+
 
         <Group justify="space-between" mt="md">
           <Text fw={500} size="lg">
@@ -666,18 +650,22 @@ const EditInvoiceModal: React.FC<EditInvoiceModalProps> = ({ invoice, opened, on
  * Create Invoice Modal Component
  */
 const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ opened, onClose }) => {
-  const [formData, setFormData] = useState({
-    patientName: '',
+  const [formData, setFormData] = useState<{
+    patientId: string;
+    dueDate: string;
+    notes: string;
+  }>({
+    patientId: '',
     dueDate: '',
     notes: '',
   });
 
   const [items, setItems] = useState([
-    { description: '', quantity: 1, unitPrice: 0, total: 0 },
+    { id: '', description: '', quantity: 1, unitPrice: 0, total: 0 },
   ]);
 
   const addItem = () => {
-    setItems([...items, { description: '', quantity: 1, unitPrice: 0, total: 0 }]);
+    setItems([...items, { id: '', description: '', quantity: 1, unitPrice: 0, total: 0 }]);
   };
 
   const updateItem = (index: number, field: string, value: any) => {
@@ -712,10 +700,10 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ opened, onClose
         <Grid>
           <Grid.Col span={6}>
             <TextInput
-              label="Patient Name"
-              placeholder="Enter patient name"
-              value={formData.patientName}
-              onChange={(event) => setFormData({ ...formData, patientName: event.currentTarget.value })}
+              label="Patient ID"
+              placeholder="Enter patient ID"
+              value={formData.patientId}
+              onChange={(event) => setFormData({ ...formData, patientId: event.currentTarget.value })}
               required
             />
           </Grid.Col>
@@ -854,7 +842,7 @@ export const InvoicesPage: React.FC = () => {
     // Update invoice status to pending
     const updatedInvoices = invoices.map(inv => 
       inv.id === invoice.id 
-        ? { ...inv, status: 'pending' as const }
+        ? { ...inv, status: 'sent' as const }
         : inv
     );
     
@@ -879,7 +867,7 @@ export const InvoicesPage: React.FC = () => {
       case 'paid':
         return invoices.filter(invoice => invoice.status === 'paid');
       case 'pending':
-        return invoices.filter(invoice => invoice.status === 'pending');
+        return invoices.filter(invoice => invoice.status === 'sent');
       case 'overdue':
         return invoices.filter(invoice => invoice.status === 'overdue');
       case 'draft':
@@ -891,7 +879,7 @@ export const InvoicesPage: React.FC = () => {
 
   const filteredInvoices = filterInvoicesByTab(invoices, activeTab || 'all')
     .filter(invoice => 
-      invoice.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      invoice.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       invoice.id.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .filter(invoice => !statusFilter || invoice.status === statusFilter);
@@ -902,7 +890,7 @@ export const InvoicesPage: React.FC = () => {
     .filter(invoice => invoice.status === 'paid')
     .reduce((sum, invoice) => sum + invoice.amount, 0);
   const pendingAmount = invoices
-    .filter(invoice => invoice.status === 'pending')
+    .filter(invoice => invoice.status === 'sent')
     .reduce((sum, invoice) => sum + invoice.amount, 0);
   const overdueAmount = invoices
     .filter(invoice => invoice.status === 'overdue')
@@ -1044,7 +1032,7 @@ export const InvoicesPage: React.FC = () => {
               All Invoices
             </Tabs.Tab>
             <Tabs.Tab value="pending" leftSection={<Clock size={16} />}>
-              Pending
+              Sent
             </Tabs.Tab>
             <Tabs.Tab value="paid" leftSection={<CheckCircle size={16} />}>
               Paid

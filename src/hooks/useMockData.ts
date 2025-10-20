@@ -359,7 +359,7 @@ export const usePatients = (params?: { page?: number; limit?: number; search?: s
       patient.firstName?.toLowerCase().includes(searchLower) ||
       patient.lastName?.toLowerCase().includes(searchLower) ||
       patient.email?.toLowerCase().includes(searchLower) ||
-      patient.phone?.includes(params.search)
+      patient.phone?.includes(params.search || '')
     );
   }
 

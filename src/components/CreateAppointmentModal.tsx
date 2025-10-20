@@ -89,7 +89,9 @@ export const CreateAppointmentModal: React.FC<CreateAppointmentModalProps> = ({
         type: values.type,
         sessionType: values.sessionType,
         notes: values.notes,
-        status: 'scheduled',
+        status: 'scheduled' as const,
+        patientId: '', // Add required field
+        providerId: '', // Add required field
       });
 
       notifications.show({

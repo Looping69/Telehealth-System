@@ -151,7 +151,7 @@ export function useTasks(params?: { _sort?: string; _count?: string }) {
           resourceType: 'Task',
           status: 'in-progress',
           intent: 'order',
-          priority: 'high',
+          priority: 'urgent',
           description: 'Process insurance authorization for Mary Wilson',
           authoredOn: new Date(Date.now() - 14400000).toISOString(), // 4 hours ago
           lastModified: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago

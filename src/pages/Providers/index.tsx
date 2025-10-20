@@ -78,34 +78,29 @@ const mockProviders: Provider[] = [
     yearsExperience: 15,
     availability: [
       {
-        dayOfWeek: 'monday',
+        dayOfWeek: 1, // Monday
         startTime: '09:00',
         endTime: '17:00',
-        isAvailable: true,
       },
       {
-        dayOfWeek: 'tuesday',
+        dayOfWeek: 2, // Tuesday
         startTime: '09:00',
         endTime: '17:00',
-        isAvailable: true,
       },
       {
-        dayOfWeek: 'wednesday',
+        dayOfWeek: 3, // Wednesday
         startTime: '09:00',
         endTime: '17:00',
-        isAvailable: true,
       },
       {
-        dayOfWeek: 'thursday',
+        dayOfWeek: 4, // Thursday
         startTime: '09:00',
         endTime: '17:00',
-        isAvailable: true,
       },
       {
-        dayOfWeek: 'friday',
+        dayOfWeek: 5, // Friday
         startTime: '09:00',
         endTime: '15:00',
-        isAvailable: true,
       },
     ],
   },
@@ -130,34 +125,29 @@ const mockProviders: Provider[] = [
     yearsExperience: 12,
     availability: [
       {
-        dayOfWeek: 'monday',
+        dayOfWeek: 1, // Monday
         startTime: '08:00',
         endTime: '16:00',
-        isAvailable: true,
       },
       {
-        dayOfWeek: 'tuesday',
+        dayOfWeek: 2, // Tuesday
         startTime: '08:00',
         endTime: '16:00',
-        isAvailable: true,
       },
       {
-        dayOfWeek: 'wednesday',
+        dayOfWeek: 3, // Wednesday
         startTime: '08:00',
         endTime: '16:00',
-        isAvailable: true,
       },
       {
-        dayOfWeek: 'thursday',
+        dayOfWeek: 4, // Thursday
         startTime: '08:00',
         endTime: '16:00',
-        isAvailable: true,
       },
       {
-        dayOfWeek: 'friday',
+        dayOfWeek: 5, // Friday
         startTime: '08:00',
         endTime: '14:00',
-        isAvailable: true,
       },
     ],
   },
@@ -182,22 +172,19 @@ const mockProviders: Provider[] = [
     yearsExperience: 18,
     availability: [
       {
-        dayOfWeek: 'tuesday',
+        dayOfWeek: 2, // Tuesday
         startTime: '07:00',
         endTime: '18:00',
-        isAvailable: true,
       },
       {
-        dayOfWeek: 'wednesday',
+        dayOfWeek: 3, // Wednesday
         startTime: '07:00',
         endTime: '18:00',
-        isAvailable: true,
       },
       {
-        dayOfWeek: 'thursday',
+        dayOfWeek: 4, // Thursday
         startTime: '07:00',
         endTime: '18:00',
-        isAvailable: true,
       },
     ],
   },
@@ -280,12 +267,12 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onView, onEdit })
 
         <Group justify="space-between" align="center">
           <Group gap="xs">
-            {provider.languages.slice(0, 2).map((lang) => (
+            {provider.languages?.slice(0, 2).map((lang) => (
               <Badge key={lang} size="sm" variant="light">
                 {lang}
               </Badge>
             ))}
-            {provider.languages.length > 2 && (
+            {provider.languages && provider.languages.length > 2 && (
               <Badge size="sm" variant="light">
                 +{provider.languages.length - 2}
               </Badge>
@@ -333,9 +320,9 @@ const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
   if (!provider) return null;
 
   const formatAvailability = (availability: ProviderAvailability[]) => {
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return availability
-      .filter(slot => slot.isAvailable)
-      .map(slot => `${slot.dayOfWeek}: ${slot.startTime} - ${slot.endTime}`)
+      .map(slot => `${dayNames[slot.dayOfWeek]}: ${slot.startTime} - ${slot.endTime}`)
       .join(', ');
   };
 
@@ -408,7 +395,7 @@ const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
                       <strong>Experience:</strong> {provider.yearsExperience} years
                     </Text>
                     <Text size="sm">
-                      <strong>Languages:</strong> {provider.languages.join(', ')}
+                      <strong>Languages:</strong> {provider.languages?.join(', ') || 'Not specified'}
                     </Text>
                   </Stack>
                 </Grid.Col>
@@ -431,18 +418,18 @@ const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
               <div>
                 <Text fw={500} mb="xs">Education</Text>
                 <Stack gap="xs">
-                  {provider.education.map((edu, index) => (
+                  {provider.education?.map((edu, index) => (
                     <Text key={index} size="sm">• {edu}</Text>
-                  ))}
+                  )) || <Text size="sm" c="dimmed">Not specified</Text>}
                 </Stack>
               </div>
 
               <div>
                 <Text fw={500} mb="xs">Certifications</Text>
                 <Stack gap="xs">
-                  {provider.certifications.map((cert, index) => (
+                  {provider.certifications?.map((cert, index) => (
                     <Text key={index} size="sm">• {cert}</Text>
-                  ))}
+                  )) || <Text size="sm" c="dimmed">Not specified</Text>}
                 </Stack>
               </div>
             </Stack>
@@ -461,14 +448,14 @@ const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
-                    const availability = provider.availability.find(a => a.dayOfWeek === day);
+                  {['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].map((day, index) => {
+                    const availability = provider.availability?.find(a => a.dayOfWeek === index);
                     return (
                       <Table.Tr key={day}>
                         <Table.Td style={{ textTransform: 'capitalize' }}>{day}</Table.Td>
                         <Table.Td>
-                          <Badge color={availability?.isAvailable ? 'green' : 'red'} size="sm">
-                            {availability?.isAvailable ? 'Available' : 'Not Available'}
+                          <Badge color={availability ? 'green' : 'red'} size="sm">
+                            {availability ? 'Available' : 'Not Available'}
                           </Badge>
                         </Table.Td>
                         <Table.Td>{availability?.startTime || '-'}</Table.Td>
@@ -578,11 +565,11 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
       totalPatients: 0,
       yearsExperience: formData.yearsExperience,
       availability: [
-        { dayOfWeek: 'monday', startTime: '09:00', endTime: '17:00', isAvailable: true },
-        { dayOfWeek: 'tuesday', startTime: '09:00', endTime: '17:00', isAvailable: true },
-        { dayOfWeek: 'wednesday', startTime: '09:00', endTime: '17:00', isAvailable: true },
-        { dayOfWeek: 'thursday', startTime: '09:00', endTime: '17:00', isAvailable: true },
-        { dayOfWeek: 'friday', startTime: '09:00', endTime: '17:00', isAvailable: true },
+        { dayOfWeek: 1, startTime: '09:00', endTime: '17:00' },
+        { dayOfWeek: 2, startTime: '09:00', endTime: '17:00' },
+        { dayOfWeek: 3, startTime: '09:00', endTime: '17:00' },
+        { dayOfWeek: 4, startTime: '09:00', endTime: '17:00' },
+        { dayOfWeek: 5, startTime: '09:00', endTime: '17:00' },
       ],
     };
 
@@ -759,7 +746,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
           label="Years of Experience"
           placeholder="Enter years of experience"
           value={formData.yearsExperience}
-          onChange={(value) => setFormData({ ...formData, yearsExperience: value || 0 })}
+          onChange={(value) => setFormData({ ...formData, yearsExperience: Number(value) || 0 })}
           min={0}
           max={50}
         />
@@ -832,10 +819,10 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
         npiNumber: provider.npiNumber,
         department: provider.department,
         title: provider.title,
-        bio: provider.bio,
-        languages: provider.languages,
+        bio: provider.bio || '',
+        languages: provider.languages || [],
         status: provider.status,
-        yearsExperience: provider.yearsExperience,
+        yearsExperience: provider.yearsExperience || 0,
       });
     }
   }, [provider]);
@@ -885,7 +872,7 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
         title: formData.title,
         bio: formData.bio,
         languages: formData.languages,
-        status: formData.status,
+        status: formData.status as 'active' | 'inactive',
         yearsExperience: formData.yearsExperience,
       };
 
@@ -1031,7 +1018,7 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
               label="Years of Experience"
               placeholder="Enter years of experience"
               value={formData.yearsExperience}
-              onChange={(value) => setFormData({ ...formData, yearsExperience: value || 0 })}
+              onChange={(value) => setFormData({ ...formData, yearsExperience: Number(value) || 0 })}
               min={0}
               max={50}
             />
@@ -1158,8 +1145,8 @@ export const ProvidersPage: React.FC = () => {
 
   // Calculate summary statistics
   const activeProviders = providers.filter(p => p.status === 'active').length;
-  const totalPatients = providers.reduce((sum, p) => sum + p.totalPatients, 0);
-  const avgRating = providers.reduce((sum, p) => sum + p.rating, 0) / providers.length;
+  const totalPatients = providers.reduce((sum, p) => sum + (p.totalPatients || 0), 0);
+  const avgRating = providers.reduce((sum, p) => sum + (p.rating || 0), 0) / providers.length;
   const departments = [...new Set(providers.map(p => p.department))].length;
 
   return (

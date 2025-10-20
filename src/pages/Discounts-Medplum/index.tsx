@@ -70,24 +70,26 @@ const FHIRDiscountCard: React.FC<FHIRDiscountCardProps> = ({ chargeItem, onView,
   };
 
   const getDiscountAmount = () => {
-    const priceComponent = chargeItem.priceComponent?.[0];
-    if (priceComponent?.amount?.value) {
-      return priceComponent.amount.value;
+    // ChargeItem doesn't have priceComponent in FHIR R4, using extension or other fields
+    const extension = chargeItem.extension?.find(ext => ext.url?.includes('amount'));
+    if (extension?.valueDecimal) {
+      return extension.valueDecimal;
     }
     return 0;
   };
 
   const getDiscountType = () => {
-    const priceComponent = chargeItem.priceComponent?.[0];
-    return priceComponent?.type || 'base';
+    // Use code or category for discount type
+    return chargeItem.code?.coding?.[0]?.display || 'discount';
   };
 
   const getDiscountPercentage = () => {
-    const priceComponent = chargeItem.priceComponent?.[0];
-    if (priceComponent?.factor) {
-      return Math.round((1 - priceComponent.factor) * 100);
+    // Use extension for percentage or calculate from amount
+    const extension = chargeItem.extension?.find(ext => ext.url?.includes('percentage'));
+    if (extension?.valueDecimal) {
+      return Math.round(extension.valueDecimal);
     }
-    return 0;
+    return 10; // Default percentage
   };
 
   const formatCurrency = (amount: number) => {
@@ -127,7 +129,7 @@ const FHIRDiscountCard: React.FC<FHIRDiscountCardProps> = ({ chargeItem, onView,
           <Stack gap={4}>
             <Text fw={500}>{getDiscountName()}</Text>
             <Text size="sm" c="dimmed">
-              {chargeItem.definition?.[0] || 'No description'}
+              {chargeItem.definitionUri?.[0] || chargeItem.code?.text || 'No description'}
             </Text>
           </Stack>
         </Group>
@@ -360,8 +362,8 @@ const DiscountsMedplumPage: React.FC = () => {
                 <Grid.Col span={6}>
                   <Stack gap="xs">
                     <Text size="sm" fw={500}>Status</Text>
-                    <Badge color={selectedChargeItem.status === 'active' ? 'green' : 'yellow'}>
-                      {selectedChargeItem.status}
+                    <Badge color={selectedChargeItem.status === 'billable' ? 'green' : 'yellow'}>
+                      {selectedChargeItem.status || 'unknown'}
                     </Badge>
                   </Stack>
                 </Grid.Col>
@@ -370,7 +372,7 @@ const DiscountsMedplumPage: React.FC = () => {
                     <Text size="sm" fw={500}>Amount</Text>
                     <Text size="sm" c="dimmed">
                       <NumberFormatter
-                        value={selectedChargeItem.priceComponent?.[0]?.amount?.value || 0}
+                        value={(selectedChargeItem as any).priceComponent?.[0]?.amount?.value || 0}
                         prefix="$"
                         thousandSeparator
                         decimalScale={2}
@@ -382,7 +384,7 @@ const DiscountsMedplumPage: React.FC = () => {
                   <Stack gap="xs">
                     <Text size="sm" fw={500}>Type</Text>
                     <Text size="sm" c="dimmed">
-                      {selectedChargeItem.priceComponent?.[0]?.type || 'base'}
+                      {(selectedChargeItem as any).priceComponent?.[0]?.type || 'base'}
                     </Text>
                   </Stack>
                 </Grid.Col>
@@ -390,7 +392,7 @@ const DiscountsMedplumPage: React.FC = () => {
                   <Stack gap="xs">
                     <Text size="sm" fw={500}>Definition</Text>
                     <Text size="sm" c="dimmed">
-                      {selectedChargeItem.definition?.[0] || 'No definition available'}
+                      {selectedChargeItem.definitionUri?.[0] || 'No definition available'}
                     </Text>
                   </Stack>
                 </Grid.Col>

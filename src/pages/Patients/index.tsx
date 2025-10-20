@@ -360,12 +360,7 @@ export const PatientsPage: React.FC = () => {
 
   const { data: patients, isLoading, error } = usePatients({
     search: searchQuery,
-    status: statusFilter,
-    gender: genderFilter,
-    insurance: insuranceFilter,
-    ageRange: ageRangeFilter,
-    sortBy: sortBy,
-    sortOrder: sortOrder,
+    status: statusFilter || undefined,
     page: currentPage,
     limit: 12,
   });

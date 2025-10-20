@@ -127,7 +127,7 @@ const AuditLogRow: React.FC<AuditLogRowProps> = ({ log, onViewDetails }) => {
         </Group>
       </Table.Td>
       <Table.Td>
-        <Code size="sm">{log.action}</Code>
+        <Code>{log.action}</Code>
       </Table.Td>
       <Table.Td>{log.resource}</Table.Td>
       <Table.Td>
@@ -402,7 +402,7 @@ const TopActionsComponent: React.FC<{ auditLogs: AuditLog[] }> = ({ auditLogs })
               <Badge variant="light" size="sm">
                 #{index + 1}
               </Badge>
-              <Code size="sm">{action.action}</Code>
+              <Code>{action.action}</Code>
             </Group>
             <Text fw={500}>{action.count}</Text>
           </Group>
@@ -478,7 +478,7 @@ export const AuditMedplumPage: React.FC = () => {
     action: event.action || 'Unknown',
     resource: event.entity?.[0]?.what?.reference || 'Unknown',
     resourceId: event.entity?.[0]?.what?.reference?.split('/')?.[1] || undefined,
-    status: event.outcome === 0 ? 'success' : 'failure',
+    status: event.outcome === '0' ? 'success' : 'failure',
     details: event.outcomeDesc || 'No details',
     ipAddress: 'N/A',
   })) || [];
@@ -600,11 +600,12 @@ export const AuditMedplumPage: React.FC = () => {
                   <Grid.Col span={{ base: 12, sm: 6, md: 2.4 }}>
                   <SegmentedControl
                     value={viewMode}
-                    onChange={setViewMode}
+                    onChange={(value) => setViewMode(value as 'cards' | 'table')}
                     data={[
                       { label: 'Cards', value: 'cards' },
                       { label: 'Table', value: 'table' },
                     ]}
+                    fullWidth
                   />
                   </Grid.Col>
                 </Grid>
@@ -842,7 +843,7 @@ const AuditLogCard: React.FC<AuditLogCardProps> = ({ log, onViewDetails }) => {
         <Group justify="space-between" align="flex-start">
           <div>
             <Group gap="xs" mb="xs">
-              <Code size="sm">{log.action}</Code>
+              <Code>{log.action}</Code>
               <Badge
                 color={getStatusColor(log.status)}
                 variant="light"

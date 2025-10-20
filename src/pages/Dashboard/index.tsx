@@ -37,7 +37,7 @@ import {
   CheckCircle,
   Plus,
 } from 'lucide-react';
-import { useDashboardMetrics, useTasks } from '../../hooks/useMedplum';
+import { useDashboardMetrics as useMedplumDashboardMetrics, useTasks } from '../../hooks/useMedplum';
 import { useAppointments, usePatients } from '../../hooks/useQuery';
 import { formatHumanName, getReferenceDisplay, convertAppointmentFromFHIR, convertTaskFromFHIR } from '../../utils/fhir';
 import { useAuthStore } from '../../store/authStore';
@@ -217,7 +217,7 @@ const UpcomingAppointments: React.FC = () => {
         <Stack gap="sm">
           {todayAppointments.length > 0 ? (
             todayAppointments.map((appointment) => {
-              const converted = convertAppointmentFromFHIR(appointment);
+              const converted = convertAppointmentFromFHIR(appointment as any);
               return (
                 <Card key={appointment.id} padding="sm" withBorder>
                   <Group justify="space-between">
@@ -235,7 +235,7 @@ const UpcomingAppointments: React.FC = () => {
                       </Text>
                     </div>
                     <Badge 
-                      color={appointment.status === 'booked' ? 'blue' : 'gray'} 
+                      color={appointment.status === 'scheduled' ? 'blue' : 'gray'} 
                       size="sm"
                     >
                       {appointment.status}
@@ -262,7 +262,7 @@ const UpcomingAppointments: React.FC = () => {
  * Main Dashboard Page Component
  */
 export const DashboardPage: React.FC = () => {
-  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useDashboardMetrics();
+  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useMedplumDashboardMetrics();
 
   if (metricsLoading) {
     return (

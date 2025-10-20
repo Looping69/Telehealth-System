@@ -124,7 +124,26 @@ const mockInsuranceProviders = [
   },
 ];
 
-const mockPatientInsurance: Insurance[] = [
+interface ExtendedInsurance extends Insurance {
+  id: string;
+  patientId: string;
+  patientName: string;
+  planName: string;
+  subscriberId: string;
+  subscriberName: string;
+  relationship: string;
+  effectiveDate: Date;
+  status: 'active' | 'inactive';
+  copay: number;
+  deductible: number;
+  coinsurance: number;
+  outOfPocketMax: number;
+  lastVerified: Date;
+  verificationStatus: 'verified' | 'pending' | 'failed';
+  notes?: string;
+}
+
+const mockPatientInsurance: ExtendedInsurance[] = [
   {
     id: 'PI-001',
     patientId: 'PAT-001',
@@ -136,14 +155,14 @@ const mockPatientInsurance: Insurance[] = [
     subscriberId: 'SUB123456',
     subscriberName: 'Sarah Johnson',
     relationship: 'self',
-    effectiveDate: '2024-01-01',
-    expirationDate: '2024-12-31',
+    effectiveDate: new Date('2024-01-01'),
+    expirationDate: new Date('2024-12-31'),
     status: 'active',
     copay: 25,
     deductible: 1000,
     coinsurance: 20,
     outOfPocketMax: 5000,
-    lastVerified: '2024-01-10',
+    lastVerified: new Date('2024-01-10'),
     verificationStatus: 'verified',
   },
   {
@@ -157,14 +176,14 @@ const mockPatientInsurance: Insurance[] = [
     subscriberId: 'SUB987654',
     subscriberName: 'Michael Chen',
     relationship: 'self',
-    effectiveDate: '2024-01-01',
-    expirationDate: '2024-12-31',
+    effectiveDate: new Date('2024-01-01'),
+    expirationDate: new Date('2024-12-31'),
     status: 'active',
     copay: 30,
     deductible: 1500,
     coinsurance: 25,
     outOfPocketMax: 6000,
-    lastVerified: '2024-01-08',
+    lastVerified: new Date('2024-01-08'),
     verificationStatus: 'pending',
   },
 ];
@@ -798,9 +817,9 @@ const AddProviderModal: React.FC<AddProviderModalProps> = ({
  * Patient Insurance Card Component
  */
 interface PatientInsuranceCardProps {
-  insurance: Insurance;
-  onView: (insurance: Insurance) => void;
-  onVerify: (insurance: Insurance) => void;
+  insurance: ExtendedInsurance;
+  onView: (insurance: ExtendedInsurance) => void;
+  onVerify: (insurance: ExtendedInsurance) => void;
 }
 
 const PatientInsuranceCard: React.FC<PatientInsuranceCardProps> = ({
@@ -879,14 +898,14 @@ const PatientInsuranceCard: React.FC<PatientInsuranceCardProps> = ({
           <Group justify="space-between">
             <Text size="sm" c="dimmed">Last Verified:</Text>
             <Text size="sm" fw={500}>
-              {insurance.lastVerified}
+              {insurance.lastVerified.toLocaleDateString()}
             </Text>
           </Group>
         </Stack>
 
         <Group justify="space-between" align="center">
           <Text size="xs" c="dimmed">
-            Expires: {insurance.expirationDate}
+            Expires: {insurance.expirationDate?.toLocaleDateString()}
           </Text>
           <Group gap="xs">
             <ActionIcon
@@ -914,7 +933,7 @@ const PatientInsuranceCard: React.FC<PatientInsuranceCardProps> = ({
  * Insurance Details Modal
  */
 interface InsuranceDetailsModalProps {
-  insurance: Insurance | null;
+  insurance: ExtendedInsurance | null;
   opened: boolean;
   onClose: () => void;
 }
@@ -1010,10 +1029,10 @@ const InsuranceDetailsModal: React.FC<InsuranceDetailsModalProps> = ({
             <Stack gap="xs">
               <Text fw={500}>Coverage Period</Text>
               <Text size="sm">
-                <strong>Effective Date:</strong> {insurance.effectiveDate}
+                <strong>Effective Date:</strong> {insurance.effectiveDate.toLocaleDateString()}
               </Text>
               <Text size="sm">
-                <strong>Expiration Date:</strong> {insurance.expirationDate}
+                <strong>Expiration Date:</strong> {insurance.expirationDate?.toLocaleDateString()}
               </Text>
             </Stack>
           </Grid.Col>
@@ -1027,7 +1046,7 @@ const InsuranceDetailsModal: React.FC<InsuranceDetailsModalProps> = ({
                 </Badge>
               </Text>
               <Text size="sm">
-                <strong>Last Verified:</strong> {insurance.lastVerified}
+                <strong>Last Verified:</strong> {insurance.lastVerified.toLocaleDateString()}
               </Text>
             </Stack>
           </Grid.Col>
@@ -1053,12 +1072,12 @@ export const InsurancePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>('patient_insurance');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [selectedInsurance, setSelectedInsurance] = useState<Insurance | null>(null);
+  const [selectedInsurance, setSelectedInsurance] = useState<ExtendedInsurance | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   
   // State management for data
-  const [patientInsurance, setPatientInsurance] = useState<Insurance[]>(mockPatientInsurance);
+  const [patientInsurance, setPatientInsurance] = useState<ExtendedInsurance[]>(mockPatientInsurance);
   const [providers, setProviders] = useState(mockInsuranceProviders);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -1069,12 +1088,12 @@ export const InsurancePage: React.FC = () => {
   const [editProviderOpened, { open: openEditProvider, close: closeEditProvider }] = useDisclosure(false);
   const [selectedProvider, setSelectedProvider] = useState<any>(null);
 
-  const handleViewInsurance = (insurance: Insurance) => {
+  const handleViewInsurance = (insurance: ExtendedInsurance) => {
     setSelectedInsurance(insurance);
     openDetails();
   };
 
-  const handleVerifyInsurance = (insurance: Insurance) => {
+  const handleVerifyInsurance = (insurance: ExtendedInsurance) => {
     setIsLoading(true);
     
     // Simulate API call
@@ -1085,7 +1104,7 @@ export const InsurancePage: React.FC = () => {
             ? { 
                 ...ins, 
                 verificationStatus: 'verified', 
-                lastVerified: new Date().toISOString().split('T')[0] 
+                lastVerified: new Date() 
               }
             : ins
         )
@@ -1119,8 +1138,30 @@ export const InsurancePage: React.FC = () => {
     openAddProvider();
   };
 
-  const handleAddInsuranceSubmit = (insuranceData: Partial<Insurance>) => {
-    setPatientInsurance(prev => [...prev, insuranceData as Insurance]);
+  const handleAddInsuranceSubmit = (insuranceData: any) => {
+    const newInsurance: ExtendedInsurance = {
+      id: `PI-${Date.now()}`,
+      patientId: 'P001',
+      patientName: 'John Doe',
+      planName: insuranceData.planName || 'Unknown Plan',
+      provider: insuranceData.provider || 'Unknown Provider',
+      policyNumber: insuranceData.policyNumber || '',
+      groupNumber: insuranceData.groupNumber || '',
+      effectiveDate: insuranceData.effectiveDate || new Date(),
+      expirationDate: insuranceData.expirationDate || new Date(),
+      copay: insuranceData.copay || 0,
+      deductible: insuranceData.deductible || 0,
+      coinsurance: insuranceData.coinsurance || 20,
+      outOfPocketMax: insuranceData.outOfPocketMax || 0,
+      status: insuranceData.status || 'active',
+      subscriberId: insuranceData.subscriberId || '',
+      subscriberName: insuranceData.subscriberName || '',
+      relationship: insuranceData.relationship || 'self',
+      lastVerified: new Date(),
+      verificationStatus: 'pending',
+      notes: insuranceData.notes || '',
+    };
+    setPatientInsurance(prev => [...prev, newInsurance]);
   };
 
   const handleEditProviderSubmit = (providerData: any) => {
@@ -1467,9 +1508,9 @@ export const InsurancePage: React.FC = () => {
  * Patient Insurance Table Row Component
  */
 interface PatientInsuranceTableRowProps {
-  insurance: Insurance;
-  onView: (insurance: Insurance) => void;
-  onVerify: (insurance: Insurance) => void;
+  insurance: ExtendedInsurance;
+  onView: (insurance: ExtendedInsurance) => void;
+  onVerify: (insurance: ExtendedInsurance) => void;
 }
 
 const PatientInsuranceTableRow: React.FC<PatientInsuranceTableRowProps> = ({
@@ -1528,7 +1569,7 @@ const PatientInsuranceTableRow: React.FC<PatientInsuranceTableRowProps> = ({
         <Text size="sm">${insurance.deductible}</Text>
       </Table.Td>
       <Table.Td>
-        <Text size="sm">{insurance.expirationDate}</Text>
+        <Text size="sm">{insurance.expirationDate?.toLocaleDateString()}</Text>
       </Table.Td>
       <Table.Td>
         <Group gap="xs">
@@ -1633,7 +1674,7 @@ const ProviderTableRow: React.FC<ProviderTableRowProps> = ({ provider, onView, o
 interface AddInsuranceModalProps {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (insuranceData: Partial<Insurance>) => void;
+  onSubmit: (insuranceData: any) => void;
 }
 
 const AddInsuranceModal: React.FC<AddInsuranceModalProps> = ({ opened, onClose, onSubmit }) => {
@@ -1681,12 +1722,8 @@ const AddInsuranceModal: React.FC<AddInsuranceModalProps> = ({ opened, onClose, 
     setIsSubmitting(true);
     
     try {
-      const newInsurance: Partial<Insurance> = {
+      const newInsurance = {
         ...formData,
-        id: `PI-${Date.now()}`,
-        status: 'active',
-        verificationStatus: 'pending',
-        lastVerified: new Date().toISOString().split('T')[0],
       };
 
       onSubmit(newInsurance);

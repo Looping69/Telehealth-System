@@ -282,7 +282,7 @@ export function CreateInvoiceModal({ opened, onClose }: CreateInvoiceModalProps)
           onChange={(value) => setPatientId(value || '')}
           searchable
           clearable
-          loading={patientsLoading}
+
           required
           error={!patientId ? 'Patient selection is required' : null}
         />
@@ -387,7 +387,7 @@ export function CreateInvoiceModal({ opened, onClose }: CreateInvoiceModalProps)
                       <Table.Th>Qty</Table.Th>
                       <Table.Th>Unit Price</Table.Th>
                       <Table.Th>Total</Table.Th>
-                      <Table.Th width={50}></Table.Th>
+                      <Table.Th style={{ width: 50 }}></Table.Th>
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>

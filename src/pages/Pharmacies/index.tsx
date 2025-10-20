@@ -626,6 +626,7 @@ const CreatePharmacyModal: React.FC<CreatePharmacyModalProps> = ({ opened, onClo
       const newPharmacy: Pharmacy = {
         id: `PHARM-${Date.now()}`,
         ...formData,
+        type: formData.type as 'retail' | 'hospital' | 'mail_order' | 'specialty',
         status: 'pending' as const,
         hours: {
           monday: { open: '08:00', close: '18:00', isOpen: true },
@@ -934,6 +935,7 @@ const CreatePharmacyModal: React.FC<CreatePharmacyModalProps> = ({ opened, onClo
        const updatedPharmacy: Pharmacy = {
          ...pharmacy,
          ...formData,
+         type: formData.type as 'retail' | 'hospital' | 'mail_order' | 'specialty',
        };
 
        onSave(updatedPharmacy);

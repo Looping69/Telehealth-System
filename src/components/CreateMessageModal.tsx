@@ -37,7 +37,7 @@ export function CreateMessageModal({ opened, onClose }: CreateMessageModalProps)
   // Hooks
   const { data: patients = [], isLoading: patientsLoading } = usePatients({
     search: searchQuery,
-    _count: '20',
+    limit: 20,
   });
   const createCommunication = useCreateCommunication();
 
@@ -129,9 +129,11 @@ export function CreateMessageModal({ opened, onClose }: CreateMessageModalProps)
       setRecipientId(value);
       const selectedPatient = patients.find((p: any) => p.id === value);
       if (selectedPatient) {
-        const name = selectedPatient.name?.[0]?.given?.[0] && selectedPatient.name?.[0]?.family
-          ? `${selectedPatient.name[0].given[0]} ${selectedPatient.name[0].family}`
-          : selectedPatient.name?.[0]?.text || 'Unknown Patient';
+        const name = typeof selectedPatient.name === 'string' 
+          ? selectedPatient.name
+          : (selectedPatient.name as any)?.[0]?.given?.[0] && (selectedPatient.name as any)?.[0]?.family
+            ? `${(selectedPatient.name as any)[0].given[0]} ${(selectedPatient.name as any)[0].family}`
+            : (selectedPatient.name as any)?.[0]?.text || 'Unknown Patient';
         setRecipientName(name);
       }
     } else {
@@ -154,7 +156,7 @@ export function CreateMessageModal({ opened, onClose }: CreateMessageModalProps)
         {/* Recipient Selection */}
         <Select
           label="Recipient"
-          placeholder="Search and select a patient..."
+          placeholder="Select a patient"
           data={patientOptions}
           value={recipientId}
           onChange={handleRecipientChange}
@@ -162,7 +164,7 @@ export function CreateMessageModal({ opened, onClose }: CreateMessageModalProps)
           searchable
           clearable
           required
-          loading={patientsLoading}
+
           description="Type to search for patients by name"
         />
 

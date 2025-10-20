@@ -19,7 +19,6 @@ import {
   ActionIcon,
   Modal,
   Tabs,
-  Calendar,
   Avatar,
   Divider,
   Center,
@@ -224,10 +223,10 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
             <Stack gap="xs">
               <Text fw={500}>Provider Information</Text>
               <Text size="sm">
-                <strong>Provider:</strong> {appointment.provider}
+                <strong>Provider:</strong> {appointment.providerName || 'Unknown Provider'}
               </Text>
               <Text size="sm">
-                <strong>Reason:</strong> {appointment.reason}
+                <strong>Type:</strong> {appointment.type}
               </Text>
             </Stack>
           </Grid.Col>
@@ -473,7 +472,7 @@ export const SessionsPage: React.FC = () => {
                       </Table.Td>
                       <Table.Td>
                         <Group gap="xs">
-                          {appointment.type === 'video' ? <Video size={14} /> : <Phone size={14} />}
+                          {appointment.sessionType === 'video' ? <Video size={14} /> : <Phone size={14} />}
                           <Text size="sm">{appointment.type}</Text>
                         </Group>
                       </Table.Td>
@@ -576,7 +575,7 @@ export const SessionsPage: React.FC = () => {
                       </Table.Td>
                       <Table.Td>
                         <Group gap="xs">
-                          {appointment.type === 'video' ? <Video size={14} /> : <Phone size={14} />}
+                          {appointment.sessionType === 'video' ? <Video size={14} /> : <Phone size={14} />}
                           <Text size="sm">{appointment.type}</Text>
                         </Group>
                       </Table.Td>
@@ -678,7 +677,7 @@ export const SessionsPage: React.FC = () => {
                       </Table.Td>
                       <Table.Td>
                         <Group gap="xs">
-                          {appointment.type === 'video' ? <Video size={14} /> : <Phone size={14} />}
+                          {appointment.sessionType === 'video' ? <Video size={14} /> : <Phone size={14} />}
                           <Text size="sm">{appointment.type}</Text>
                         </Group>
                       </Table.Td>
@@ -771,7 +770,7 @@ export const SessionsPage: React.FC = () => {
                       </Table.Td>
                       <Table.Td>
                         <Group gap="xs">
-                          {appointment.type === 'video' ? <Video size={14} /> : <Phone size={14} />}
+                          {appointment.sessionType === 'video' ? <Video size={14} /> : <Phone size={14} />}
                           <Text size="sm">{appointment.type}</Text>
                         </Group>
                       </Table.Td>
@@ -864,7 +863,7 @@ export const SessionsPage: React.FC = () => {
                       </Table.Td>
                       <Table.Td>
                         <Group gap="xs">
-                          {appointment.type === 'video' ? <Video size={14} /> : <Phone size={14} />}
+                          {appointment.sessionType === 'video' ? <Video size={14} /> : <Phone size={14} />}
                           <Text size="sm">{appointment.type}</Text>
                         </Group>
                       </Table.Td>

@@ -65,7 +65,7 @@ import {
   Check,
   AlertTriangle,
 } from 'lucide-react';
-import { useDisclosure, useNotifications } from '@mantine/hooks';
+import { useDisclosure } from '@mantine/hooks';
 
 /**
  * Resource interface
@@ -849,7 +849,6 @@ const ResourceDetailsModal: React.FC<ResourceDetailsModalProps> = ({ resource, o
                 <Text fw={500} mb="xs">Engagement Rate</Text>
                 <Progress
                   value={(resource.downloadCount / resource.viewCount) * 100}
-                  label={`${((resource.downloadCount / resource.viewCount) * 100).toFixed(1)}%`}
                   size="lg"
                   radius="md"
                 />
@@ -1505,7 +1504,7 @@ export const ResourcesPage: React.FC = () => {
                   onView={handleViewResource}
                   onEdit={handleEditResource}
                   onDownload={handleDownloadResource}
-                  onDelete={handleDeleteResource}
+                  onDelete={(resource) => handleDeleteResource(resource.id)}
                   onDuplicate={handleDuplicateResource}
                   isSelected={selectedResources.includes(resource.id)}
                   onSelect={toggleResourceSelection}
@@ -1546,7 +1545,7 @@ export const ResourcesPage: React.FC = () => {
                     onView={handleViewResource}
                     onEdit={handleEditResource}
                     onDownload={handleDownloadResource}
-                    onDelete={handleDeleteResource}
+                    onDelete={(resource) => handleDeleteResource(resource.id)}
                     onDuplicate={handleDuplicateResource}
                     isSelected={selectedResources.includes(resource.id)}
                     onSelect={toggleResourceSelection}
@@ -1583,7 +1582,7 @@ export const ResourcesPage: React.FC = () => {
         <Notification
           icon={notification.type === 'success' ? <Check size={18} /> : <AlertTriangle size={18} />}
           color={notification.type === 'success' ? 'green' : 'red'}
-          title={notification.title}
+          title={notification.type === 'success' ? 'Success' : 'Error'}
           onClose={() => setNotification(null)}
           style={{ position: 'fixed', top: 20, right: 20, zIndex: 1000 }}
         >
@@ -1592,17 +1591,17 @@ export const ResourcesPage: React.FC = () => {
       )}
 
       {/* Delete Confirmation Modal */}
-      <Modal opened={deleteOpened} onClose={() => setDeleteOpened(false)} title="Delete Resource">
+      <Modal opened={deleteOpened} onClose={closeDelete} title="Delete Resource">
         <Text>Are you sure you want to delete this resource? This action cannot be undone.</Text>
         <Group justify="flex-end" mt="md">
-          <Button variant="light" onClick={() => setDeleteOpened(false)}>
+          <Button variant="light" onClick={closeDelete}>
             Cancel
           </Button>
           <Button color="red" onClick={() => {
             if (selectedResource) {
               handleDeleteResource(selectedResource.id);
             }
-            setDeleteOpened(false);
+            closeDelete();
           }}>
             Delete
           </Button>

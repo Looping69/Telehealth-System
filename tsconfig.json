@@ -4,10 +4,11 @@
     "lib": [
       "DOM",
       "DOM.Iterable",
-      "ES6"
+      "ES2020"
     ],
     "allowJs": true,
     "skipLibCheck": true,
+    "types": ["vite/client"],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,

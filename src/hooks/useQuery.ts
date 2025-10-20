@@ -6,6 +6,7 @@
 import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { medplumClient } from '../config/medplum';
 import { Patient, Appointment, Order, Invoice, Task, Provider, Message } from '../types';
+import { Patient as FHIRPatient, Appointment as FHIRAppointment } from '@medplum/fhirtypes';
 
 // Create a client
 export const queryClient = new QueryClient({
@@ -79,7 +80,7 @@ export function usePatients(searchQuery?: string | {
           phone: patient.telecom?.find((t: any) => t.system === 'phone')?.value || '',
           dateOfBirth: patient.birthDate || '',
           gender: patient.gender || 'unknown',
-          status: patient.active ? 'active' : 'inactive',
+          status: patient.active ? 'active' : 'inactive' as const,
           createdAt: new Date(patient.meta?.lastUpdated || Date.now()),
           updatedAt: new Date(patient.meta?.lastUpdated || Date.now()),
           address: patient.address?.[0] ? 
@@ -88,8 +89,8 @@ export function usePatients(searchQuery?: string | {
           insurance: patient.extension?.find((ext: any) => ext.url?.includes('insurance'))?.valueString || '',
           medicalHistory: [],
           allergies: [],
-          lastVisit: patient.meta?.lastUpdated ? new Date(patient.meta.lastUpdated) : null,
-          nextAppointment: null,
+          lastVisit: patient.meta?.lastUpdated ? new Date(patient.meta.lastUpdated) : undefined,
+          nextAppointment: undefined,
         }));
         
         console.log(`Successfully fetched ${result.length} patients from Medplum`);
@@ -494,9 +495,9 @@ export function useDashboardMetrics() {
         });
 
         const metrics = {
-          totalAppointments: appointments.total || 0,
-          totalPatients: patients.total || 0,
-          totalRevenue: revenue.total || 0,
+          totalAppointments: appointments.length || 0,
+          totalPatients: patients.length || 0,
+          totalRevenue: revenue.length || 0,
           pendingAppointments: 10, // Mock data for now
         };
 
@@ -527,18 +528,18 @@ export function useCreatePatient() {
       try {
         console.log('Creating patient in Medplum...');
         
-        const medplumPatient = {
+        const medplumPatient: FHIRPatient = {
           resourceType: 'Patient',
           active: patientData.status === 'active',
           name: [{
-            given: [patientData.firstName],
-            family: patientData.lastName,
+            given: patientData.firstName ? [patientData.firstName] : [],
+            family: patientData.lastName || '',
           }],
           telecom: [
-            ...(patientData.email ? [{ system: 'email', value: patientData.email }] : []),
-            ...(patientData.phone ? [{ system: 'phone', value: patientData.phone }] : []),
+            ...(patientData.email ? [{ system: 'email' as const, value: patientData.email }] : []),
+            ...(patientData.phone ? [{ system: 'phone' as const, value: patientData.phone }] : []),
           ],
-          gender: patientData.gender,
+          gender: patientData.gender as 'male' | 'female' | 'other' | 'unknown',
           birthDate: patientData.dateOfBirth,
         };
         
@@ -552,7 +553,7 @@ export function useCreatePatient() {
           email: patientData.email,
           phone: patientData.phone,
           dateOfBirth: patientData.dateOfBirth,
-          gender: patientData.gender,
+          gender: patientData.gender as 'male' | 'female' | 'other' | 'unknown',
           status: patientData.status,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -602,14 +603,14 @@ export function useUpdatePatient() {
             family: patientData.lastName,
           }],
           telecom: [
-            ...(patientData.email ? [{ system: 'email', value: patientData.email }] : []),
-            ...(patientData.phone ? [{ system: 'phone', value: patientData.phone }] : []),
+            ...(patientData.email ? [{ system: 'email' as const, value: patientData.email }] : []),
+            ...(patientData.phone ? [{ system: 'phone' as const, value: patientData.phone }] : []),
           ],
-          gender: patientData.gender,
+          gender: patientData.gender as 'male' | 'female' | 'other' | 'unknown',
           birthDate: patientData.dateOfBirth,
         };
         
-        const updatedPatient = await medplumClient.updateResource(updatedMedplumPatient);
+        const updatedPatient = await medplumClient.updateResource(updatedMedplumPatient as any);
         
         const result: Patient = {
           ...patientData as Patient,
@@ -694,26 +695,29 @@ export function useCreateAppointment() {
           }
         }
         
-        const medplumAppointment = {
+        const medplumAppointment: FHIRAppointment = {
           resourceType: 'Appointment',
-          status: appointmentData.status,
-          start: appointmentData.date.toISOString(),
-          end: new Date(appointmentData.date.getTime() + appointmentData.duration * 60000).toISOString(),
+          status: appointmentData.status as 'proposed' | 'pending' | 'booked' | 'arrived' | 'fulfilled' | 'cancelled' | 'noshow' | 'entered-in-error' | 'checked-in' | 'waitlist',
+          start: appointmentData.start || appointmentData.date.toISOString(),
+          end: appointmentData.end || new Date(appointmentData.date.getTime() + (appointmentData.duration || 30) * 60000).toISOString(),
           minutesDuration: appointmentData.duration,
-          participant: [
+          participant: (appointmentData.participant?.map(p => ({
+            ...p,
+            status: p.status as 'accepted' | 'declined' | 'tentative' | 'needs-action'
+          }))) || [
             {
               actor: {
                 reference: `Patient/${patientId}`,
                 display: appointmentData.patientName || 'Unknown Patient',
               },
-              status: 'accepted',
+              status: 'accepted' as const,
             },
             {
               actor: {
                 reference: `Practitioner/${providerId}`,
                 display: appointmentData.providerName || 'Unknown Provider',
               },
-              status: 'accepted',
+              status: 'accepted' as const,
             },
           ],
           comment: appointmentData.notes,
@@ -866,7 +870,7 @@ export function useCreateOrder() {
         };
       }
       
-      const createdOrder = await medplumClient.createResource(medplumOrder);
+      const createdOrder = await medplumClient.createResource(medplumOrder as any);
       
       console.log('Successfully created order in Medplum:', createdOrder);
       return createdOrder;
@@ -1092,7 +1096,7 @@ export function useCreateProduct() {
       try {
         // Create FHIR Medication resource
         const medplumMedication = {
-          resourceType: 'Medication',
+          resourceType: 'Medication' as const,
           status: productData.status,
           code: {
             text: productData.name,
@@ -1571,8 +1575,8 @@ export function useCommunications(params?: {
                 coding: [
                   {
                    system: 'http://terminology.hl7.org/CodeSystem/communication-category',
-                   code: communicationData.category || 'notification',
-                   display: communicationData.category || 'Notification'
+                   code: 'notification',
+                   display: 'Notification'
                  }
                 ]
               }
@@ -1646,8 +1650,8 @@ export function useCreateCommunication() {
         
         // Create FHIR Communication resource
         const communication = {
-          resourceType: 'Communication',
-          status: 'completed',
+          resourceType: 'Communication' as const,
+          status: 'completed' as const,
           category: [
             {
               coding: [
@@ -1915,7 +1919,7 @@ export function useInvoices(searchQuery?: string | {
                     }
                   },
                   {
-                    type: 'tax',
+                    type: 'tax' as const,
                     amount: {
                       value: 15.00,
                       currency: 'USD'
@@ -2008,7 +2012,7 @@ export function useInvoices(searchQuery?: string | {
                 },
                 priceComponent: [
                   {
-                    type: 'tax',
+                    type: 'tax' as const,
                     amount: {
                       value: 20.00,
                       currency: 'USD'
@@ -2036,7 +2040,7 @@ export function useInvoices(searchQuery?: string | {
           {
             resourceType: 'Invoice',
             id: 'invoice-3',
-            status: 'draft',
+            status: 'draft' as const,
             type: {
               coding: [
                 {
@@ -2078,7 +2082,7 @@ export function useInvoices(searchQuery?: string | {
                     }
                   },
                   {
-                    type: 'tax',
+                    type: 'tax' as const,
                     amount: {
                       value: 30.00,
                       currency: 'USD'
@@ -2174,8 +2178,8 @@ export function useCreateInvoice() {
 
         // Create FHIR Invoice resource
         const fhirInvoice = {
-          resourceType: 'Invoice',
-          status: 'draft',
+          resourceType: 'Invoice' as const,
+          status: 'draft' as const,
           type: {
             coding: [
               {
@@ -2196,11 +2200,11 @@ export function useCreateInvoice() {
           date: new Date().toISOString().split('T')[0],
           totalNet: {
             value: totalNet,
-            currency: invoiceData.currency || 'USD'
+            currency: (invoiceData.currency || 'USD') as 'USD'
           },
           totalGross: {
             value: totalGross,
-            currency: invoiceData.currency || 'USD'
+            currency: (invoiceData.currency || 'USD') as 'USD'
           },
           lineItem: invoiceData.lineItems?.map((item, index) => ({
             sequence: index + 1,
@@ -2209,11 +2213,11 @@ export function useCreateInvoice() {
             },
             priceComponent: [
               {
-                type: 'base',
+                type: 'base' as const,
                 amount: {
-                  value: item.total,
-                  currency: invoiceData.currency || 'USD'
-                }
+                    value: item.total,
+                    currency: (invoiceData.currency || 'USD') as 'USD'
+                  }
               }
             ]
           })) || [
@@ -2224,11 +2228,11 @@ export function useCreateInvoice() {
               },
               priceComponent: [
                 {
-                  type: 'base',
+                  type: 'base' as const,
                   amount: {
-                    value: totalNet,
-                    currency: invoiceData.currency || 'USD'
-                  }
+                      value: totalNet,
+                      currency: (invoiceData.currency || 'USD') as 'USD'
+                    }
                 }
               ]
             }
@@ -2249,11 +2253,11 @@ export function useCreateInvoice() {
             },
             priceComponent: [
               {
-                type: 'tax',
+                type: 'base' as const,
                 amount: {
-                  value: taxAmount,
-                  currency: invoiceData.currency || 'USD'
-                }
+                    value: taxAmount,
+                    currency: (invoiceData.currency || 'USD') as 'USD'
+                  }
               }
             ]
           });
@@ -2267,9 +2271,9 @@ export function useCreateInvoice() {
         
         // Fallback to mock creation
         const mockInvoice = {
-          resourceType: 'Invoice',
+          resourceType: 'Invoice' as const,
           id: `invoice-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          status: 'draft',
+          status: 'draft' as const,
           type: {
             coding: [
               {

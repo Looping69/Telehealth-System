@@ -282,10 +282,10 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 <strong>Assigned to:</strong> {task.assignedTo}
               </Text>
               <Text size="sm">
-                <strong>Created:</strong> {task.createdAt.toLocaleDateString()}
+                <strong>Created:</strong> {task.createdAt ? (typeof task.createdAt === 'string' ? new Date(task.createdAt).toLocaleDateString() : task.createdAt.toLocaleDateString()) : 'N/A'}
               </Text>
               <Text size="sm">
-                <strong>Due Date:</strong> {task.dueDate ? task.dueDate.toLocaleDateString() : 'No due date'}
+                <strong>Due Date:</strong> {task.dueDate ? (typeof task.dueDate === 'string' ? new Date(task.dueDate).toLocaleDateString() : task.dueDate.toLocaleDateString()) : 'No due date'}
               </Text>
             </Stack>
           </Grid.Col>
@@ -447,7 +447,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose, onTa
                 { value: 'urgent', label: 'Urgent' },
               ]}
               value={formData.priority}
-              onChange={(value) => setFormData({ ...formData, priority: value || 'medium' })}
+              onChange={(value) => setFormData({ ...formData, priority: (value || 'medium') as 'low' | 'medium' | 'high' | 'urgent' })}
             />
           </Grid.Col>
           <Grid.Col span={6}>
@@ -643,7 +643,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, opened, onClose, on
                 { value: 'urgent', label: 'Urgent' },
               ]}
               value={formData.priority}
-              onChange={(value) => setFormData({ ...formData, priority: value || 'medium' })}
+              onChange={(value) => setFormData({ ...formData, priority: (value || 'medium') as 'low' | 'medium' | 'high' | 'urgent' })}
             />
           </Grid.Col>
           <Grid.Col span={6}>
@@ -655,7 +655,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, opened, onClose, on
                 { value: 'completed', label: 'Completed' },
               ]}
               value={formData.status}
-              onChange={(value) => setFormData({ ...formData, status: value || 'pending' })}
+              onChange={(value) => setFormData({ ...formData, status: (value || 'pending') as 'pending' | 'in_progress' | 'completed' | 'todo' })}
             />
           </Grid.Col>
         </Grid>
@@ -1254,7 +1254,7 @@ const TaskTableRow: React.FC<TaskTableRowProps> = ({ task, onView, onEdit, onCom
       <Table.Td>
         <Stack gap={2}>
           <Text size="sm">
-            {task.dueDate ? task.dueDate.toLocaleDateString() : 'No due date'}
+            {task.dueDate ? (typeof task.dueDate === 'string' ? new Date(task.dueDate).toLocaleDateString() : task.dueDate.toLocaleDateString()) : 'No due date'}
           </Text>
           {isOverdue() && (
             <Badge color="red" size="xs">

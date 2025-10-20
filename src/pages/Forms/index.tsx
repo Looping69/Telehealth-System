@@ -102,7 +102,7 @@ export default function FormsPage() {
   // Filter forms based on search and filters
   const filteredForms = existingForms.filter(form => {
     const matchesSearch = form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         form.description.toLowerCase().includes(searchQuery.toLowerCase());
+                         (form.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = filterCategory === 'all' || form.category === filterCategory;
     const matchesStatus = filterStatus === 'all' || form.status === filterStatus;
     
@@ -566,8 +566,8 @@ export default function FormsPage() {
                           {form.category.replace('_', ' ')}
                         </Badge>
                         <Group gap="xs">
-                          <Badge color={getFormStatusColor(form.status)} size="sm">
-                            {form.status}
+                          <Badge color={getFormStatusColor(form.status || 'inactive')} size="sm">
+                            {form.status || 'inactive'}
                           </Badge>
                           {form.estimatedTime && (
                             <Group gap={4}>
@@ -689,8 +689,8 @@ export default function FormsPage() {
                       </Badge>
                     </Table.Td>
                     <Table.Td>
-                      <Badge color={getFormStatusColor(form.status)}>
-                        {form.status}
+                      <Badge color={getFormStatusColor(form.status || 'inactive')}>
+                        {form.status || 'inactive'}
                       </Badge>
                     </Table.Td>
                     <Table.Td>

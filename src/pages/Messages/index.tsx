@@ -67,12 +67,14 @@ const mockMessages: Message[] = [
     recipientRole: 'patient',
     subject: 'Lab Results Review',
     content: 'Hi Sarah, your recent blood work results are in. Overall, everything looks good. Your cholesterol levels have improved since your last visit. Please schedule a follow-up appointment in 3 months.',
+    type: 'text',
     timestamp: '2024-01-15T10:30:00Z',
     status: 'delivered',
     priority: 'medium',
     isRead: false,
     attachments: [],
     messageType: 'clinical',
+    createdAt: new Date('2024-01-15T10:30:00Z'),
   },
   {
     id: 'MSG-002',
@@ -85,12 +87,14 @@ const mockMessages: Message[] = [
     recipientRole: 'healthcare_provider',
     subject: 'Re: Lab Results Review',
     content: 'Thank you for the update, Dr. Smith. I\'m glad to hear the results are good. Should I continue with my current medication regimen?',
+    type: 'text',
     timestamp: '2024-01-15T14:20:00Z',
     status: 'delivered',
     priority: 'medium',
     isRead: true,
     attachments: [],
     messageType: 'clinical',
+    createdAt: new Date('2024-01-15T14:20:00Z'),
   },
   {
     id: 'MSG-003',
@@ -103,12 +107,14 @@ const mockMessages: Message[] = [
     recipientRole: 'patient',
     subject: 'Appointment Reminder',
     content: 'This is a reminder that you have an appointment scheduled for tomorrow, January 16th at 2:00 PM with Dr. Johnson. Please arrive 15 minutes early for check-in.',
+    type: 'text',
     timestamp: '2024-01-15T16:00:00Z',
     status: 'delivered',
     priority: 'medium',
     isRead: false,
     attachments: [],
     messageType: 'administrative',
+    createdAt: new Date('2024-01-15T16:00:00Z'),
   },
   {
     id: 'MSG-004',
@@ -121,6 +127,7 @@ const mockMessages: Message[] = [
     recipientRole: 'patient',
     subject: 'Prescription Refill Approved',
     content: 'Your prescription refill request has been approved. You can pick up your medication at the pharmacy. The prescription is valid for 30 days.',
+    type: 'text',
     timestamp: '2024-01-15T11:45:00Z',
     status: 'delivered',
     priority: 'high',
@@ -134,6 +141,7 @@ const mockMessages: Message[] = [
       },
     ],
     messageType: 'clinical',
+    createdAt: new Date('2024-01-15T11:45:00Z'),
   },
 ];
 
@@ -210,23 +218,23 @@ const MessageCard: React.FC<MessageCardProps> = ({ message, onView, onReply }) =
         <Group justify="space-between" align="flex-start">
           <Group>
             <Avatar size="md" radius="xl" color="blue">
-              {message.senderName.split(' ').map(n => n[0]).join('')}
+              {message.senderName?.split(' ').map(n => n[0]).join('') || 'U'}
             </Avatar>
             <Stack gap={4}>
               <Text fw={500} size="sm">
                 {message.senderName}
               </Text>
               <Text size="xs" c="dimmed">
-                {message.senderRole.replace('_', ' ')}
+                {message.senderRole?.replace('_', ' ') || 'Unknown'}
               </Text>
             </Stack>
           </Group>
           <Group gap="xs">
-            <Badge color={getPriorityColor(message.priority)} size="sm">
-              {message.priority}
+            <Badge color={getPriorityColor(message.priority || 'medium')} size="sm">
+              {message.priority || 'medium'}
             </Badge>
-            <Badge color={getStatusColor(message.status)} size="sm">
-              {message.status}
+            <Badge color={getStatusColor(message.status || 'delivered')} size="sm">
+              {message.status || 'delivered'}
             </Badge>
             {!message.isRead && (
               <Indicator color="blue" size={8} />
@@ -251,7 +259,7 @@ const MessageCard: React.FC<MessageCardProps> = ({ message, onView, onReply }) =
             </Text>
           </Group>
           <Text size="xs" c="dimmed">
-            {formatDate(message.timestamp)}
+            {formatDate(message.timestamp || '')}
           </Text>
         </Group>
 
@@ -320,14 +328,14 @@ const MessageTableRow: React.FC<MessageTableRowProps> = ({ message, onView, onRe
       <Table.Td>
         <Group gap="sm">
           <Avatar size="sm" radius="xl" color="blue">
-            {message.senderName.split(' ').map(n => n[0]).join('')}
+            {message.senderName?.split(' ').map(n => n[0]).join('') || 'U'}
           </Avatar>
           <Stack gap={2}>
             <Text fw={500} size="sm">
-              {message.senderName}
+              {message.senderName || 'Unknown'}
             </Text>
             <Text size="xs" c="dimmed">
-              {message.senderRole.replace('_', ' ')}
+              {message.senderRole?.replace('_', ' ') || 'Unknown'}
             </Text>
           </Stack>
         </Group>
@@ -343,18 +351,18 @@ const MessageTableRow: React.FC<MessageTableRowProps> = ({ message, onView, onRe
         </Text>
       </Table.Td>
       <Table.Td>
-        <Badge color={getPriorityColor(message.priority)} size="sm">
-          {message.priority}
+        <Badge color={getPriorityColor(message.priority || 'medium')} size="sm">
+          {message.priority || 'medium'}
         </Badge>
       </Table.Td>
       <Table.Td>
-        <Badge color={getStatusColor(message.status)} size="sm">
-          {message.status}
+        <Badge color={getStatusColor(message.status || 'delivered')} size="sm">
+          {message.status || 'delivered'}
         </Badge>
       </Table.Td>
       <Table.Td>
         <Text size="sm" c="dimmed">
-          {formatDate(message.timestamp)}
+          {formatDate(message.timestamp || '')}
         </Text>
       </Table.Td>
       <Table.Td>
@@ -456,8 +464,9 @@ const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
                     selectedRecipient?.label.includes('Provider') ? 'healthcare_provider' : 'staff',
       subject: formData.subject,
       content: formData.content,
+      type: 'text',
       timestamp: new Date().toISOString(),
-      status: 'sent',
+      status: 'delivered',
       priority: formData.priority,
       isRead: false,
       attachments: attachments.map((file, index) => ({
@@ -466,7 +475,8 @@ const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
         size: file.size,
         type: file.type,
       })),
-      messageType: formData.messageType,
+      messageType: formData.messageType === 'general' ? 'clinical' : formData.messageType,
+      createdAt: new Date(),
     };
 
     onMessageSent(newMessage);
@@ -700,14 +710,14 @@ const ViewMessageModal: React.FC<ViewMessageModalProps> = ({
             <div>
               <Text fw={600} size="lg">{message.subject}</Text>
               <Group gap="xs" mt="xs">
-                <Badge color={getPriorityColor(message.priority)} size="sm">
-                  {message.priority.toUpperCase()}
+                <Badge color={getPriorityColor(message.priority || 'medium')} size="sm">
+                  {(message.priority || 'medium').toUpperCase()}
                 </Badge>
-                <Badge color={getStatusColor(message.status)} size="sm">
-                  {message.status.toUpperCase()}
+                <Badge color={getStatusColor(message.status || 'delivered')} size="sm">
+                  {(message.status || 'delivered').toUpperCase()}
                 </Badge>
                 <Badge variant="light" size="sm">
-                  {message.messageType.toUpperCase()}
+                  {(message.messageType || 'clinical').toUpperCase()}
                 </Badge>
               </Group>
             </div>
@@ -732,7 +742,7 @@ const ViewMessageModal: React.FC<ViewMessageModalProps> = ({
                 <Avatar size="sm" name={message.senderName} color="blue" />
                 <div>
                   <Text size="sm" fw={500}>{message.senderName}</Text>
-                  <Text size="xs" c="dimmed">{message.senderRole.replace('_', ' ')}</Text>
+                  <Text size="xs" c="dimmed">{message.senderRole?.replace('_', ' ') || 'Unknown'}</Text>
                 </div>
               </Group>
             </Grid.Col>
@@ -742,21 +752,21 @@ const ViewMessageModal: React.FC<ViewMessageModalProps> = ({
                 <Avatar size="sm" name={message.recipientName} color="green" />
                 <div>
                   <Text size="sm" fw={500}>{message.recipientName}</Text>
-                  <Text size="xs" c="dimmed">{message.recipientRole.replace('_', ' ')}</Text>
+                  <Text size="xs" c="dimmed">{message.recipientRole?.replace('_', ' ') || 'Unknown'}</Text>
                 </div>
               </Group>
             </Grid.Col>
           </Grid>
 
           <Text size="sm" c="dimmed" mt="md">
-            Sent: {formatDate(message.timestamp)}
+            Sent: {formatDate(message.timestamp || '')}
           </Text>
         </Card>
 
         {/* Message Content */}
         <Card withBorder p="md">
           <Text size="sm" c="dimmed" mb="sm">Message:</Text>
-          <ScrollArea.Autosize maxHeight={300}>
+          <ScrollArea.Autosize mah={300}>
             <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
               {message.content}
             </Text>
@@ -833,7 +843,7 @@ const MessagesPage: React.FC = () => {
 
   const conversationMessages = messages.filter(msg => 
     msg.conversationId === selectedConversation
-  ).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  ).sort((a, b) => new Date(a.timestamp || '').getTime() - new Date(b.timestamp || '').getTime());
 
   /**
    * Handle sending a new message
@@ -852,20 +862,20 @@ const MessagesPage: React.FC = () => {
       updatedConversations[existingConvIndex] = {
         ...updatedConversations[existingConvIndex],
         lastMessage: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : ''),
-        lastMessageTime: message.timestamp,
+        lastMessageTime: message.timestamp || new Date().toISOString(),
         unreadCount: updatedConversations[existingConvIndex].unreadCount + 1,
       };
       setConversations(updatedConversations);
     } else {
       // Create new conversation
       const newConversation = {
-        id: message.conversationId,
-        participants: [message.senderName, message.recipientName],
+        id: message.conversationId || `conv-${Date.now()}`,
+        participants: [message.senderName || 'Unknown', message.recipientName || 'Unknown'],
         lastMessage: message.content.substring(0, 50) + (message.content.length > 50 ? '...' : ''),
-        lastMessageTime: message.timestamp,
+        lastMessageTime: message.timestamp || new Date().toISOString(),
         unreadCount: 1,
-        subject: message.subject,
-        messageType: message.messageType,
+        subject: message.subject || 'No Subject',
+        messageType: message.messageType || 'clinical',
       };
       setConversations(prev => [newConversation, ...prev]);
     }
@@ -888,12 +898,14 @@ const MessagesPage: React.FC = () => {
       recipientRole: 'patient',
       subject: 'Quick Message',
       content: newMessage,
+      type: 'text',
       timestamp: new Date().toISOString(),
-      status: 'sent',
+      status: 'delivered',
       priority: 'medium',
       isRead: false,
       attachments: [],
-      messageType: 'general',
+      messageType: 'clinical',
+      createdAt: new Date(),
     };
     
     handleMessageSent(message);
@@ -928,8 +940,8 @@ const MessagesPage: React.FC = () => {
   // Filter messages based on search and filters
   const filteredMessages = messages.filter((message) => {
     const matchesSearch = 
-      message.senderName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      message.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      message.senderName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      message.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       message.content.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = !statusFilter || message.status === statusFilter;

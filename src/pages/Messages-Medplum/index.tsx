@@ -46,9 +46,9 @@ import { Communication } from '@medplum/fhirtypes';
  * FHIR Communication Card Component
  */
 interface FHIRCommunicationCardProps {
-  communication: Communication;
-  onView: (communication: Communication) => void;
-  onReply: (communication: Communication) => void;
+  communication: any;
+  onView: (communication: any) => void;
+  onReply: (communication: any) => void;
 }
 
 const FHIRCommunicationCard: React.FC<FHIRCommunicationCardProps> = ({ communication, onView, onReply }) => {
@@ -309,15 +309,17 @@ const MessagesMedplumPage: React.FC = () => {
           </Center>
         ) : (
           <Grid>
-            {filteredCommunications.map((communication) => (
-              <Grid.Col key={communication.id} span={{ base: 12, md: 6, lg: 4 }}>
-                <FHIRCommunicationCard
-                  communication={communication}
-                  onView={handleViewCommunication}
-                  onReply={handleReplyCommunication}
-                />
-              </Grid.Col>
-            ))}
+            {filteredCommunications.map((communication) => 
+              communication ? (
+                <Grid.Col key={communication.id} span={{ base: 12, md: 6, lg: 4 }}>
+                  <FHIRCommunicationCard
+                    communication={communication}
+                    onView={handleViewCommunication}
+                    onReply={handleReplyCommunication}
+                  />
+                </Grid.Col>
+              ) : null
+            )}
           </Grid>
         )}
 

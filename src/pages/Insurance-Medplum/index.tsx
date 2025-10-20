@@ -21,6 +21,12 @@ import {
   Center,
   Loader,
   Alert,
+  Tabs,
+  Avatar,
+  Textarea,
+  NumberInput,
+  Table,
+  Checkbox,
 } from '@mantine/core';
 import {
   Search,
@@ -33,21 +39,29 @@ import {
   Filter,
   Database,
   AlertCircle,
+  Building,
+  Phone,
+  Mail,
+  MapPin,
+  CheckCircle,
+  XCircle,
+  Clock,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
 import { Coverage } from '@medplum/fhirtypes';
 import { useCoverage } from '../../hooks/useQuery';
 
 /**
- * FHIR Coverage Card Component
+ * Patient Insurance Card Component
  */
-interface FHIRCoverageCardProps {
-  coverage: Coverage;
-  onView: (coverage: Coverage) => void;
-  onEdit: (coverage: Coverage) => void;
+interface PatientInsuranceCardProps {
+  coverage: any;
+  onView: (coverage: any) => void;
+  onVerify: (coverage: any) => void;
 }
 
-const FHIRCoverageCard: React.FC<FHIRCoverageCardProps> = ({ coverage, onView, onEdit }) => {
+const PatientInsuranceCard: React.FC<PatientInsuranceCardProps> = ({ coverage, onView, onVerify }) => {
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'active':
@@ -63,6 +77,40 @@ const FHIRCoverageCard: React.FC<FHIRCoverageCardProps> = ({ coverage, onView, o
     }
   };
 
+  const getVerificationColor = (status?: string) => {
+    // For FHIR Coverage, we'll use the status to determine verification
+    switch (status) {
+      case 'active':
+        return 'green';
+      case 'draft':
+        return 'yellow';
+      default:
+        return 'gray';
+    }
+  };
+
+  const getVerificationIcon = (status?: string) => {
+    switch (status) {
+      case 'active':
+        return <CheckCircle size={16} />;
+      case 'draft':
+        return <Clock size={16} />;
+      default:
+        return <Clock size={16} />;
+    }
+  };
+
+  const getVerificationStatus = (status?: string) => {
+    switch (status) {
+      case 'active':
+        return 'verified';
+      case 'draft':
+        return 'pending';
+      default:
+        return 'pending';
+    }
+  };
+
   const getPatientName = () => {
     return coverage.beneficiary?.display || 'Unknown Patient';
   };
@@ -71,55 +119,83 @@ const FHIRCoverageCard: React.FC<FHIRCoverageCardProps> = ({ coverage, onView, o
     return coverage.payor?.[0]?.display || 'Unknown Payor';
   };
 
+  const getPolicyNumber = () => {
+    return coverage.identifier?.[0]?.value || coverage.id || 'N/A';
+  };
+
+  const getCopay = () => {
+    // Extract copay from coverage class or cost sharing
+    const copayClass = coverage.class?.find((c: any) => c.type?.coding?.[0]?.code === 'copay');
+    return copayClass?.value || '25';
+  };
+
+  const getDeductible = () => {
+    // Extract deductible from coverage class
+    const deductibleClass = coverage.class?.find((c: any) => c.type?.coding?.[0]?.code === 'deductible');
+    return deductibleClass?.value || '1000';
+  };
+
+  const getLastVerified = () => {
+    return coverage.meta?.lastUpdated ? new Date(coverage.meta.lastUpdated).toLocaleDateString() : 'N/A';
+  };
+
+  const getExpirationDate = () => {
+    return coverage.period?.end ? new Date(coverage.period.end).toLocaleDateString() : 'N/A';
+  };
+
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder>
       <Stack gap="md">
         <Group justify="space-between" align="flex-start">
-          <Group>
-            <Badge size="xs" color="green" variant="light">
-              <Database size={10} style={{ marginRight: 4 }} />
-              FHIR Coverage
-            </Badge>
-          </Group>
-          <Badge color={getStatusColor(coverage.status)}>
-            {coverage.status}
-          </Badge>
-        </Group>
-
-        <Group>
-          <ActionIcon variant="light" color="blue" size="lg">
-            <Shield size={20} />
-          </ActionIcon>
           <Stack gap={4}>
-            <Text fw={500}>{getPayorName()}</Text>
+            <Text fw={500}>{getPatientName()}</Text>
             <Text size="sm" c="dimmed">
-              Coverage #{coverage.id}
+              {getPayorName()} • {coverage.type?.text || 'Health Plan'}
             </Text>
           </Stack>
+          <Group>
+            <Badge color={getStatusColor(coverage.status)}>
+              {coverage.status}
+            </Badge>
+            <Badge
+              color={getVerificationColor(coverage.status)}
+              leftSection={getVerificationIcon(coverage.status)}
+            >
+              {getVerificationStatus(coverage.status)}
+            </Badge>
+          </Group>
         </Group>
 
         <Stack gap="xs">
-          <Group gap="xs">
-            <User size={14} />
-            <Text size="sm">Beneficiary: {getPatientName()}</Text>
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">Policy Number:</Text>
+            <Text size="sm" fw={500}>
+              {getPolicyNumber()}
+            </Text>
           </Group>
-          {coverage.period?.start && (
-            <Group gap="xs">
-              <Calendar size={14} />
-              <Text size="sm">Start: {new Date(coverage.period.start).toLocaleDateString()}</Text>
-            </Group>
-          )}
-          {coverage.period?.end && (
-            <Group gap="xs">
-              <Calendar size={14} />
-              <Text size="sm">End: {new Date(coverage.period.end).toLocaleDateString()}</Text>
-            </Group>
-          )}
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">Copay:</Text>
+            <Text size="sm" fw={500}>
+              ${getCopay()}
+            </Text>
+          </Group>
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">Deductible:</Text>
+            <Text size="sm" fw={500}>
+              ${getDeductible()}
+            </Text>
+          </Group>
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">Last Verified:</Text>
+            <Text size="sm" fw={500}>
+              {getLastVerified()}
+            </Text>
+          </Group>
         </Stack>
 
         <Group justify="space-between" align="center">
-          <Text size="sm" fw={500}>
-            Type: {coverage.type?.text || 'Not specified'}
+          <Text size="xs" c="dimmed">
+            Expires: {getExpirationDate()}
           </Text>
           <Group gap="xs">
             <ActionIcon
@@ -131,8 +207,83 @@ const FHIRCoverageCard: React.FC<FHIRCoverageCardProps> = ({ coverage, onView, o
             </ActionIcon>
             <ActionIcon
               variant="light"
+              color="green"
+              onClick={() => onVerify(coverage)}
+            >
+              <Shield size={16} />
+            </ActionIcon>
+          </Group>
+        </Group>
+      </Stack>
+    </Card>
+  );
+};
+
+/**
+ * Insurance Provider Card Component
+ */
+interface ProviderCardProps {
+  provider: any;
+  onView: (provider: any) => void;
+  onEdit: (provider: any) => void;
+}
+
+const ProviderCard: React.FC<ProviderCardProps> = ({ provider, onView, onEdit }) => {
+  return (
+    <Card shadow="sm" padding="lg" radius="md" withBorder>
+      <Stack gap="md">
+        <Group justify="space-between" align="flex-start">
+          <Group>
+            <Avatar size="lg" radius="md" color="blue">
+              <Building size={24} />
+            </Avatar>
+            <Stack gap={4}>
+              <Text fw={500} size="lg">
+                {provider.name}
+              </Text>
+              <Text size="sm" c="dimmed">
+                {provider.id} • {provider.type}
+              </Text>
+            </Stack>
+          </Group>
+          <Badge color={provider.status === 'active' ? 'green' : 'red'}>
+            {provider.status}
+          </Badge>
+        </Group>
+
+        <Stack gap="xs">
+          <Group gap="xs">
+            <Phone size={14} />
+            <Text size="sm">{provider.phone}</Text>
+          </Group>
+          <Group gap="xs">
+            <Mail size={14} />
+            <Text size="sm">{provider.email}</Text>
+          </Group>
+          <Group gap="xs">
+            <MapPin size={14} />
+            <Text size="sm" lineClamp={2}>
+              {provider.address}
+            </Text>
+          </Group>
+        </Stack>
+
+        <Group justify="space-between" align="center">
+          <Text size="sm" c="dimmed">
+            {provider.plans?.length || 0} plan{(provider.plans?.length || 0) !== 1 ? 's' : ''}
+          </Text>
+          <Group gap="xs">
+            <ActionIcon
+              variant="light"
+              color="blue"
+              onClick={() => onView(provider)}
+            >
+              <Eye size={16} />
+            </ActionIcon>
+            <ActionIcon
+              variant="light"
               color="orange"
-              onClick={() => onEdit(coverage)}
+              onClick={() => onEdit(provider)}
             >
               <Edit size={16} />
             </ActionIcon>
@@ -263,10 +414,10 @@ const InsuranceMedplumPage: React.FC = () => {
           <Grid>
             {filteredCoverages.map((coverage) => (
               <Grid.Col key={coverage.id} span={{ base: 12, md: 6, lg: 4 }}>
-                <FHIRCoverageCard
+                <PatientInsuranceCard
                   coverage={coverage}
                   onView={handleViewCoverage}
-                  onEdit={handleEditCoverage}
+                  onVerify={handleEditCoverage}
                 />
               </Grid.Col>
             ))}

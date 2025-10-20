@@ -102,6 +102,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({
     try {
       // Transform form data to match Patient interface
       const patientData = {
+        id: `patient-${Date.now()}`,
         name: `${values.firstName} ${values.lastName}`,
         firstName: values.firstName,
         lastName: values.lastName,
@@ -111,7 +112,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({
         gender: values.gender,
         status: 'active' as const,
         address: `${values.address.street}, ${values.address.city}, ${values.address.state} ${values.address.zipCode}`,
-        emergencyContact: values.emergencyContact,
+        emergencyContact: `${values.emergencyContact} (${values.emergencyPhone})`,
         insurance: values.insurance.provider,
         medicalHistory: [],
         allergies: [],
@@ -119,7 +120,7 @@ export const CreatePatientModal: React.FC<CreatePatientModalProps> = ({
         nextAppointment: null,
       };
 
-      const createdPatient = await createPatientMutation.mutateAsync(patientData);
+      const createdPatient = await createPatientMutation.mutateAsync(patientData as any);
       
       notifications.show({
         title: 'Success',

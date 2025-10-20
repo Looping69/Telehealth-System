@@ -191,6 +191,9 @@ interface DiscountCardProps {
   onDelete: (discount: Discount) => void;
   onToggleStatus: (discount: Discount) => void;
   onCopyCode: (code: string) => void;
+  onDuplicate: (discount: Discount) => void;
+  isSelected: boolean;
+  onSelect: (id: string, selected: boolean) => void;
 }
 
 /**
@@ -202,6 +205,9 @@ interface DiscountTableRowProps {
   onDelete: (discount: Discount) => void;
   onToggleStatus: (discount: Discount) => void;
   onCopyCode: (code: string) => void;
+  onDuplicate: (discount: Discount) => void;
+  isSelected: boolean;
+  onSelect: (id: string, selected: boolean) => void;
 }
 
 const DiscountTableRow: React.FC<DiscountTableRowProps> = ({

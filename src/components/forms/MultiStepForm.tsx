@@ -24,11 +24,13 @@ import { FormQuestion } from './FormQuestion';
 import { Question, FormAnswer, FormData } from '../../types/forms';
 
 interface MultiStepFormProps {
-  questions: Question[];
+  formData?: FormData;
+  questions?: Question[];
   title?: string;
   description?: string;
-  onSubmit: (data: FormData) => void;
+  onSubmit: (answers: Record<string, FormAnswer>) => void;
   onCancel: () => void;
+  loading?: boolean;
 }
 
 /**
@@ -36,12 +38,17 @@ interface MultiStepFormProps {
  * Renders a form with one question per screen, smooth transitions, and progress tracking
  */
 export function MultiStepForm({
-  questions,
-  title,
-  description,
+  formData,
+  questions: propQuestions,
+  title: propTitle,
+  description: propDescription,
   onSubmit,
   onCancel,
+  loading = false,
 }: MultiStepFormProps) {
+  const questions = propQuestions || formData?.questions || [];
+  const title = propTitle || formData?.title;
+  const description = propDescription || formData?.description;
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, FormAnswer>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -137,18 +144,7 @@ export function MultiStepForm({
     } else {
       // Submit form
       setIsSubmitting(true);
-      const formData: FormData = {
-        id: `form-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        title: title || 'Untitled Form',
-        description: description || '',
-        category: 'custom',
-        questions,
-        version: '1.0',
-        active: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      onSubmit(formData);
+      onSubmit(answers);
     }
   }, [currentStep, answers, questions, title, description, onSubmit, isLastStep]);
 
@@ -298,7 +294,7 @@ export function MultiStepForm({
               isLastStep ? <IconCheck size={16} /> : <IconChevronRight size={16} />
             }
             onClick={handleNext}
-            loading={isSubmitting}
+            loading={isSubmitting || loading}
             aria-label={isLastStep ? 'Submit form' : 'Go to next question'}
           >
             {isLastStep ? 'Submit' : 'Next'}

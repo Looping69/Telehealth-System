@@ -137,7 +137,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onView, onEdit }) => {
           </Group>
           <Group gap="xs">
             <Clock size={14} />
-            <Text size="sm">Due: {order.dueDate || 'Not specified'}</Text>
+            <Text size="sm">Due: {order.dueDate ? (typeof order.dueDate === 'string' ? order.dueDate : order.dueDate.toLocaleDateString()) : 'Not specified'}</Text>
           </Group>
         </Stack>
 
@@ -230,7 +230,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 <strong>Order Date:</strong> {order.orderDate}
               </Text>
               <Text size="sm">
-                <strong>Due Date:</strong> {order.dueDate || 'Not specified'}
+                <strong>Due Date:</strong> {order.dueDate ? (typeof order.dueDate === 'string' ? order.dueDate : order.dueDate.toLocaleDateString()) : 'Not specified'}
               </Text>
               <Text size="sm">
                 <strong>Priority:</strong> {order.priority}
@@ -806,7 +806,7 @@ export const OrdersPage: React.FC = () => {
                 </Table.Td>
                 <Table.Td>
                   <Text size="sm">
-                    {order.dueDate || 'Not specified'}
+                    {order.dueDate ? (typeof order.dueDate === 'string' ? order.dueDate : order.dueDate.toLocaleDateString()) : 'Not specified'}
                   </Text>
                 </Table.Td>
                 <Table.Td>

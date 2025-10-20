@@ -239,7 +239,7 @@ const UpcomingAppointments: React.FC = () => {
         <Stack gap="sm">
           {todayAppointments.length > 0 ? (
             todayAppointments.map((appointment) => {
-              const converted = convertAppointmentFromFHIR(appointment);
+              const converted = convertAppointmentFromFHIR(appointment as any);
               return (
                 <Card key={appointment.id} padding="sm" withBorder>
                   <Group justify="space-between">
@@ -257,7 +257,7 @@ const UpcomingAppointments: React.FC = () => {
                       </Text>
                     </div>
                     <Badge 
-                      color={appointment.status === 'booked' ? 'blue' : 'gray'} 
+                      color={appointment.status === 'scheduled' ? 'blue' : 'gray'} 
                       size="sm"
                     >
                       {appointment.status}
