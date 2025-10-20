@@ -169,7 +169,7 @@ const mockSystemSettings: SystemSettings = {
 };
 
 const mockIntegrationSettings: IntegrationSettings = {
-  medplumUrl: 'http://localhost:8103',
+  medplumUrl: 'https://api.medplum.com',
   medplumClientId: 'telehealth-dashboard',
   emailProvider: 'SendGrid',
   emailApiKey: '••••••••••••••••',

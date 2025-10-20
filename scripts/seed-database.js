@@ -213,8 +213,8 @@ global.localStorage = {
 // Mock window object for Node.js environment
 global.window = {
   location: {
-    href: 'http://localhost:8103',
-    origin: 'http://localhost:8103'
+    href: 'https://api.medplum.com',
+        origin: 'https://api.medplum.com'
   },
   crypto: require('crypto').webcrypto || {
     getRandomValues: (arr) => {
@@ -595,7 +595,7 @@ async function main(options = {}) {
     
     // Step 2: Initialize Medplum client
     const medplum = new MedplumClient({
-      baseUrl: process.env.VITE_MEDPLUM_BASE_URL || 'http://localhost:8103',
+      baseUrl: process.env.VITE_MEDPLUM_BASE_URL || 'https://api.medplum.com',
       clientId: process.env.VITE_MEDPLUM_CLIENT_ID || 'demo-client-id'
     });
     
@@ -723,7 +723,7 @@ Examples:
   node seed-database.js --validate-only    # Check server connection only
 
 Prerequisites:
-  - Medplum server running (default: http://localhost:8103)
+  - Medplum service accessible (default: https://api.medplum.com)
   - Valid VITE_MEDPLUM_BASE_URL and VITE_MEDPLUM_CLIENT_ID environment variables
   - Network connectivity to the Medplum server
 

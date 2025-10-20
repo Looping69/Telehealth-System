@@ -31,10 +31,10 @@ The simplified Docker setup includes:
 2. **Redis Cache** (port 6379)
    - No password required (simplified setup)
 
-3. **Medplum FHIR Server** (port 8103)
-   - Base URL: `http://localhost:8103`
-   - FHIR API: `http://localhost:8103/fhir/R4/`
-   - Uses stable version 3.1.4
+3. **Medplum FHIR Service** (Online Hosted)
+   - Base URL: `https://api.medplum.com`
+   - FHIR API: `https://api.medplum.com/fhir/R4/`
+   - Uses Medplum's hosted service
 
 ## Available Commands
 
@@ -60,11 +60,11 @@ npm run medplum:reset
 
 ## Configuration
 
-The telehealth app is configured to connect to the Docker Medplum server automatically:
+The telehealth app is configured to connect to the hosted Medplum service:
 
-- **Base URL**: `http://localhost:8103`
-- **Client ID**: `medplum-client`
-- **FHIR Endpoint**: `http://localhost:8103/fhir/R4/`
+- **Base URL**: `https://api.medplum.com`
+- **Client ID**: Configure with your Medplum project credentials
+- **FHIR Endpoint**: `https://api.medplum.com/fhir/R4/`
 
 ## 🎯 First Time Setup
 
@@ -92,20 +92,20 @@ The telehealth app is configured to connect to the Docker Medplum server automat
    npm run dev
    ```
 
-## Accessing the Medplum Server
+## Accessing the Medplum Service
 
-- **FHIR API**: `http://localhost:8103/fhir/R4/`
-- **Metadata Endpoint**: `http://localhost:8103/fhir/R4/metadata`
-- **Health Check**: `http://localhost:8103/healthcheck`
+- **FHIR API**: `https://api.medplum.com/fhir/R4/`
+- **Metadata Endpoint**: `https://api.medplum.com/fhir/R4/metadata`
+- **Health Check**: Available through Medplum's hosted infrastructure
 
 ### Quick Test
 
 ```bash
-# Test if the server is responding
-curl http://localhost:8103/fhir/R4/metadata
+# Test if the service is responding
+curl https://api.medplum.com/fhir/R4/metadata
 
 # Or using PowerShell
-Invoke-WebRequest -Uri "http://localhost:8103/fhir/R4/metadata"
+Invoke-WebRequest -Uri "https://api.medplum.com/fhir/R4/metadata"
 ```
 
 ## 🔧 Troubleshooting
@@ -130,8 +130,8 @@ npm run medplum:status
 # Wait for all services to be ready
 npm run medplum:logs
 
-# Test the connection
-curl http://localhost:8103/fhir/R4/metadata
+# Test the connection to hosted service
+curl https://api.medplum.com/fhir/R4/metadata
 ```
 
 ### Server keeps restarting
@@ -185,7 +185,7 @@ You can customize the setup by creating a `.env` file:
 
 ```env
 # Medplum Configuration
-VITE_MEDPLUM_BASE_URL=http://localhost:8103
+VITE_MEDPLUM_BASE_URL=https://api.medplum.com
 VITE_MEDPLUM_CLIENT_ID=medplum-client
 
 # Database Configuration (if needed)
@@ -218,7 +218,7 @@ If you encounter issues:
 1. **Check the logs**: `npm run medplum:logs`
 2. **Verify Docker is running**: `docker version`
 3. **Check service health**: `npm run medplum:status`
-4. **Test connectivity**: `curl http://localhost:8103/fhir/R4/metadata`
+4. **Test connectivity**: `curl https://api.medplum.com/fhir/R4/metadata`
 5. **Restart services**: `npm run medplum:restart`
 6. **Reset if needed**: `npm run medplum:reset`
 
@@ -227,7 +227,7 @@ If you encounter issues:
 You know everything is working when:
 
 - ✅ All containers show "healthy" status
-- ✅ `http://localhost:8103/fhir/R4/metadata` returns JSON
+- ✅ `https://api.medplum.com/fhir/R4/metadata` returns JSON
 - ✅ Your telehealth app connects without errors
 - ✅ No error messages in the logs
 

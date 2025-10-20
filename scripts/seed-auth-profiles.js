@@ -20,7 +20,7 @@ if (!globalThis.fetch) {
 }
 
 // Configuration
-const MEDPLUM_BASE_URL = process.env.MEDPLUM_BASE_URL || 'http://localhost:8103';
+const MEDPLUM_BASE_URL = process.env.MEDPLUM_BASE_URL || 'https://api.medplum.com';
 const ADMIN_CLIENT_ID = process.env.MEDPLUM_ADMIN_CLIENT_ID || 'medplum-admin';
 const ADMIN_CLIENT_SECRET = process.env.MEDPLUM_ADMIN_CLIENT_SECRET || 'medplum-admin-secret';
 

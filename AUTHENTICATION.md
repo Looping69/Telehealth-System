@@ -55,7 +55,7 @@ The Telehealth application includes built-in mock authentication that works even
 
 To use real Medplum authentication, you need to manually create these profiles in the Medplum database:
 
-1. **Access Medplum Admin Interface:** http://localhost:8103
+1. **Access Medplum Admin Interface:** https://app.medplum.com
 2. **Create users manually** with the exact email/password combinations listed above
 3. **Match the resource types** (Practitioner or Person) as specified
 4. **Include the same contact information** for consistency

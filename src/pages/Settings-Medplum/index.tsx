@@ -46,7 +46,7 @@ const SettingsMedplumPage: React.FC = () => {
 
   // FHIR Server Settings
   const [fhirSettings, setFhirSettings] = useState({
-    baseUrl: import.meta.env.VITE_MEDPLUM_BASE_URL || 'http://localhost:8103',
+    baseUrl: import.meta.env.VITE_MEDPLUM_BASE_URL || 'https://api.medplum.com',
     clientId: import.meta.env.VITE_MEDPLUM_CLIENT_ID || 'demo-client-id',
     timeout: 30000,
     retryAttempts: 3,
@@ -187,7 +187,7 @@ const SettingsMedplumPage: React.FC = () => {
                   <Grid.Col span={6}>
                     <TextInput
                       label="Base URL"
-                      placeholder="http://localhost:8103"
+                      placeholder="https://api.medplum.com"
                       value={fhirSettings.baseUrl}
                       onChange={(e) => setFhirSettings(prev => ({
                         ...prev,

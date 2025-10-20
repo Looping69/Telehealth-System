@@ -18,7 +18,7 @@ if (!globalThis.fetch) {
 }
 
 // Configuration
-const MEDPLUM_BASE_URL = process.env.MEDPLUM_BASE_URL || 'http://localhost:8103';
+const MEDPLUM_BASE_URL = process.env.MEDPLUM_BASE_URL || 'https://api.medplum.com';
 
 /**
  * Log message with timestamp

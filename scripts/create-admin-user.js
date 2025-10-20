@@ -18,7 +18,7 @@ if (!globalThis.fetch) {
 }
 
 // Configuration
-const MEDPLUM_BASE_URL = process.env.MEDPLUM_BASE_URL || 'http://localhost:8103';
+const MEDPLUM_BASE_URL = process.env.MEDPLUM_BASE_URL || 'https://api.medplum.com';
 
 // Super admin user data
 const SUPER_ADMIN_USER = {
@@ -127,7 +127,7 @@ async function main() {
     log('🎉 Setup completed!');
     log('');
     log('You can now:');
-    log('1. Log into the Medplum app at http://localhost:3000');
+    log('1. Log into the Medplum app at https://app.medplum.com');
     log(`2. Use credentials: ${SUPER_ADMIN_USER.email} / ${SUPER_ADMIN_USER.password}`);
     log('3. Create additional users through the admin interface');
     log('4. Or run the user seeding script to create more users programmatically');

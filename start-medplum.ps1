@@ -26,8 +26,8 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ Medplum services started successfully!" -ForegroundColor Green
     Write-Host ""
     Write-Host "🌐 Services are available at:" -ForegroundColor Cyan
-    Write-Host "   • Medplum Server: http://localhost:8103" -ForegroundColor White
-    Write-Host "   • FHIR API: http://localhost:8103/fhir/R4/" -ForegroundColor White
+    Write-Host "   • Medplum Service: https://api.medplum.com" -ForegroundColor White
+    Write-Host "   • FHIR API: https://api.medplum.com/fhir/R4/" -ForegroundColor White
     Write-Host "   • PostgreSQL: localhost:5432" -ForegroundColor White
     Write-Host "   • Redis: localhost:6379" -ForegroundColor White
     Write-Host ""
@@ -47,19 +47,19 @@ if ($LASTEXITCODE -eq 0) {
         $attempt++
         Start-Sleep -Seconds 2
         try {
-            $response = Invoke-WebRequest -Uri "http://localhost:8103/fhir/R4/metadata" -TimeoutSec 5 -UseBasicParsing
+            $response = Invoke-WebRequest -Uri "https://api.medplum.com/fhir/R4/metadata" -TimeoutSec 5 -UseBasicParsing
             if ($response.StatusCode -eq 200) {
-                Write-Host "✅ Medplum server is ready!" -ForegroundColor Green
+                Write-Host "✅ Medplum service is accessible!" -ForegroundColor Green
                 Write-Host ""
-                Write-Host "🎉 Success! Your self-hosted Medplum FHIR server is running!" -ForegroundColor Green
+                Write-Host "🎉 Success! Medplum hosted FHIR service is accessible!" -ForegroundColor Green
                 Write-Host "   You can now start your telehealth app with: npm run dev" -ForegroundColor Green
                 Write-Host ""
                 Write-Host "📋 Quick test:" -ForegroundColor Cyan
-                Write-Host "   curl http://localhost:8103/fhir/R4/metadata" -ForegroundColor White
+                Write-Host "   curl https://api.medplum.com/fhir/R4/metadata" -ForegroundColor White
                 break
             }
         } catch {
-            Write-Host "⏳ Attempt $attempt/$maxAttempts - Waiting for Medplum server..." -ForegroundColor Yellow
+            Write-Host "⏳ Attempt $attempt/$maxAttempts - Testing Medplum service..." -ForegroundColor Yellow
         }
     } while ($attempt -lt $maxAttempts)
     

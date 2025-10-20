@@ -24,7 +24,7 @@ if (!globalThis.fetch) {
 }
 
 // Configuration
-const MEDPLUM_BASE_URL = process.env.MEDPLUM_BASE_URL || 'http://localhost:8103';
+const MEDPLUM_BASE_URL = process.env.MEDPLUM_BASE_URL || 'https://api.medplum.com';
 const MEDPLUM_CLIENT_ID = process.env.MEDPLUM_CLIENT_ID || 'demo-client-id';
 
 // User data to seed
@@ -115,7 +115,7 @@ Default Users Created:
   - nurse@telehealth.com / nurse123 (Emily Davis - Registered Nurse)
 
 Environment Variables:
-  MEDPLUM_BASE_URL    Medplum server URL (default: http://localhost:8103)
+  MEDPLUM_BASE_URL    Medplum service URL (default: https://api.medplum.com)
   MEDPLUM_CLIENT_ID   Medplum client ID (default: demo-client-id)
 `);
 }
@@ -400,7 +400,7 @@ async function seedUsers() {
       
       log('🔐 Authentication Setup:', false, options);
       log('To enable login for these users, you need to:', false, options);
-      log('1. Access the Medplum admin interface at http://localhost:3000', false, options);
+      log('1. Access the Medplum admin interface at https://app.medplum.com', false, options);
       log('2. Create user accounts linked to the Practitioner resources', false, options);
       log('3. Or use the Medplum CLI with super admin credentials', false, options);
     }

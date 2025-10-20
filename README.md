@@ -79,8 +79,7 @@ docker-compose -f docker-compose.dev.yml up -d
 
 # Services available at:
 # - Telehealth App: http://localhost:3000
-# - Medplum Admin: http://localhost:3001
-# - Medplum Server: http://localhost:8103
+# - Medplum (Online Hosted): https://api.medplum.com
 # - PostgreSQL: localhost:5432
 # - Redis: localhost:6379
 ```
@@ -92,7 +91,7 @@ docker-compose up -d
 
 # Services available at:
 # - Telehealth App: http://localhost:3000
-# - Medplum Server: http://localhost:8103
+# - Medplum (Online Hosted): https://api.medplum.com
 ```
 
 ## 🏥 Healthcare Pages & Features
@@ -126,9 +125,9 @@ Each page includes both Mock Data and Medplum-integrated versions with real FHIR
 
 ### Environment Variables (.env)
 ```bash
-# Medplum Server Configuration
-VITE_MEDPLUM_BASE_URL=http://localhost:8103
-MEDPLUM_BASE_URL=http://localhost:8103
+# Medplum Configuration (Online Hosted Service)
+VITE_MEDPLUM_BASE_URL=https://api.medplum.com
+MEDPLUM_BASE_URL=https://api.medplum.com
 MEDPLUM_ADMIN_EMAIL=admin@example.com
 MEDPLUM_ADMIN_PASSWORD=admin123
 
@@ -278,7 +277,7 @@ The system supports comprehensive role-based access control:
 #### 1. **Mode Switching Not Working**
 - Ensure Medplum server is running: `docker-compose -f docker-compose.dev.yml up -d`
 - Check environment variables in `.env` file
-- Verify network connectivity to `localhost:8103`
+- Verify network connectivity to Medplum hosted service
 
 #### 2. **Docker Container Issues**
 ```bash
@@ -294,7 +293,7 @@ docker-compose restart
 
 #### 3. **Authentication Errors**
 - Verify Medplum credentials in `.env`
-- Check Medplum server status: `curl http://localhost:8103/fhir/R4/metadata`
+- Check Medplum service status: `curl https://api.medplum.com/fhir/R4/metadata`
 - Ensure client ID matches Medplum configuration
 
 #### 4. **Database Connection Issues**

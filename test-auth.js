@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 async function testAuth() {
   try {
     const client = new MedplumClient({
-      baseUrl: 'http://localhost:8103',
+      baseUrl: 'https://api.medplum.com',
       fetch: fetch,
       storage: {
         getItem: () => null,
@@ -14,7 +14,7 @@ async function testAuth() {
     });
     
     // Try to get an access token using client credentials
-    const response = await fetch('http://localhost:8103/oauth2/token', {
+    const response = await fetch('https://api.medplum.com/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -34,7 +34,7 @@ async function testAuth() {
       console.log('Access token (first 50 chars):', tokenData.access_token?.substring(0, 50) + '...');
       
       // Test the token with a FHIR request
-      const fhirResponse = await fetch('http://localhost:8103/fhir/R4/Patient?_summary=count', {
+      const fhirResponse = await fetch('https://api.medplum.com/fhir/R4/Patient?_summary=count', {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
           'Accept': 'application/fhir+json'

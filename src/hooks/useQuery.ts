@@ -1370,7 +1370,7 @@ export function useSystemMetadata() {
           },
           implementation: {
             description: 'Mock FHIR R4 Server for Development',
-            url: 'http://localhost:8103'
+            url: 'https://api.medplum.com'
           },
           fhirVersion: '4.0.1',
           format: ['application/fhir+json', 'application/fhir+xml'],
