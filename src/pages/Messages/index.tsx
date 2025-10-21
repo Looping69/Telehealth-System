@@ -500,13 +500,13 @@ const ComposeMessageModal: React.FC<ComposeMessageModalProps> = ({
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    const validFiles = files.filter(file => file.size <= 10 * 1024 * 1024); // 10MB limit
+    const validFiles = files.filter((file: File) => file.size <= 10 * 1024 * 1024); // 10MB limit
     
     if (validFiles.length !== files.length) {
       console.warn('Some files were too large and were not added');
     }
     
-    setAttachments(prev => [...prev, ...validFiles]);
+    setAttachments((prev: File[]) => [...prev, ...validFiles]);
   };
 
   const removeAttachment = (index: number) => {

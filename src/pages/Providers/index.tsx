@@ -1147,7 +1147,7 @@ export const ProvidersPage: React.FC = () => {
   const activeProviders = providers.filter(p => p.status === 'active').length;
   const totalPatients = providers.reduce((sum, p) => sum + (p.totalPatients || 0), 0);
   const avgRating = providers.reduce((sum, p) => sum + (p.rating || 0), 0) / providers.length;
-  const departments = [...new Set(providers.map(p => p.department))].length;
+  const departments = Array.from(new Set(providers.map(p => p.department))).length;
 
   return (
     <Container size="xl" py="md">
