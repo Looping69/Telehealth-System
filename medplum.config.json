@@ -8,7 +8,7 @@
   "tokenUrl": "https://api.medplum.com/oauth2/token",
   "userInfoUrl": "https://api.medplum.com/oauth2/userinfo",
   "logoutUrl": "https://api.medplum.com/oauth2/logout",
-  "allowedOrigins": ["http://localhost:3000", "https://localhost:3000"],
+  "allowedOrigins": ["http://localhost:5173", "https://localhost:5173", "https://telehealth-system-woad.vercel.app"],
   "database": {
     "host": "postgres",
     "port": 5432,

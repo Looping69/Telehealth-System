@@ -31,10 +31,11 @@ The simplified Docker setup includes:
 2. **Redis Cache** (port 6379)
    - No password required (simplified setup)
 
-3. **Medplum FHIR Service** (Online Hosted)
-   - Base URL: `https://api.medplum.com`
-   - FHIR API: `https://api.medplum.com/fhir/R4/`
-   - Uses Medplum's hosted service
+3. **Medplum FHIR Service** (Local Development)
+   - Base URL: `http://localhost:8103`
+   - FHIR API: `http://localhost:8103/fhir/R4/`
+   - Admin Interface: `http://localhost:8103/admin/`
+   - Self-hosted Medplum server for development
 
 ## Available Commands
 

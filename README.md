@@ -1,6 +1,12 @@
 # Telehealth System - Complete FHIR Healthcare Platform
 
-A comprehensive React-based telehealth system with full Medplum FHIR integration, dual-mode functionality, and production-ready Docker deployment.
+A comprehensive React-based telehealth system with full Medplum FHIR integration, dual-mode functionality, and production-ready deployment on Vercel.
+
+## 🌐 Live Demo
+
+**🚀 [View Live Application](https://telehealth-system-woad.vercel.app/)**
+
+The application is deployed on Vercel and ready for immediate use. You can explore all features in Mock Data mode without any setup required.
 
 ## 🚀 Features
 
@@ -17,11 +23,12 @@ A comprehensive React-based telehealth system with full Medplum FHIR integration
 ### Technical Excellence
 - **Dual-Mode Operation**: Seamlessly switch between Mock Data and Live FHIR modes
 - **Medplum FHIR Integration**: Full FHIR R4 compliance with real-time API calls
-- **Docker Containerization**: Production-ready deployment with multi-stage builds
+- **Cloud Deployment**: Production-ready deployment on Vercel with automatic CI/CD
 - **Modern React Stack**: React 19, TypeScript, Mantine UI, React Query
 - **Self-Hosted Infrastructure**: PostgreSQL database, Redis cache, Nginx reverse proxy
 - **Role-Based Access Control**: Comprehensive permission system for healthcare roles
 - **Error Handling**: Graceful fallbacks and comprehensive error management
+- **TypeScript**: 100% TypeScript coverage with strict type checking
 
 ## 🏗️ Architecture
 
@@ -45,9 +52,10 @@ Users can toggle between modes using the integrated mode switcher in the navigat
 
 ## 📋 Prerequisites
 
-- **Node.js 22+** (you have Node.js 22.14.0 ✅)
-- **Docker & Docker Compose** (for containerized deployment)
+- **Node.js 18+** (Recommended: Node.js 22.14.0 or later)
+- **npm** or **yarn** (Package manager)
 - **Git** (for version control)
+- **Docker & Docker Compose** (optional, for local FHIR server setup)
 
 ## 🚀 Quick Start
 
@@ -64,34 +72,40 @@ Users can toggle between modes using the integrated mode switcher in the navigat
    ```bash
    npm run dev
    ```
-   Application available at: `http://localhost:3000`
+   Application available at: `http://localhost:5173` (Vite default port)
 
 3. **Access the System**
    - Default mode: Mock Data (no additional setup required)
    - Switch to Live FHIR mode using the navigation toggle
 
-### Docker Deployment
+### Vercel Deployment (Recommended)
 
-#### Development Environment
+The application is optimized for Vercel deployment with automatic CI/CD:
+
+1. **Fork the Repository**
+2. **Connect to Vercel**
+   - Import your GitHub repository to Vercel
+   - Vercel will automatically detect the Vite configuration
+3. **Deploy**
+   - Automatic deployments on every push to main branch
+   - Preview deployments for pull requests
+
+### Local Docker Deployment (Optional)
+
+For local FHIR server development:
+
 ```bash
-# Start complete development stack
-docker-compose -f docker-compose.dev.yml up -d
+# Start Medplum FHIR server locally
+npm run medplum:start
+
+# Start development with local FHIR
+npm run dev
 
 # Services available at:
-# - Telehealth App: http://localhost:3000
-# - Medplum (Online Hosted): https://api.medplum.com
+# - Telehealth App: http://localhost:5173
+# - Medplum Server: http://localhost:8103
 # - PostgreSQL: localhost:5432
 # - Redis: localhost:6379
-```
-
-#### Production Environment
-```bash
-# Start production stack
-docker-compose up -d
-
-# Services available at:
-# - Telehealth App: http://localhost:3000
-# - Medplum (Online Hosted): https://api.medplum.com
 ```
 
 ## 🏥 Healthcare Pages & Features
@@ -164,23 +178,24 @@ npm run build        # Build for production
 npm run preview      # Preview production build
 npm run type-check   # Run TypeScript type checking
 
-# Docker Commands
-docker-compose up -d                           # Start production stack
-docker-compose -f docker-compose.dev.yml up -d # Start development stack
-docker-compose down                            # Stop all services
-docker-compose logs -f telehealth-app         # View application logs
+# Medplum FHIR Server (Local Development)
+npm run medplum:start    # Start local Medplum server
+npm run medplum:stop     # Stop local Medplum server
+npm run medplum:restart  # Restart local Medplum server
+npm run medplum:logs     # View Medplum server logs
+npm run medplum:status   # Check Medplum server status
+npm run medplum:reset    # Reset Medplum server (removes all data)
 ```
 
 ## 📁 Project Structure
 
 ```
 telehealth-system/
-├── 🐳 Docker Configuration
-│   ├── Dockerfile                 # Multi-stage production build
-│   ├── docker-compose.yml         # Production deployment
-│   ├── docker-compose.dev.yml     # Development environment
+├── 🚀 Deployment Configuration
+│   ├── vercel.json                # Vercel deployment config
+│   ├── docker-compose.simple.yml  # Local Medplum FHIR server
 │   ├── nginx.conf                 # Nginx reverse proxy config
-│   └── .dockerignore              # Docker build optimization
+│   └── .vercelignore              # Vercel build optimization
 │
 ├── 📱 Application Source
 │   ├── src/
@@ -250,25 +265,26 @@ The system supports comprehensive role-based access control:
 
 ## 🚀 Deployment Options
 
-### 1. Local Development
+### 1. Vercel (Recommended)
+- **Live Demo**: [https://telehealth-system-woad.vercel.app/](https://telehealth-system-woad.vercel.app/)
+- Automatic CI/CD from GitHub
+- Global CDN distribution
+- Serverless functions support
+- Zero configuration deployment
+- Preview deployments for PRs
+
+### 2. Local Development
 - Mock data mode for immediate development
 - Hot reloading with Vite
 - TypeScript type checking
 - No external dependencies required
 
-### 2. Docker Development
-- Complete healthcare stack
+### 3. Local FHIR Development
+- Complete healthcare stack with local Medplum server
 - PostgreSQL database
 - Redis caching
-- Medplum FHIR server
 - Admin interface included
-
-### 3. Production Deployment
-- Multi-stage Docker builds
-- Nginx reverse proxy
-- Health monitoring
-- Optimized static assets
-- Production-ready configuration
+- Full FHIR R4 compliance testing
 
 ## 🔧 Troubleshooting
 
@@ -279,16 +295,16 @@ The system supports comprehensive role-based access control:
 - Check environment variables in `.env` file
 - Verify network connectivity to Medplum hosted service
 
-#### 2. **Docker Container Issues**
+#### 2. **Local FHIR Server Issues**
 ```bash
-# Check container status
-docker-compose ps
+# Check Medplum server status
+npm run medplum:status
 
-# View logs
-docker-compose logs -f telehealth-app
+# View Medplum logs
+npm run medplum:logs
 
-# Restart services
-docker-compose restart
+# Restart Medplum server
+npm run medplum:restart
 ```
 
 #### 3. **Authentication Errors**
@@ -298,12 +314,11 @@ docker-compose restart
 
 #### 4. **Database Connection Issues**
 ```bash
-# Check PostgreSQL status
-docker-compose exec postgres psql -U medplum -d medplum -c "SELECT version();"
+# Reset local Medplum server and database
+npm run medplum:reset
 
-# Reset database (if needed)
-docker-compose down -v
-docker-compose up -d
+# Start fresh Medplum server
+npm run medplum:start
 ```
 
 #### 5. **Build Errors**
@@ -329,10 +344,10 @@ npm run build
 
 1. **Start Development**: `npm run dev` (Mock data mode)
 2. **Test Features**: Use mock data for rapid development
-3. **Enable FHIR**: Start Docker stack for live data testing
+3. **Enable FHIR**: `npm run medplum:start` for live data testing
 4. **Switch Modes**: Use navigation toggle to test both modes
 5. **Build Production**: `npm run build` for deployment
-6. **Deploy**: Use Docker Compose for production deployment
+6. **Deploy**: Push to GitHub for automatic Vercel deployment
 
 ## 📚 Resources
 

@@ -8,11 +8,7 @@ dist
 server/
 scripts/
 tests/
-*.md
 *.ps1
-*.js
 docker-compose.simple.yml
 nginx.conf
 init-db.sql
-test-auth.js
-debug-nav.js

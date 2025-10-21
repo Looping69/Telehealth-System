@@ -2,7 +2,7 @@
 
 ## System Overview
 
-The Telehealth System is a comprehensive FHIR-compliant healthcare platform with dual-mode operation, supporting both mock data development and live FHIR production environments.
+The Telehealth System is a comprehensive FHIR-compliant healthcare platform with dual-mode operation, supporting both mock data development and live FHIR production environments. The system is deployed on Vercel with automatic CI/CD and can optionally connect to local Medplum FHIR servers for development.
 
 ## 🏗️ High-Level Architecture
 
@@ -38,11 +38,11 @@ graph TB
     end
     
     %% Infrastructure
-    subgraph "🐳 Infrastructure"
-        DockerCompose[Docker Compose]
+    subgraph "🚀 Deployment Infrastructure"
+        VercelApp[Vercel Deployment]
+        LocalMedplum[Local Medplum Server]
+        DockerCompose[Docker Compose - Optional]
         NginxProxy[Nginx Reverse Proxy]
-        MedplumServer[Medplum Server Container]
-        AppContainer[React App Container]
     end
     
     %% Connections
@@ -59,18 +59,17 @@ graph TB
     MockMode --> MockData
     FHIRMode --> MedplumAPI
     
-    MedplumAPI --> MedplumServer
-    MedplumServer --> PostgresDB
-    MedplumServer --> RedisCache
+    MedplumAPI --> LocalMedplum
+    LocalMedplum --> PostgresDB
+    LocalMedplum --> RedisCache
     
-    DockerCompose --> NginxProxy
-    DockerCompose --> MedplumServer
-    DockerCompose --> AppContainer
+    Browser --> VercelApp
+    ReactApp --> VercelApp
+    
+    DockerCompose --> LocalMedplum
     DockerCompose --> PostgresDB
     DockerCompose --> RedisCache
-    
-    NginxProxy --> AppContainer
-    NginxProxy --> MedplumServer
+    DockerCompose --> NginxProxy
 ```
 
 ## 🔄 Dual-Mode Architecture

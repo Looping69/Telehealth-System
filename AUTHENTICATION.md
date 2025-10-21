@@ -47,7 +47,9 @@ The system includes the following pre-configured authentication profiles that ma
 
 The Telehealth application includes built-in mock authentication that works even when the Medplum server is unavailable:
 
-1. **Open the application:** http://localhost:3000
+1. **Open the application:** 
+   - **Live Demo:** https://telehealth-system-woad.vercel.app/
+   - **Local Development:** http://localhost:5173
 2. **Use any of the credentials above**
 3. **Automatic fallback:** The app automatically uses mock data when real authentication fails
 
