@@ -7,6 +7,27 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['scripts']
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom'],
+          'mantine-core': ['@mantine/core'],
+          'mantine-hooks': ['@mantine/hooks'],
+          'mantine-notifications': ['@mantine/notifications'],
+          'mantine-modals': ['@mantine/modals'],
+          'mantine-dates': ['@mantine/dates'],
+          'medplum': ['@medplum/core'],
+          'icons': ['lucide-react', '@tabler/icons-react'],
+          'routing': ['react-router-dom'],
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    target: 'esnext',
+    minify: 'esbuild',
+  },
   server: {
     proxy: {
       '/fhir/R4': {

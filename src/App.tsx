@@ -20,44 +20,44 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ModeProvider, useMode } from './contexts/ModeContext';
 import { initializeMedplumAuth } from './config/medplum';
 
-// Import page components (Mock Data versions)
-import { DashboardPage } from './pages/Dashboard';
-import { PatientsPage } from './pages/Patients';
-import { SessionsPage } from './pages/Sessions';
-import { OrdersPage } from './pages/Orders';
-import { InvoicesPage } from './pages/Invoices';
-import { TasksPage } from './pages/Tasks';
-import { InsurancePage } from './pages/Insurance';
-import MessagesPage from './pages/Messages';
-import { ProvidersPage } from './pages/Providers';
-import { PharmaciesPage } from './pages/Pharmacies';
-import { TagsPage } from './pages/Tags';
-import { DiscountsPage } from './pages/Discounts';
-import { ProductsPage } from './pages/Products';
-import FormsPage from './pages/Forms';
-import { ResourcesPage } from './pages/Resources';
-import { SettingsPage } from './pages/Settings';
-import { AuditPage } from './pages/Audit';
+// Lazy load page components for better performance
+const DashboardPage = React.lazy(() => import('./pages/Dashboard').then(m => ({ default: m.DashboardPage })));
+const PatientsPage = React.lazy(() => import('./pages/Patients').then(m => ({ default: m.PatientsPage })));
+const SessionsPage = React.lazy(() => import('./pages/Sessions').then(m => ({ default: m.SessionsPage })));
+const OrdersPage = React.lazy(() => import('./pages/Orders').then(m => ({ default: m.OrdersPage })));
+const InvoicesPage = React.lazy(() => import('./pages/Invoices').then(m => ({ default: m.InvoicesPage })));
+const TasksPage = React.lazy(() => import('./pages/Tasks').then(m => ({ default: m.TasksPage })));
+const InsurancePage = React.lazy(() => import('./pages/Insurance').then(m => ({ default: m.InsurancePage })));
+const MessagesPage = React.lazy(() => import('./pages/Messages'));
+const ProvidersPage = React.lazy(() => import('./pages/Providers').then(m => ({ default: m.ProvidersPage })));
+const PharmaciesPage = React.lazy(() => import('./pages/Pharmacies').then(m => ({ default: m.PharmaciesPage })));
+const TagsPage = React.lazy(() => import('./pages/Tags').then(m => ({ default: m.TagsPage })));
+const DiscountsPage = React.lazy(() => import('./pages/Discounts').then(m => ({ default: m.DiscountsPage })));
+const ProductsPage = React.lazy(() => import('./pages/Products').then(m => ({ default: m.ProductsPage })));
+const FormsPage = React.lazy(() => import('./pages/Forms'));
+const ResourcesPage = React.lazy(() => import('./pages/Resources').then(m => ({ default: m.ResourcesPage })));
+const SettingsPage = React.lazy(() => import('./pages/Settings').then(m => ({ default: m.SettingsPage })));
+const AuditPage = React.lazy(() => import('./pages/Audit').then(m => ({ default: m.AuditPage })));
 
-// Import Medplum page components (FHIR versions)
-import DashboardMedplumPage from './pages/Dashboard-Medplum';
-import PatientsMedplumPage from './pages/Patients-Medplum';
-import SessionsMedplumPage from './pages/Sessions-Medplum';
-import OrdersMedplumPage from './pages/Orders-Medplum';
-import InvoicesMedplumPage from './pages/Invoices-Medplum';
-import TasksMedplumPage from './pages/Tasks-Medplum';
-import InsuranceMedplumPage from './pages/Insurance-Medplum';
-import MessagesMedplumPage from './pages/Messages-Medplum';
-import ProvidersMedplumPage from './pages/Providers-Medplum';
-import PharmaciesMedplumPage from './pages/Pharmacies-Medplum';
-import TagsMedplumPage from './pages/Tags-Medplum';
-import DiscountsMedplumPage from './pages/Discounts-Medplum';
-import ProductsMedplumPage from './pages/Products-Medplum';
-import FormsMedplumPage from './pages/Forms-Medplum';
-import ResourcesMedplumPage from './pages/Resources-Medplum';
-import SettingsMedplumPage from './pages/Settings-Medplum';
-import AuditMedplumPage from './pages/Audit-Medplum';
-import FormBuilderMedplumPage from './pages/FormBuilder-Medplum';
+// Lazy load Medplum page components (FHIR versions)
+const DashboardMedplumPage = React.lazy(() => import('./pages/Dashboard-Medplum'));
+const PatientsMedplumPage = React.lazy(() => import('./pages/Patients-Medplum'));
+const SessionsMedplumPage = React.lazy(() => import('./pages/Sessions-Medplum'));
+const OrdersMedplumPage = React.lazy(() => import('./pages/Orders-Medplum'));
+const InvoicesMedplumPage = React.lazy(() => import('./pages/Invoices-Medplum'));
+const TasksMedplumPage = React.lazy(() => import('./pages/Tasks-Medplum'));
+const InsuranceMedplumPage = React.lazy(() => import('./pages/Insurance-Medplum'));
+const MessagesMedplumPage = React.lazy(() => import('./pages/Messages-Medplum'));
+const ProvidersMedplumPage = React.lazy(() => import('./pages/Providers-Medplum'));
+const PharmaciesMedplumPage = React.lazy(() => import('./pages/Pharmacies-Medplum'));
+const TagsMedplumPage = React.lazy(() => import('./pages/Tags-Medplum'));
+const DiscountsMedplumPage = React.lazy(() => import('./pages/Discounts-Medplum'));
+const ProductsMedplumPage = React.lazy(() => import('./pages/Products-Medplum'));
+const FormsMedplumPage = React.lazy(() => import('./pages/Forms-Medplum'));
+const ResourcesMedplumPage = React.lazy(() => import('./pages/Resources-Medplum'));
+const SettingsMedplumPage = React.lazy(() => import('./pages/Settings-Medplum'));
+const AuditMedplumPage = React.lazy(() => import('./pages/Audit-Medplum'));
+const FormBuilderMedplumPage = React.lazy(() => import('./pages/FormBuilder-Medplum'));
 
 // Custom theme with medical blue color scheme
 const theme = createTheme({
@@ -85,9 +85,14 @@ const theme = createTheme({
 function AppContent() {
   const { mode } = useMode();
 
-  // Helper function to get the appropriate component based on mode
+  // Helper function to get the appropriate component based on mode with Suspense
   const getPageComponent = (mockComponent: React.ComponentType, fhirComponent: React.ComponentType) => {
-    return mode === 'fhir' ? React.createElement(fhirComponent) : React.createElement(mockComponent);
+    const Component = mode === 'fhir' ? fhirComponent : mockComponent;
+    return (
+      <React.Suspense fallback={<div>Loading...</div>}>
+        <Component />
+      </React.Suspense>
+    );
   };
 
   return (

@@ -946,6 +946,7 @@ export const DiscountsMedplumPage: React.FC = () => {
         // Create new FHIR ChargeItem
         const newChargeItem: ChargeItem = {
           resourceType: 'ChargeItem',
+          subject: { reference: 'Patient/example' },
           code: {
             text: discountData.name,
             coding: [{
@@ -954,7 +955,7 @@ export const DiscountsMedplumPage: React.FC = () => {
             }]
           },
           definitionUri: [discountData.description || ''],
-          status: discountData.isActive ? 'billable' : 'not-billable',
+          status: (discountData.isActive ? 'billable' : 'not-billable') as 'billable' | 'not-billable' | 'aborted' | 'billed' | 'entered-in-error' | 'unknown',
           extension: [
             {
               url: 'discount-type',
@@ -1020,6 +1021,8 @@ export const DiscountsMedplumPage: React.FC = () => {
     try {
       const duplicatedChargeItem: ChargeItem = {
         resourceType: 'ChargeItem',
+        status: 'billable',
+        subject: { reference: 'Patient/example' },
         code: {
           text: `${discount.name} (Copy)`,
           coding: [{
@@ -1028,7 +1031,6 @@ export const DiscountsMedplumPage: React.FC = () => {
           }]
         },
         definitionUri: [discount.description],
-        status: discount.chargeItem.status as ChargeItem['status'],
         extension: discount.chargeItem.extension,
       };
 
@@ -1115,7 +1117,7 @@ export const DiscountsMedplumPage: React.FC = () => {
           `${discount.usageCount}${discount.usageLimit ? `/${discount.usageLimit}` : ''}`,
           discount.startDate,
           discount.endDate,
-          discount.chargeItem.status || 'unknown',
+          (discount.chargeItem.status as string) || 'unknown',
         ].join(','))
       ].join('\n');
       

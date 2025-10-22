@@ -24,12 +24,14 @@ import { FormQuestion } from './FormQuestion';
 import { Question, FormAnswer, FormData } from '../../types/forms';
 
 interface MultiStepFormProps {
+  form?: FormData;
   formData?: FormData;
   questions?: Question[];
   title?: string;
   description?: string;
   onSubmit: (answers: Record<string, FormAnswer>) => void;
-  onCancel: () => void;
+  onCancel?: () => void;
+  onClose?: () => void;
   loading?: boolean;
 }
 
@@ -38,6 +40,7 @@ interface MultiStepFormProps {
  * Renders a form with one question per screen, smooth transitions, and progress tracking
  */
 export function MultiStepForm({
+  form,
   formData,
   questions: propQuestions,
   title: propTitle,
@@ -46,9 +49,10 @@ export function MultiStepForm({
   onCancel,
   loading = false,
 }: MultiStepFormProps) {
-  const questions = propQuestions || formData?.questions || [];
-  const title = propTitle || formData?.title;
-  const description = propDescription || formData?.description;
+  const actualFormData = form || formData;
+  const questions = propQuestions || actualFormData?.questions || [];
+  const title = propTitle || actualFormData?.title;
+  const description = propDescription || actualFormData?.description;
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, FormAnswer>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});

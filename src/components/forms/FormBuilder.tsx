@@ -55,6 +55,7 @@ interface FormBuilderProps {
   onSave?: (questionnaire: Questionnaire) => void;
   onCancel?: () => void;
   initialQuestionnaire?: Questionnaire;
+  initialForm?: any;
 }
 
 interface QuestionBuilder extends Question {
@@ -65,7 +66,7 @@ interface QuestionBuilder extends Question {
  * FormBuilder Component
  * Advanced form building interface with FHIR Questionnaire support
  */
-export function FormBuilder({ onSave, onCancel, initialQuestionnaire }: FormBuilderProps) {
+export function FormBuilder({ onSave, onCancel, initialQuestionnaire, initialForm }: FormBuilderProps) {
   const [previewOpened, { open: openPreview, close: closePreview }] = useDisclosure(false);
   const [settingsOpened, { open: openSettings, close: closeSettings }] = useDisclosure(false);
   

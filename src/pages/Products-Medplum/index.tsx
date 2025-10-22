@@ -971,7 +971,7 @@ const ProductsMedplumPage: React.FC = () => {
         <CreateProductModal
           opened={createOpened}
           onClose={closeCreate}
-          onSuccess={() => {
+          onProductCreated={() => {
             // Refresh the medications list after creating a new product
             const fetchMedications = async () => {
               try {

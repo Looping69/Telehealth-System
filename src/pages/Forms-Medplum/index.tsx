@@ -909,18 +909,22 @@ const FormsMedplumPage: React.FC = () => {
           {selectedQuestionnaire && (
             <MultiStepForm
               form={{
-                id: selectedQuestionnaire.id,
+                id: selectedQuestionnaire.id || 'temp-id',
                 title: selectedQuestionnaire.title || selectedQuestionnaire.name || 'FHIR Questionnaire',
                 description: selectedQuestionnaire.description || 'Complete this FHIR questionnaire',
-                category: selectedQuestionnaire.code?.[0]?.display || selectedQuestionnaire.purpose || 'general',
-                estimatedTime: '5-10 minutes',
+                category: 'custom' as const,
+                estimatedTime: 10,
+                version: '1.0',
+                active: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
                 questions: selectedQuestionnaire.item?.map((item, index) => ({
                   id: item.linkId || `q${index}`,
                   type: item.type === 'string' ? 'text' : 
                         item.type === 'boolean' ? 'radio' :
                         item.type === 'choice' ? 'select' :
                         item.type === 'integer' ? 'number' : 'text',
-                  question: item.text || `Question ${index + 1}`,
+                  text: item.text || `Question ${index + 1}`,
                   required: item.required || false,
                   options: item.answerOption?.map(option => ({
                     value: option.valueCoding?.code || option.valueString || '',
@@ -1102,7 +1106,7 @@ const FormsMedplumPage: React.FC = () => {
                 })) || []
               })) || []
             } : undefined}
-            onSave={async (formData) => {
+            onSave={async (formData: any) => {
               try {
                 const questionnaire: Partial<Questionnaire> = {
                   resourceType: 'Questionnaire',
@@ -1110,7 +1114,7 @@ const FormsMedplumPage: React.FC = () => {
                   title: formData.title,
                   description: formData.description,
                   purpose: formData.category,
-                  item: formData.questions.map((q, index) => ({
+                  item: formData.questions?.map((q: any, index: number) => ({
                     linkId: q.id || `q${index}`,
                     text: q.question,
                     type: q.type === 'text' ? 'string' :
@@ -1118,13 +1122,13 @@ const FormsMedplumPage: React.FC = () => {
                           q.type === 'select' ? 'choice' :
                           q.type === 'number' ? 'integer' : 'string',
                     required: q.required,
-                    answerOption: q.options?.map(opt => ({
+                    answerOption: q.options?.map((opt: any) => ({
                       valueCoding: {
                         code: opt.value,
                         display: opt.label
                       }
                     }))
-                  }))
+                  })) || []
                 };
 
                 if (selectedQuestionnaire?.id) {
@@ -1151,9 +1155,20 @@ const FormsMedplumPage: React.FC = () => {
                 }
 
                 setFormBuilderOpened(false);
+                setSelectedQuestionnaire(null);
                 // Refresh questionnaires
-                const updatedQuestionnaires = await medplumClient.searchResources('Questionnaire');
-                setQuestionnaires(updatedQuestionnaires);
+                const questionnaireResponse = await medplumClient.search('Questionnaire', {
+                  _sort: 'title',
+                  _count: '50'
+                });
+
+                if (questionnaireResponse.entry) {
+                  const questionnaireData = questionnaireResponse.entry
+                    .filter(entry => entry.resource?.resourceType === 'Questionnaire')
+                    .map(entry => entry.resource as Questionnaire);
+                  
+                  setQuestionnaires(questionnaireData);
+                }
               } catch (error) {
                 console.error('Error saving questionnaire:', error);
                 notifications.show({

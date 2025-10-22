@@ -587,13 +587,13 @@ const TagsMedplumPage: React.FC = () => {
 
   const handleToggleStatus = async (codeSystem: CodeSystem) => {
     try {
-      const newStatus = codeSystem.status === 'active' ? 'retired' : 'active';
+      const newStatus: 'active' | 'retired' = codeSystem.status === 'active' ? 'retired' : 'active';
       const updatedCodeSystem = { ...codeSystem, status: newStatus };
       
       if (codeSystem.id) {
          await medplumClient.updateResource(updatedCodeSystem);
          setCodeSystems(prev => prev.map(cs => 
-           cs.id === codeSystem.id ? updatedCodeSystem : cs
+           cs.id === codeSystem.id ? updatedCodeSystem as CodeSystem : cs
          ));
          notifications.show({
            title: 'Success',

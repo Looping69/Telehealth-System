@@ -925,12 +925,12 @@ const ResourcesMedplumPage: React.FC = () => {
       // Mock download functionality for FHIR documents
       const attachment = document.content?.[0]?.attachment;
       if (attachment?.url) {
-        const link = document.createElement('a');
+        const link = window.document.createElement('a');
         link.href = attachment.url;
         link.download = attachment.title || `document-${document.id}`;
-        document.body.appendChild(link);
+        window.document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        window.document.body.removeChild(link);
         setNotification({ type: 'success', message: 'Document downloaded successfully!' });
       } else {
         setNotification({ type: 'error', message: 'No downloadable content available for this document.' });
@@ -1373,7 +1373,7 @@ const ResourcesMedplumPage: React.FC = () => {
               </Title>
               <SegmentedControl
                 value={viewMode}
-                onChange={setViewMode}
+                onChange={(value) => setViewMode(value as 'cards' | 'table')}
                 data={[
                   { 
                     label: (
