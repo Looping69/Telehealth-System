@@ -14,14 +14,16 @@ import {
   Divider,
   Center,
   Loader,
+  Tabs,
 } from '@mantine/core';
-import { IconAlertCircle, IconMedicalCross } from '@tabler/icons-react';
+import { IconAlertCircle, IconMedicalCross, IconUser, IconStethoscope } from '@tabler/icons-react';
 import { useAuthStore } from '../../store/authStore';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loginType, setLoginType] = useState<'provider' | 'patient'>('provider');
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -35,10 +37,10 @@ const LoginPage: React.FC = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      const from = location.state?.from?.pathname || '/dashboard';
+      const from = location.state?.from?.pathname || (loginType === 'patient' ? '/patient/dashboard' : '/dashboard');
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, location]);
+  }, [isAuthenticated, navigate, location, loginType]);
 
   // Clear error when component unmounts or inputs change
   useEffect(() => {
@@ -60,24 +62,35 @@ const LoginPage: React.FC = () => {
 
     try {
       await login(email.trim(), password);
+      // Redirect will be handled by the useEffect above
     } catch (err) {
       // Error handling is managed by the authStore
       console.error('Login submission error:', err);
     }
   };
 
-  const fillDemoCredentials = (userType: 'admin' | 'doctor' | 'nurse' | 'superadmin') => {
+  const fillDemoCredentials = (userType: 'admin' | 'doctor' | 'nurse' | 'superadmin' | 'patient') => {
     const credentials = {
       admin: { email: 'admin@example.com', password: 'medplum_admin' },
       doctor: { email: 'doctor@example.com', password: 'doctor123' },
       nurse: { email: 'nurse@example.com', password: 'nurse123' },
-      superadmin: { email: 'superadmin@example.com', password: 'superadmin123' }
+      superadmin: { email: 'superadmin@example.com', password: 'superadmin123' },
+      patient: { email: 'patient@example.com', password: 'patient123' }
     };
     
     const cred = credentials[userType];
     setEmail(cred.email);
     setPassword(cred.password);
     clearError();
+  };
+
+  const handleTabChange = (value: string | null) => {
+    if (value === 'provider' || value === 'patient') {
+      setLoginType(value);
+      setEmail('');
+      setPassword('');
+      clearError();
+    }
   };
 
   return (
@@ -95,85 +108,161 @@ const LoginPage: React.FC = () => {
       </Center>
 
       <Paper withBorder shadow="md" p={30} mt={30} radius="md">
-        <form onSubmit={handleSubmit}>
-          <Stack gap="md">
-            <TextInput
-              label="Email address"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-              required
-            />
+        <Tabs value={loginType} onChange={handleTabChange} variant="pills" radius="md">
+          <Tabs.List grow>
+            <Tabs.Tab value="provider" leftSection={<IconStethoscope size="1rem" />}>
+              Healthcare Provider
+            </Tabs.Tab>
+            <Tabs.Tab value="patient" leftSection={<IconUser size="1rem" />}>
+              Patient Portal
+            </Tabs.Tab>
+          </Tabs.List>
 
-            <PasswordInput
-              label="Password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
-              required
-              visible={showPassword}
-              onVisibilityChange={setShowPassword}
-            />
+          <Tabs.Panel value="provider" pt="md">
+            <form onSubmit={handleSubmit}>
+              <Stack gap="md">
+                <TextInput
+                  label="Email address"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                  required
+                />
 
-            {error && (
-              <Alert icon={<IconAlertCircle size="1rem" />} title="Login Failed" color="red">
-                {error}
-              </Alert>
-            )}
+                <PasswordInput
+                  label="Password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                  required
+                  visible={showPassword}
+                  onVisibilityChange={setShowPassword}
+                />
 
-            <Button
-              type="submit"
-              fullWidth
-              disabled={isLoading || !email.trim() || !password.trim()}
-              loading={isLoading}
-              leftSection={isLoading ? <Loader size="sm" /> : null}
-            >
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </Button>
+                {error && (
+                  <Alert icon={<IconAlertCircle size="1rem" />} title="Login Failed" color="red">
+                    {error}
+                  </Alert>
+                )}
 
-            <Divider label="Demo Credentials" labelPosition="center" />
+                <Button
+                  type="submit"
+                  fullWidth
+                  disabled={isLoading || !email.trim() || !password.trim()}
+                  loading={isLoading}
+                  leftSection={isLoading ? <Loader size="sm" /> : null}
+                >
+                  {isLoading ? 'Signing in...' : 'Sign in as Provider'}
+                </Button>
 
-            <Group grow>
-              <Button
-                variant="light"
-                onClick={() => fillDemoCredentials('admin')}
-                disabled={isLoading}
-              >
-                Admin
-              </Button>
-              <Button
-                variant="light"
-                onClick={() => fillDemoCredentials('doctor')}
-                disabled={isLoading}
-              >
-                Doctor
-              </Button>
-            </Group>
+                <Divider label="Demo Credentials" labelPosition="center" />
 
-            <Group grow>
-              <Button
-                variant="light"
-                onClick={() => fillDemoCredentials('nurse')}
-                disabled={isLoading}
-              >
-                Nurse
-              </Button>
-              <Button
-                variant="light"
-                onClick={() => fillDemoCredentials('superadmin')}
-                disabled={isLoading}
-              >
-                Super Admin
-              </Button>
-            </Group>
+                <Group grow>
+                  <Button
+                    variant="light"
+                    onClick={() => fillDemoCredentials('admin')}
+                    disabled={isLoading}
+                  >
+                    Admin
+                  </Button>
+                  <Button
+                    variant="light"
+                    onClick={() => fillDemoCredentials('doctor')}
+                    disabled={isLoading}
+                  >
+                    Doctor
+                  </Button>
+                </Group>
 
-            <Text size="xs" c="dimmed" ta="center">
-              Click any demo button to auto-fill credentials, then sign in
-            </Text>
-          </Stack>
-        </form>
+                <Group grow>
+                  <Button
+                    variant="light"
+                    onClick={() => fillDemoCredentials('nurse')}
+                    disabled={isLoading}
+                  >
+                    Nurse
+                  </Button>
+                  <Button
+                    variant="light"
+                    onClick={() => fillDemoCredentials('superadmin')}
+                    disabled={isLoading}
+                  >
+                    Super Admin
+                  </Button>
+                </Group>
+
+                <Text size="xs" c="dimmed" ta="center">
+                  Click any demo button to auto-fill credentials, then sign in
+                </Text>
+              </Stack>
+            </form>
+          </Tabs.Panel>
+
+          <Tabs.Panel value="patient" pt="md">
+            <form onSubmit={handleSubmit}>
+              <Stack gap="md">
+                <Text size="sm" c="blue" ta="center" mb="md">
+                  🏥 GLP-1 Patient Portal Access
+                </Text>
+
+                <TextInput
+                  label="Email address"
+                  placeholder="Enter your patient email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                  required
+                />
+
+                <PasswordInput
+                  label="Password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                  required
+                  visible={showPassword}
+                  onVisibilityChange={setShowPassword}
+                />
+
+                {error && (
+                  <Alert icon={<IconAlertCircle size="1rem" />} title="Login Failed" color="red">
+                    {error}
+                  </Alert>
+                )}
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  disabled={isLoading || !email.trim() || !password.trim()}
+                  loading={isLoading}
+                  leftSection={isLoading ? <Loader size="sm" /> : null}
+                  color="blue"
+                >
+                  {isLoading ? 'Signing in...' : 'Access Patient Portal'}
+                </Button>
+
+                <Divider label="Demo Patient" labelPosition="center" />
+
+                <Button
+                  variant="light"
+                  onClick={() => fillDemoCredentials('patient')}
+                  disabled={isLoading}
+                  fullWidth
+                  color="blue"
+                >
+                  Demo Patient Login
+                </Button>
+
+                <Text size="xs" c="dimmed" ta="center">
+                  Mobile-optimized portal for GLP-1 treatment tracking
+                </Text>
+              </Stack>
+            </form>
+          </Tabs.Panel>
+        </Tabs>
       </Paper>
 
       <Text c="dimmed" size="xs" ta="center" mt="md">

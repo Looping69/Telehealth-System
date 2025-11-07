@@ -54,6 +54,14 @@ const MOCK_USERS = [
     role: 'super_admin' as const,
     isActive: true,
   },
+  {
+    id: '5',
+    email: 'patient@example.com',
+    password: 'patient123',
+    name: 'John Patient',
+    role: 'patient' as const,
+    isActive: true,
+  },
 ];
 
 export const useAuthStore = create<AuthStore>((set, get) => ({

@@ -13,40 +13,51 @@ interface NavigationItemProps {
   icon: LucideIcon;
   isActive: boolean;
   onClick: () => void;
+  collapsed?: boolean;
 }
 
 export function NavigationItem({ 
   label, 
   icon: IconComponent, 
   isActive, 
-  onClick 
+  onClick,
+  collapsed = false,
 }: NavigationItemProps) {
   return (
     <UnstyledButton
       onClick={onClick}
       style={(theme) => ({
-        display: 'block',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'flex-start',
         width: '100%',
-        padding: theme.spacing.xs,
+        padding: collapsed ? theme.spacing.xs : theme.spacing.xs,
         borderRadius: theme.radius.sm,
-        color: isActive ? '#2563eb' : theme.colors.gray[7],
-        backgroundColor: isActive ? '#eff6ff' : 'transparent',
+        color: isActive ? '#7cb8ff' : '#c9d7f2',
+        backgroundColor: isActive ? '#12284e' : 'transparent',
+        transition: 'background-color 180ms ease, transform 150ms ease, color 150ms ease',
         '&:hover': {
-          backgroundColor: isActive ? '#eff6ff' : theme.colors.gray[0],
+          backgroundColor: isActive ? '#12284e' : '#0a1a36',
+          color: isActive ? '#e6edf7' : '#e6edf7',
+          transform: collapsed ? 'scale(1.03)' : 'translateX(2px)',
         },
       })}
     >
-      <Group gap="sm">
+      <Group gap={collapsed ? 0 : 'sm'} justify={collapsed ? 'center' : 'flex-start'}>
         <ThemeIcon
           variant={isActive ? 'light' : 'subtle'}
-          color={isActive ? '#2563eb' : 'gray'}
-          size="sm"
+          color={isActive ? 'blue' : 'indigo'}
+          size={collapsed ? 'md' : 'sm'}
         >
-          <IconComponent size={16} />
+          <IconComponent size={collapsed ? 18 : 16} />
         </ThemeIcon>
-        <Text size="sm" fw={isActive ? 500 : 400}>
-          {label}
-        </Text>
+        {!collapsed && (
+          <Text size="sm" fw={isActive ? 500 : 400} c={isActive ? '#e6edf7' : '#c9d7f2'}
+            style={{ transition: 'color 150ms ease' }}
+          >
+            {label}
+          </Text>
+        )}
       </Group>
     </UnstyledButton>
   );

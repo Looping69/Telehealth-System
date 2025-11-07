@@ -15,6 +15,7 @@ import '@mantine/dates/styles.css';
 import { queryClient } from './hooks/useQuery';
 import LoginPage from './components/auth/LoginPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { PatientProtectedRoute } from './components/auth/PatientProtectedRoute';
 import { UnauthorizedPage } from './components/common/UnauthorizedPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { ModeProvider, useMode } from './contexts/ModeContext';
@@ -59,6 +60,15 @@ const SettingsMedplumPage = React.lazy(() => import('./pages/Settings-Medplum'))
 const AuditMedplumPage = React.lazy(() => import('./pages/Audit-Medplum'));
 const FormBuilderMedplumPage = React.lazy(() => import('./pages/FormBuilder-Medplum'));
 
+// Lazy load Patient Portal components
+const PatientPortalLayout = React.lazy(() => import('./components/layout/PatientPortalLayout'));
+const PatientDashboard = React.lazy(() => import('./pages/Patient/Dashboard'));
+const PatientWeightTracking = React.lazy(() => import('./pages/Patient/WeightTracking'));
+const PatientHealth = React.lazy(() => import('./pages/Patient/Health'));
+const PatientResources = React.lazy(() => import('./pages/Patient/Resources'));
+const PatientSupport = React.lazy(() => import('./pages/Patient/Support'));
+const PatientShop = React.lazy(() => import('./pages/Patient/Shop'));
+
 // Custom theme with medical blue color scheme
 const theme = createTheme({
   primaryColor: 'blue',
@@ -102,52 +112,114 @@ function AppContent() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-            {/* Protected Routes */}
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              {/* Dashboard */}
-              <Route index element={getPageComponent(DashboardPage, DashboardMedplumPage)} />
-              <Route path="dashboard" element={getPageComponent(DashboardPage, DashboardMedplumPage)} />
+        {/* Patient Portal Routes */}
+        <Route
+          path="/patient/*"
+          element={
+            <PatientProtectedRoute>
+              <React.Suspense fallback={<div>Loading...</div>}>
+                <PatientPortalLayout />
+              </React.Suspense>
+            </PatientProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/patient/dashboard" replace />} />
+          <Route 
+            path="dashboard" 
+            element={
+              <React.Suspense fallback={<div>Loading...</div>}>
+                <PatientDashboard />
+              </React.Suspense>
+            } 
+          />
+          <Route 
+            path="weight-tracking" 
+            element={
+              <React.Suspense fallback={<div>Loading...</div>}>
+                <PatientWeightTracking />
+              </React.Suspense>
+            } 
+          />
+          <Route 
+            path="health" 
+            element={
+              <React.Suspense fallback={<div>Loading...</div>}>
+                <PatientHealth />
+              </React.Suspense>
+            } 
+          />
+          <Route 
+            path="resources" 
+            element={
+              <React.Suspense fallback={<div>Loading...</div>}>
+                <PatientResources />
+              </React.Suspense>
+            } 
+          />
+          <Route 
+            path="support" 
+            element={
+              <React.Suspense fallback={<div>Loading...</div>}>
+                <PatientSupport />
+              </React.Suspense>
+            } 
+          />
+          <Route 
+            path="shop" 
+            element={
+              <React.Suspense fallback={<div>Loading...</div>}>
+                <PatientShop />
+              </React.Suspense>
+            } 
+          />
+        </Route>
 
-              {/* Patient Care */}
-              <Route path="patients" element={getPageComponent(PatientsPage, PatientsMedplumPage)} />
-              <Route path="sessions" element={getPageComponent(SessionsPage, SessionsMedplumPage)} />
+        {/* Provider Portal Routes */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          {/* Dashboard */}
+          <Route index element={getPageComponent(DashboardPage, DashboardMedplumPage)} />
+          <Route path="dashboard" element={getPageComponent(DashboardPage, DashboardMedplumPage)} />
 
-              {/* Orders & Billing */}
-              <Route path="orders" element={getPageComponent(OrdersPage, OrdersMedplumPage)} />
-              <Route path="invoices" element={getPageComponent(InvoicesPage, InvoicesMedplumPage)} />
+          {/* Patient Care */}
+          <Route path="patients" element={getPageComponent(PatientsPage, PatientsMedplumPage)} />
+          <Route path="sessions" element={getPageComponent(SessionsPage, SessionsMedplumPage)} />
 
-              {/* Management */}
-              <Route path="tasks" element={getPageComponent(TasksPage, TasksMedplumPage)} />
-              <Route path="insurance" element={getPageComponent(InsurancePage, InsuranceMedplumPage)} />
-              <Route path="messages" element={getPageComponent(MessagesPage, MessagesMedplumPage)} />
+          {/* Orders & Billing */}
+          <Route path="orders" element={getPageComponent(OrdersPage, OrdersMedplumPage)} />
+          <Route path="invoices" element={getPageComponent(InvoicesPage, InvoicesMedplumPage)} />
 
-              {/* Admin */}
-              <Route path="providers" element={getPageComponent(ProvidersPage, ProvidersMedplumPage)} />
-              <Route path="pharmacies" element={getPageComponent(PharmaciesPage, PharmaciesMedplumPage)} />
-              <Route path="tags" element={getPageComponent(TagsPage, TagsMedplumPage)} />
-              <Route path="discounts" element={getPageComponent(DiscountsPage, DiscountsMedplumPage)} />
+          {/* Management */}
+          <Route path="tasks" element={getPageComponent(TasksPage, TasksMedplumPage)} />
+          <Route path="insurance" element={getPageComponent(InsurancePage, InsuranceMedplumPage)} />
+          <Route path="messages" element={getPageComponent(MessagesPage, MessagesMedplumPage)} />
 
-              {/* Products & Content */}
-              <Route path="products" element={getPageComponent(ProductsPage, ProductsMedplumPage)} />
-              <Route path="resources" element={getPageComponent(ResourcesPage, ResourcesMedplumPage)} />
-              <Route path="forms" element={getPageComponent(FormsPage, FormsMedplumPage)} />
-              <Route path="form-builder" element={getPageComponent(() => <div>Form Builder (Mock)</div>, FormBuilderMedplumPage)} />
+          {/* Admin */}
+          <Route path="providers" element={getPageComponent(ProvidersPage, ProvidersMedplumPage)} />
+          <Route path="pharmacies" element={getPageComponent(PharmaciesPage, PharmaciesMedplumPage)} />
+          <Route path="tags" element={getPageComponent(TagsPage, TagsMedplumPage)} />
+          <Route path="discounts" element={getPageComponent(DiscountsPage, DiscountsMedplumPage)} />
 
-              {/* System */}
-              <Route path="settings" element={getPageComponent(SettingsPage, SettingsMedplumPage)} />
-              <Route path="audit" element={getPageComponent(AuditPage, AuditMedplumPage)} />
+          {/* Products & Content */}
+          <Route path="products" element={getPageComponent(ProductsPage, ProductsMedplumPage)} />
+          <Route path="resources" element={getPageComponent(ResourcesPage, ResourcesMedplumPage)} />
+          <Route path="forms" element={getPageComponent(FormsPage, FormsMedplumPage)} />
+          <Route path="form-builder" element={getPageComponent(() => <div>Form Builder (Mock)</div>, FormBuilderMedplumPage)} />
 
-              {/* Catch all - redirect to dashboard */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
+          {/* System */}
+          <Route path="settings" element={getPageComponent(SettingsPage, SettingsMedplumPage)} />
+          <Route path="audit" element={getPageComponent(AuditPage, AuditMedplumPage)} />
+
+          {/* Catch all - redirect to dashboard */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
     </Router>
   );
 }

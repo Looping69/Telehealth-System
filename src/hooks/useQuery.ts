@@ -473,45 +473,51 @@ export function useAuditEvents(params?: { search?: string; status?: string }) {
 
 /**
  * Fetch dashboard metrics
+ * 
+ * Purpose: Retrieve real counts and totals from Medplum FHIR backend for the dashboard.
+ * Inputs: None (uses authenticated `medplumClient`).
+ * Outputs: Object with `totalAppointments`, `totalPatients`, `totalRevenue`, `pendingAppointments`.
  */
 export function useDashboardMetrics() {
   return useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: async () => {
+      console.log('Fetching dashboard metrics from Medplum...');
       try {
-        console.log('Fetching dashboard metrics from Medplum...');
+        // Use Bundle results to get accurate counts
+        const [appointmentsBundle, patientsBundle, scheduledBundle] = await Promise.all([
+          medplumClient.search('Appointment', new URLSearchParams({ _summary: 'count' })),
+          medplumClient.search('Patient', new URLSearchParams({ _summary: 'count' })),
+          medplumClient.search('Appointment', new URLSearchParams({ status: 'scheduled', _summary: 'count' })),
+        ]);
 
-        const appointments = await medplumClient.searchResources('Appointment', {
-          _summary: 'count',
-        });
+        // Revenue requires fetching actual invoices and summing amounts
+        const paidInvoices = await medplumClient.searchResources(
+          'Invoice',
+          new URLSearchParams({ status: 'balanced', _count: '200' })
+        );
 
-        const patients = await medplumClient.searchResources('Patient', {
-          _summary: 'count',
-        });
-
-        const revenue = await medplumClient.searchResources('Invoice', {
-          status: 'paid',
-          _summary: 'total',
-        });
+        const totalRevenue = paidInvoices.reduce((sum: number, inv: any) => {
+          const gross = inv.totalGross?.value ?? 0;
+          const net = inv.totalNet?.value ?? 0;
+          // Prefer gross if present, otherwise net
+          return sum + (gross || net);
+        }, 0);
 
         const metrics = {
-          totalAppointments: appointments.length || 0,
-          totalPatients: patients.length || 0,
-          totalRevenue: revenue.length || 0,
-          pendingAppointments: 10, // Mock data for now
+          totalAppointments: (appointmentsBundle as any)?.total ?? 0,
+          totalPatients: (patientsBundle as any)?.total ?? 0,
+          totalRevenue,
+          pendingAppointments: (scheduledBundle as any)?.total ?? 0,
         };
 
         console.log('Successfully fetched dashboard metrics:', metrics);
         return metrics;
-      } catch (err) {
-        console.error('Error fetching dashboard metrics from Medplum:', err);
-        console.log('Using mock dashboard metrics (Medplum server not available)');
-        return {
-          totalAppointments: 124,
-          totalPatients: 45,
-          totalRevenue: 18500,
-          pendingAppointments: 12,
-        };
+      } catch (err: any) {
+        // Propagate error so UI shows an error instead of silent mock fallback
+        const message = err?.message || 'Unknown error';
+        console.error('Error fetching dashboard metrics from Medplum:', message);
+        throw new Error(`Dashboard metrics fetch failed: ${message}`);
       }
     },
   });

@@ -18,7 +18,8 @@ export type UserRole =
   | 'healthcare_provider' 
   | 'practice_manager'
   | 'receptionist'
-  | 'billing_specialist';
+  | 'billing_specialist'
+  | 'patient';
 
 export interface AuthState {
   user: User | null;

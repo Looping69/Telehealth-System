@@ -65,8 +65,42 @@ interface FHIRPharmacyCardProps {
 }
 
 const FHIRPharmacyCard: React.FC<FHIRPharmacyCardProps> = ({ pharmacy, onView, onEdit }) => {
-  const getStatusColor = (active?: boolean) => {
-    return active ? 'green' : 'red';
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'green';
+      case 'inactive':
+        return 'red';
+      case 'pending':
+        return 'yellow';
+      default:
+        return 'gray';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'retail':
+        return 'blue';
+      case 'hospital':
+        return 'green';
+      case 'mail_order':
+        return 'orange';
+      case 'specialty':
+        return 'purple';
+      default:
+        return 'gray';
+    }
+  };
+
+  const formatFillTime = (minutes: number) => {
+    if (minutes < 60) {
+      return `${minutes} min`;
+    } else if (minutes < 1440) {
+      return `${Math.round(minutes / 60)} hrs`;
+    } else {
+      return `${Math.round(minutes / 1440)} days`;
+    }
   };
 
   const getPharmacyName = () => {
@@ -98,22 +132,11 @@ const FHIRPharmacyCard: React.FC<FHIRPharmacyCardProps> = ({ pharmacy, onView, o
   };
 
   const getType = () => {
-    return pharmacy.type?.[0]?.text || 'Pharmacy';
+    return pharmacy.type?.[0]?.text || 'retail';
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'retail':
-        return 'blue';
-      case 'hospital':
-        return 'green';
-      case 'mail_order':
-        return 'orange';
-      case 'specialty':
-        return 'purple';
-      default:
-        return 'gray';
-    }
+  const getStatus = () => {
+    return pharmacy.active ? 'active' : 'inactive';
   };
 
   // Mock data for enhanced features (in real implementation, this would come from FHIR extensions or related resources)
@@ -150,8 +173,8 @@ const FHIRPharmacyCard: React.FC<FHIRPharmacyCardProps> = ({ pharmacy, onView, o
             </Stack>
           </Group>
           <Group>
-            <Badge color={getStatusColor(pharmacy.active)}>
-              {pharmacy.active ? 'Active' : 'Inactive'}
+            <Badge color={getStatusColor(getStatus())}>
+              {getStatus()}
             </Badge>
             <Badge color={getTypeColor(getType())}>
               {getType()}
@@ -176,7 +199,7 @@ const FHIRPharmacyCard: React.FC<FHIRPharmacyCardProps> = ({ pharmacy, onView, o
           </Group>
           <Group gap="xs">
             <Clock size={14} />
-            <Text size="sm">Avg fill time: {mockFillTime} min</Text>
+            <Text size="sm">Avg fill time: {formatFillTime(mockFillTime)}</Text>
           </Group>
         </Stack>
 
@@ -511,11 +534,21 @@ interface FHIRPharmacyTableRowProps {
 }
 
 const FHIRPharmacyTableRow: React.FC<FHIRPharmacyTableRowProps> = ({ pharmacy, onView, onEdit }) => {
-  const getPharmacyName = () => pharmacy.name || 'Unknown Pharmacy';
-  const getType = () => pharmacy.type?.[0]?.text || 'Pharmacy';
-  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'green';
+      case 'inactive':
+        return 'red';
+      case 'pending':
+        return 'yellow';
+      default:
+        return 'gray';
+    }
+  };
+
   const getTypeColor = (type: string) => {
-    switch (type.toLowerCase()) {
+    switch (type) {
       case 'retail':
         return 'blue';
       case 'hospital':
@@ -528,6 +561,20 @@ const FHIRPharmacyTableRow: React.FC<FHIRPharmacyTableRowProps> = ({ pharmacy, o
         return 'gray';
     }
   };
+
+  const formatFillTime = (minutes: number) => {
+    if (minutes < 60) {
+      return `${minutes} min`;
+    } else if (minutes < 1440) {
+      return `${Math.round(minutes / 60)} hrs`;
+    } else {
+      return `${Math.round(minutes / 1440)} days`;
+    }
+  };
+
+  const getPharmacyName = () => pharmacy.name || 'Unknown Pharmacy';
+  const getType = () => pharmacy.type?.[0]?.text || 'retail';
+  const getStatus = () => pharmacy.active ? 'active' : 'inactive';
 
   const getAddress = () => {
     const address = pharmacy.address?.[0];
@@ -577,8 +624,8 @@ const FHIRPharmacyTableRow: React.FC<FHIRPharmacyTableRowProps> = ({ pharmacy, o
         <Text size="sm">{getPhone()}</Text>
       </Table.Td>
       <Table.Td>
-        <Badge color={pharmacy.active ? 'green' : 'red'} size="sm">
-          {pharmacy.active ? 'Active' : 'Inactive'}
+        <Badge color={getStatusColor(getStatus())} size="sm">
+          {getStatus()}
         </Badge>
       </Table.Td>
       <Table.Td>
@@ -590,7 +637,7 @@ const FHIRPharmacyTableRow: React.FC<FHIRPharmacyTableRowProps> = ({ pharmacy, o
         </Group>
       </Table.Td>
       <Table.Td>
-        <Text size="sm">{mockFillTime} min</Text>
+        <Text size="sm">{formatFillTime(mockFillTime)}</Text>
       </Table.Td>
       <Table.Td>
         <Group gap="xs">
@@ -746,13 +793,7 @@ const PharmaciesMedplumPage: React.FC = () => {
         <Group justify="space-between" align="center">
           <div>
             <Title order={2}>Pharmacy Partners</Title>
-            <Group gap="xs">
-              <Badge color="green" variant="light">
-                <Database size={12} style={{ marginRight: 4 }} />
-                FHIR-powered
-              </Badge>
-              <Text c="dimmed">Manage pharmacy partnerships and prescription fulfillment</Text>
-            </Group>
+            <Text c="dimmed">Manage pharmacy partnerships and prescription fulfillment</Text>
           </div>
           <Button leftSection={<Plus size={16} />} onClick={openCreate}>
             Add Pharmacy
@@ -848,9 +889,10 @@ const PharmaciesMedplumPage: React.FC = () => {
                 data={[
                   { value: 'active', label: 'Active' },
                   { value: 'inactive', label: 'Inactive' },
+                  { value: 'pending', label: 'Pending' },
                 ]}
-                value={statusFilter === 'all' ? null : statusFilter}
-                onChange={(value) => setStatusFilter(value || 'all')}
+                value={statusFilter}
+                onChange={setStatusFilter}
                 clearable
               />
             </Grid.Col>
@@ -869,7 +911,7 @@ const PharmaciesMedplumPage: React.FC = () => {
                 clearable
               />
             </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Grid.Col span={{ base: 12, sm: 6, md: 6 }}>
               <Group justify="flex-end">
                 <Button.Group>
                   <Button

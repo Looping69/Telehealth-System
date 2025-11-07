@@ -11,6 +11,14 @@ export interface Permission {
 }
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  patient: [
+    { module: 'dashboard', actions: ['read'] },
+    { module: 'health', actions: ['read', 'update'] },
+    { module: 'resources', actions: ['read'] },
+    { module: 'support', actions: ['create', 'read', 'update'] },
+    { module: 'shop', actions: ['read', 'create'] },
+  ],
+  
   super_admin: [
     { module: 'dashboard', actions: ['read'] },
     { module: 'patients', actions: ['create', 'read', 'update', 'delete'] },

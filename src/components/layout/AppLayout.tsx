@@ -17,6 +17,7 @@ import {
   Badge,
   Button,
   UnstyledButton,
+  ActionIcon,
   useMantineTheme,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -46,6 +47,8 @@ import {
   BookOpen,
   Cog,
   FileSearch,
+  PanelLeftClose,
+  PanelLeftOpen,
   LucideIcon
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -57,6 +60,7 @@ import { useMode } from '../../contexts/ModeContext';
 export function AppLayout() {
   const theme = useMantineTheme();
   const [opened, { toggle }] = useDisclosure(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -140,9 +144,11 @@ export function AppLayout() {
     
     return (
       <div key={title}>
-        <Text size="xs" fw={500} c="dimmed" tt="uppercase" mb="xs" px="md">
-          {title}
-        </Text>
+        {!sidebarCollapsed && (
+          <Text size="xs" fw={500} c="dimmed" tt="uppercase" mb="xs" px="md">
+            {title}
+          </Text>
+        )}
         <Stack gap={2}>
           {items.map((item) => (
             <NavigationItem
@@ -151,6 +157,7 @@ export function AppLayout() {
               label={item.label}
               icon={item.icon}
               isActive={location.pathname === item.path}
+              collapsed={sidebarCollapsed}
               onClick={() => {
                 navigate(item.path);
                 if (opened) toggle();
@@ -165,59 +172,78 @@ export function AppLayout() {
   return (
     <AppShell
       navbar={{
-        width: 280,
+        width: sidebarCollapsed ? 72 : 280,
         breakpoint: 'sm',
         collapsed: { mobile: !opened },
       }}
-      header={{ height: 70 }}
+      header={{ height: 56 }}
       padding="md"
     >
       {/* Header */}
       <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
+        <Group h="100%" px="sm" justify="space-between" gap="sm">
           <Group>
             <Burger
               opened={opened}
               onClick={toggle}
-              size="sm"
+              size="xs"
               color={theme.colors.gray[6]}
               hiddenFrom="sm"
             />
+            {/* Sidebar collapse toggle (desktop) */}
+            <ActionIcon
+              variant="subtle"
+              size="sm"
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              onClick={() => setSidebarCollapsed((v) => !v)}
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              style={{
+                color: '#e6edf7',
+                backgroundColor: 'transparent',
+              }}
+              visibleFrom="sm"
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen size={18} />
+              ) : (
+                <PanelLeftClose size={18} />
+              )}
+            </ActionIcon>
             
-            <Group gap="xs">
-              <Heart size={28} color="#2563eb" />
-              <Text size="xl" fw={700} c="#2563eb">
+            <Group gap={6}>
+              <Heart size={24} color="#2563eb" />
+              <Text size="lg" fw={700} c="#2563eb">
                 Telehealth Dashboard
               </Text>
             </Group>
           </Group>
 
-          <Group>
+          <Group gap="xs">
             {/* Mode Switcher */}
-            <ModeSwitcher size="sm" />
+            <ModeSwitcher size="xs" />
 
             {/* Notifications */}
-            <Button variant="subtle" size="sm" p="xs">
-              <Bell size={18} />
+            <Button variant="subtle" size="xs" p={4}>
+              <Bell size={16} />
             </Button>
 
             {/* User Menu */}
             <Menu shadow="md" width={200}>
               <Menu.Target>
                 <UnstyledButton>
-                  <Group gap="sm">
-                    <Avatar size={32} color="blue">
+                  <Group gap="xs">
+                    <Avatar size={26} color="blue">
                       {user?.name?.charAt(0) || 'U'}
                     </Avatar>
                     <div style={{ flex: 1 }}>
-                      <Text size="sm" fw={500}>
+                      <Text size="xs" fw={600}>
                         {user?.name || 'User'}
                       </Text>
                       <Text size="xs" c="dimmed">
                         {user?.role?.replace('_', ' ') || 'User'}
                       </Text>
                     </div>
-                    <ChevronDown size={14} />
+                    <ChevronDown size={12} />
                   </Group>
                 </UnstyledButton>
               </Menu.Target>
@@ -244,11 +270,18 @@ export function AppLayout() {
       </AppShell.Header>
 
       {/* Sidebar Navigation */}
-      <AppShell.Navbar p="md">
+      <AppShell.Navbar
+        p={sidebarCollapsed ? 'sm' : 'md'}
+        style={{
+          backgroundColor: '#0b1b33',
+          borderRight: '1px solid #0e274a',
+          transition: 'width 180ms ease'
+        }}
+      >
         <AppShell.Section grow component={ScrollArea}>
-          <Stack gap="xl">
+          <Stack gap={sidebarCollapsed ? 'sm' : 'xl'} style={{ color: '#e6edf7' }}>
             {/* Navigation Groups */}
-            <Stack gap="lg">
+            <Stack gap={sidebarCollapsed ? 'xs' : 'lg'}>
               {renderNavigationGroup('Overview', groupedNavigation.overview)}
               {renderNavigationGroup('Patient Care', groupedNavigation.patientCare)}
               {renderNavigationGroup('Orders & Billing', groupedNavigation.ordersBilling)}
@@ -257,24 +290,6 @@ export function AppLayout() {
               {renderNavigationGroup('Products & Content', groupedNavigation.productsContent)}
               {renderNavigationGroup('System', groupedNavigation.system)}
             </Stack>
-          </Stack>
-        </AppShell.Section>
-
-        {/* Footer */}
-        <AppShell.Section>
-          <Divider mb="md" />
-          <Stack gap="sm" align="center">
-            <ModeSwitcher variant="compact" />
-            <Text size="xs" c="dimmed">
-              Powered By Medplum
-            </Text>
-            <Badge 
-              size="xs" 
-              color={mode === 'fhir' ? 'green' : 'blue'} 
-              variant="light"
-            >
-              {mode === 'fhir' ? 'Live FHIR Mode' : 'Mock Data Mode'}
-            </Badge>
           </Stack>
         </AppShell.Section>
       </AppShell.Navbar>

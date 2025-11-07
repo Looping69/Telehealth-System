@@ -41,6 +41,12 @@ import { useDashboardMetrics as useMedplumDashboardMetrics, useTasks } from '../
 import { useAppointments, usePatients } from '../../hooks/useQuery';
 import { formatHumanName, getReferenceDisplay, convertAppointmentFromFHIR, convertTaskFromFHIR } from '../../utils/fhir';
 import { useAuthStore } from '../../store/authStore';
+import { useDisclosure } from '@mantine/hooks';
+import { useNavigate } from 'react-router-dom';
+import { showNotification } from '@mantine/notifications';
+import { CreatePatientModal } from '../../components/CreatePatientModal';
+import CreateAppointmentModal from '../../components/CreateAppointmentModal';
+import CreateOrderModal from '../../components/CreateOrderModal';
 
 /**
  * Metric Card Component
@@ -262,6 +268,17 @@ const UpcomingAppointments: React.FC = () => {
  * Main Dashboard Page Component
  */
 export const DashboardPage: React.FC = () => {
+  /**
+   * Quick Action Modal State and Navigation
+   * Purpose: Manage quick action modals and navigation to tasks
+   * Inputs: None
+   * Outputs: Renders controlled modals; performs navigation
+   */
+  const [createPatientOpened, { open: openCreatePatient, close: closeCreatePatient }] = useDisclosure(false);
+  const [createAppointmentOpened, { open: openCreateAppointment, close: closeCreateAppointment }] = useDisclosure(false);
+  const [createOrderOpened, { open: openCreateOrder, close: closeCreateOrder }] = useDisclosure(false);
+  const navigate = useNavigate();
+
   const { data: metrics, isLoading: metricsLoading, error: metricsError } = useMedplumDashboardMetrics();
 
   if (metricsLoading) {
@@ -385,6 +402,7 @@ export const DashboardPage: React.FC = () => {
                   leftSection={<Users size={16} />}
                   fullWidth
                   justify="flex-start"
+                  onClick={openCreatePatient}
                 >
                   Add New Patient
                 </Button>
@@ -393,6 +411,7 @@ export const DashboardPage: React.FC = () => {
                   leftSection={<Calendar size={16} />}
                   fullWidth
                   justify="flex-start"
+                  onClick={openCreateAppointment}
                 >
                   Schedule Appointment
                 </Button>
@@ -401,6 +420,7 @@ export const DashboardPage: React.FC = () => {
                   leftSection={<FileText size={16} />}
                   fullWidth
                   justify="flex-start"
+                  onClick={openCreateOrder}
                 >
                   Create Order
                 </Button>
@@ -409,6 +429,17 @@ export const DashboardPage: React.FC = () => {
                   leftSection={<Activity size={16} />}
                   fullWidth
                   justify="flex-start"
+                  onClick={() => {
+                    try {
+                      navigate('/tasks');
+                    } catch (e) {
+                      showNotification({
+                        title: 'Navigation Error',
+                        message: e instanceof Error ? e.message : 'Failed to navigate to tasks',
+                        color: 'red',
+                      });
+                    }
+                  }}
                 >
                   View Tasks
                 </Button>
@@ -416,6 +447,25 @@ export const DashboardPage: React.FC = () => {
             </Card>
           </Grid.Col>
         </Grid>
+        {/* Quick Action Modals */}
+        <CreatePatientModal
+          opened={createPatientOpened}
+          onClose={closeCreatePatient}
+          onPatientCreated={() => {
+            showNotification({ title: 'Patient Created', message: 'New patient created successfully.', color: 'green' });
+          }}
+        />
+        <CreateAppointmentModal
+          opened={createAppointmentOpened}
+          onClose={closeCreateAppointment}
+        />
+        <CreateOrderModal
+          opened={createOrderOpened}
+          onClose={closeCreateOrder}
+          onOrderCreated={() => {
+            showNotification({ title: 'Order Created', message: 'Order created successfully.', color: 'green' });
+          }}
+        />
       </Stack>
     </Container>
   );
