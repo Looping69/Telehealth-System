@@ -39,6 +39,10 @@ import {
   Calendar,
   User,
   Clock,
+  LayoutGrid,
+  Rows,
+  CheckCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
@@ -574,6 +578,13 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ opened, onClose, on
 /**
  * Main Orders Page Component
  */
+/**
+ * OrdersPage
+ * Renders medical orders management UI with summary metrics, filters, tabs, and views.
+ *
+ * Inputs: None (data loaded via `useOrders` hook)
+ * Outputs: JSX UI for managing orders (cards/table views, modals)
+ */
 export const OrdersPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -597,20 +608,48 @@ export const OrdersPage: React.FC = () => {
     }
   }, [fetchedOrders]);
 
+  /**
+   * handleViewOrder
+   * Opens details modal for the selected order.
+   *
+   * Inputs: `order` (Order)
+   * Outputs: None (updates state and opens modal)
+   */
   const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
     openDetails();
   };
 
+  /**
+   * handleEditOrder
+   * Opens edit modal for the selected order.
+   *
+   * Inputs: `order` (Order)
+   * Outputs: None (updates state and opens modal)
+   */
   const handleEditOrder = (order: Order) => {
     setEditingOrder(order);
     openEdit();
   };
 
+  /**
+   * handleSaveNewOrder
+   * Adds a new order to local state.
+   *
+   * Inputs: `newOrder` (Order)
+   * Outputs: None (updates state)
+   */
   const handleSaveNewOrder = (newOrder: Order) => {
     setOrders(prevOrders => [...prevOrders, newOrder]);
   };
 
+  /**
+   * handleSaveEditedOrder
+   * Persists edited order in local state.
+   *
+   * Inputs: `updatedOrder` (Order)
+   * Outputs: None (updates state)
+   */
   const handleSaveEditedOrder = (updatedOrder: Order) => {
     setOrders(prevOrders => 
       prevOrders.map(order => 
@@ -619,6 +658,25 @@ export const OrdersPage: React.FC = () => {
     );
   };
 
+  /**
+   * handleClearFilters
+   * Resets search and status filters; keeps current tab and view mode.
+   *
+   * Inputs: None
+   * Outputs: None (updates filter-related state)
+   */
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter(null);
+  };
+
+  /**
+   * filterOrdersByTab
+   * Returns orders filtered by logical tab grouping.
+   *
+   * Inputs: `orders` (Order[]), `tab` (string: all|pending|approved|completed|urgent)
+   * Outputs: Order[] matching tab criteria
+   */
   const filterOrdersByTab = (orders: Order[], tab: string) => {
     switch (tab) {
       case 'pending':
@@ -634,6 +692,13 @@ export const OrdersPage: React.FC = () => {
     }
   };
 
+  /**
+   * applyFilters
+   * Applies tab, search, and status filters to orders.
+   *
+   * Inputs: `orders` (Order[])
+   * Outputs: Filtered Order[]
+   */
   const applyFilters = (orders: Order[]) => {
     let filtered = orders;
 
@@ -660,6 +725,12 @@ export const OrdersPage: React.FC = () => {
   };
 
   const filteredOrders = orders ? applyFilters(orders) : [];
+
+  // Summary metrics (based on all orders, not filtered)
+  const totalOrdersCount = orders ? orders.length : 0;
+  const pendingOrdersCount = orders ? orders.filter(o => o.status === 'pending').length : 0;
+  const completedOrdersCount = orders ? orders.filter(o => o.status === 'completed').length : 0;
+  const urgentOrdersCount = orders ? orders.filter(o => o.priority === 'urgent').length : 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -859,18 +930,73 @@ export const OrdersPage: React.FC = () => {
           </Button>
         </Group>
 
-        {/* Filters */}
+        {/* Summary Cards */}
+        <Grid>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder padding="lg" radius="md">
+              <Group justify="space-between" align="center">
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Total Orders</Text>
+                  <Title order={3}>{totalOrdersCount}</Title>
+                </Stack>
+                <ActionIcon variant="light" color="blue" size="lg">
+                  <FileText size={20} />
+                </ActionIcon>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder padding="lg" radius="md">
+              <Group justify="space-between" align="center">
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Pending Orders</Text>
+                  <Title order={3}>{pendingOrdersCount}</Title>
+                </Stack>
+                <ActionIcon variant="light" color="yellow" size="lg">
+                  <Clock size={20} />
+                </ActionIcon>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder padding="lg" radius="md">
+              <Group justify="space-between" align="center">
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Completed Orders</Text>
+                  <Title order={3}>{completedOrdersCount}</Title>
+                </Stack>
+                <ActionIcon variant="light" color="green" size="lg">
+                  <CheckCircle size={20} />
+                </ActionIcon>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder padding="lg" radius="md">
+              <Group justify="space-between" align="center">
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Urgent Orders</Text>
+                  <Title order={3}>{urgentOrdersCount}</Title>
+                </Stack>
+                <ActionIcon variant="light" color="red" size="lg">
+                  <AlertTriangle size={20} />
+                </ActionIcon>
+              </Group>
+            </Card>
+          </Grid.Col>
+        </Grid>
+
+        {/* Enhanced Filters and Search */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Grid align="end">
-            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+          <Group justify="space-between" align="center">
+            <Group align="center" gap="sm" wrap="wrap">
               <TextInput
                 placeholder="Search orders..."
                 leftSection={<Search size={16} />}
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.currentTarget.value)}
+                w={{ base: '100%', sm: 280 }}
               />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
               <Select
                 placeholder="Filter by status"
                 leftSection={<Filter size={16} />}
@@ -883,27 +1009,33 @@ export const OrdersPage: React.FC = () => {
                 value={statusFilter}
                 onChange={setStatusFilter}
                 clearable
+                w={{ base: '100%', sm: 220 }}
               />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-              <Button.Group>
-                <Button
+            </Group>
+            <Group align="center" gap="sm">
+              <Group gap="xs">
+                <ActionIcon
                   variant={viewMode === 'cards' ? 'filled' : 'light'}
+                  color="blue"
                   onClick={() => setViewMode('cards')}
-                  size="sm"
+                  aria-label="Cards view"
                 >
-                  Cards
-                </Button>
-                <Button
+                  <LayoutGrid size={18} />
+                </ActionIcon>
+                <ActionIcon
                   variant={viewMode === 'table' ? 'filled' : 'light'}
+                  color="blue"
                   onClick={() => setViewMode('table')}
-                  size="sm"
+                  aria-label="Table view"
                 >
-                  Table
-                </Button>
-              </Button.Group>
-            </Grid.Col>
-          </Grid>
+                  <Rows size={18} />
+                </ActionIcon>
+              </Group>
+              <Button variant="light" onClick={handleClearFilters}>
+                Clear Filters
+              </Button>
+            </Group>
+          </Group>
         </Card>
 
         {/* Tabs */}

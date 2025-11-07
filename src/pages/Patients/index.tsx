@@ -41,6 +41,9 @@ import { usePatients } from '../../hooks/useMockData';
 import { Patient } from '../../types';
 import { CreatePatientModal } from '../../components/CreatePatientModal';
 import { EditPatientModal } from '../../components/EditPatientModal';
+import { Users, CalendarDays, ClipboardList, UserCheck } from 'lucide-react';
+import { useAppointments } from '../../hooks/useMockData';
+import type { Appointment } from '../../types';
 
 /**
  * Patient Card Component
@@ -342,14 +345,19 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
 /**
  * Main Patients Page Component
  */
+/**
+ * PatientsPage Component
+ *
+ * Purpose: Provide a non-FHIR patient directory UI that mirrors the Insurance page layout,
+ * including summary metric cards and a single-row filter toolbar, while preserving existing
+ * patient listing functionality (cards/table, modals, pagination).
+ *
+ * Inputs: None (reads mock data via hooks and local UI state)
+ * Outputs: Renders patient management UI with search/filter/toggle and modals
+ */
 export const PatientsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [genderFilter, setGenderFilter] = useState<string | null>(null);
-  const [insuranceFilter, setInsuranceFilter] = useState<string | null>(null);
-  const [ageRangeFilter, setAgeRangeFilter] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<string>('name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [editPatient, setEditPatient] = useState<Patient | null>(null);
@@ -364,6 +372,10 @@ export const PatientsPage: React.FC = () => {
     page: currentPage,
     limit: 12,
   });
+
+  // Additional data for summary metrics
+  const { data: allPatientsData } = usePatients({ page: 1, limit: 1000 });
+  const { data: appointmentsData } = useAppointments();
 
   // Debug logging
   console.log('PatientsPage - patients data:', patients);
@@ -387,16 +399,25 @@ export const PatientsPage: React.FC = () => {
   const handleClearFilters = () => {
     setSearchQuery('');
     setStatusFilter(null);
-    setGenderFilter(null);
-    setInsuranceFilter(null);
-    setAgeRangeFilter(null);
-    setSortBy('name');
-    setSortOrder('asc');
     setCurrentPage(1);
   };
 
   const filteredPatients = patients?.data || [];
   const totalPages = Math.ceil((patients?.total || 0) / 12);
+
+  // Summary metrics (mirroring Insurance page card style)
+  const allPatients = allPatientsData?.data || [];
+  const activePatients = allPatients.filter((p) => p.status === 'active').length;
+  const now = new Date();
+  const newPatientsThisMonth = allPatients.filter((p) => {
+    const created = p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt || Date.now());
+    return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+  }).length;
+  const visitsCompleted = (appointmentsData || []).filter((a: Appointment) => a.status === 'completed').length;
+  const visitsScheduled = (appointmentsData || []).filter((a: Appointment) => a.status === 'scheduled').length;
+  const totalVisits = visitsCompleted + visitsScheduled;
+  const activeProviderIds = new Set((appointmentsData || []).map((a: Appointment) => a.providerId));
+  const activeProviders = activeProviderIds.size;
 
   if (error) {
     return (
@@ -420,124 +441,108 @@ export const PatientsPage: React.FC = () => {
           </Button>
         </Group>
 
-        {/* Enhanced Filters and Search */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Stack gap="md">
-            {/* Primary Search Row */}
-            <Grid align="end">
-              <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-                <TextInput
-                  placeholder="Search patients..."
-                  leftSection={<Search size={16} />}
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.currentTarget.value)}
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-                <Select
-                  placeholder="Filter by status"
-                  leftSection={<Filter size={16} />}
-                  data={[
-                    { value: 'active', label: 'Active' },
-                    { value: 'inactive', label: 'Inactive' },
-                  ]}
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  clearable
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, md: 5 }}>
-                <Group justify="flex-end">
-                  <Button variant="light" onClick={handleClearFilters}>
-                    Clear Filters
-                  </Button>
-                  <Button.Group>
-                    <Button
-                      variant={viewMode === 'cards' ? 'filled' : 'light'}
-                      onClick={() => setViewMode('cards')}
-                    >
-                      Cards
-                    </Button>
-                    <Button
-                      variant={viewMode === 'table' ? 'filled' : 'light'}
-                      onClick={() => setViewMode('table')}
-                    >
-                      Table
-                    </Button>
-                  </Button.Group>
-                </Group>
-              </Grid.Col>
-            </Grid>
+        {/* Summary Cards */}
+        <Grid>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Group align="center" gap="md">
+                <ActionIcon size={40} radius="xl" variant="light" color="blue">
+                  <Users size={20} />
+                </ActionIcon>
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Active Patients</Text>
+                  <Title order={3}>{activePatients}</Title>
+                </Stack>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Group align="center" gap="md">
+                <ActionIcon size={40} radius="xl" variant="light" color="green">
+                  <CalendarDays size={20} />
+                </ActionIcon>
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">New Patients This Month</Text>
+                  <Title order={3}>{newPatientsThisMonth}</Title>
+                </Stack>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Group align="center" gap="md">
+                <ActionIcon size={40} radius="xl" variant="light" color="violet">
+                  <ClipboardList size={20} />
+                </ActionIcon>
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Total Visits</Text>
+                  <Title order={3}>{totalVisits}</Title>
+                </Stack>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Group align="center" gap="md">
+                <ActionIcon size={40} radius="xl" variant="light" color="cyan">
+                  <UserCheck size={20} />
+                </ActionIcon>
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Active Providers</Text>
+                  <Title order={3}>{activeProviders}</Title>
+                </Stack>
+              </Group>
+            </Card>
+          </Grid.Col>
+        </Grid>
 
-            {/* Advanced Filters Row */}
-            <Grid align="end">
-              <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-                <Select
-                  placeholder="Filter by gender"
-                  data={[
-                    { value: 'male', label: 'Male' },
-                    { value: 'female', label: 'Female' },
-                  ]}
-                  value={genderFilter}
-                  onChange={setGenderFilter}
-                  clearable
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-                <Select
-                  placeholder="Filter by age range"
-                  data={[
-                    { value: '0-18', label: '0-18 years' },
-                    { value: '19-35', label: '19-35 years' },
-                    { value: '36-50', label: '36-50 years' },
-                    { value: '51-65', label: '51-65 years' },
-                    { value: '65+', label: '65+ years' },
-                  ]}
-                  value={ageRangeFilter}
-                  onChange={setAgeRangeFilter}
-                  clearable
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-                <Select
-                  placeholder="Filter by insurance"
-                  data={[
-                    { value: 'Blue Cross Blue Shield', label: 'Blue Cross Blue Shield' },
-                    { value: 'Aetna', label: 'Aetna' },
-                    { value: 'United Healthcare', label: 'United Healthcare' },
-                    { value: 'Cigna', label: 'Cigna' },
-                    { value: 'Kaiser Permanente', label: 'Kaiser Permanente' },
-                    { value: 'Harvard Pilgrim', label: 'Harvard Pilgrim' },
-                    { value: 'Anthem', label: 'Anthem' },
-                  ]}
-                  value={insuranceFilter}
-                  onChange={setInsuranceFilter}
-                  clearable
-                />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-                <Group>
-                  <Select
-                    placeholder="Sort by"
-                    data={[
-                      { value: 'name', label: 'Name' },
-                      { value: 'age', label: 'Age' },
-                      { value: 'lastVisit', label: 'Last Visit' },
-                      { value: 'createdAt', label: 'Date Added' },
-                    ]}
-                    value={sortBy}
-                    onChange={(value) => setSortBy(value || 'name')}
-                  />
+        {/* Filters - Single Row (mirroring Insurance layout) */}
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Grid align="end">
+            <Grid.Col span={{ base: 12, sm: 6, md: 6 }}>
+              <TextInput
+                placeholder="Search patients..."
+                leftSection={<Search size={16} />}
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.currentTarget.value)}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+              <Select
+                placeholder="Filter by status"
+                leftSection={<Filter size={16} />}
+                data={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                ]}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                clearable
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 12, md: 3 }}>
+              <Group justify="flex-end">
+                <Button variant="light" onClick={handleClearFilters}>
+                  Clear Filters
+                </Button>
+                <Button.Group>
                   <Button
-                    variant="light"
-                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    variant={viewMode === 'cards' ? 'filled' : 'light'}
+                    onClick={() => setViewMode('cards')}
                   >
-                    {sortOrder === 'asc' ? '↑' : '↓'}
+                    Cards
                   </Button>
-                </Group>
-              </Grid.Col>
-            </Grid>
-          </Stack>
+                  <Button
+                    variant={viewMode === 'table' ? 'filled' : 'light'}
+                    onClick={() => setViewMode('table')}
+                  >
+                    Table
+                  </Button>
+                </Button.Group>
+              </Group>
+            </Grid.Col>
+          </Grid>
         </Card>
 
         {/* Loading State */}

@@ -36,6 +36,10 @@ import {
   Filter,
   Eye,
   Edit,
+  LayoutGrid,
+  Rows,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { useAppointments } from '../../hooks/useMockData';
@@ -253,6 +257,13 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
 /**
  * Main Sessions Page Component
  */
+/**
+ * SessionsPage
+ * Renders telehealth sessions management UI with summary metrics, filters, tabs, and views.
+ *
+ * Inputs: None (data loaded via `useAppointments` hook)
+ * Outputs: JSX UI for managing appointments (cards/table views, modals)
+ */
 export const SessionsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
@@ -278,6 +289,18 @@ export const SessionsPage: React.FC = () => {
   const handleJoinSession = (appointment: Appointment) => {
     // TODO: Implement video session joining
     console.log('Join session:', appointment);
+  };
+
+  /**
+   * handleClearFilters
+   * Resets search and status filters; keeps current tab and view mode.
+   *
+   * Inputs: None
+   * Outputs: None (updates filter-related state)
+   */
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter(null);
   };
 
   // Filter appointments based on search query and status filter
@@ -333,6 +356,7 @@ export const SessionsPage: React.FC = () => {
   const todayAppointments = filteredAppointments ? filterAppointmentsByTab(filteredAppointments, 'today') : [];
   const pastAppointments = filteredAppointments ? filterAppointmentsByTab(filteredAppointments, 'past') : [];
   const cancelledAppointments = filteredAppointments ? filterAppointmentsByTab(filteredAppointments, 'cancelled') : [];
+  const completedAppointments = filteredAppointments ? filteredAppointments.filter(apt => apt.status === 'completed') : [];
 
   if (error) {
     return (
@@ -356,18 +380,73 @@ export const SessionsPage: React.FC = () => {
           </Button>
         </Group>
 
-        {/* Filters */}
+        {/* Summary Cards */}
+        <Grid>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder padding="lg" radius="md">
+              <Group justify="space-between" align="center">
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Upcoming Appointments</Text>
+                  <Title order={3}>{upcomingAppointments.length}</Title>
+                </Stack>
+                <ActionIcon variant="light" color="blue" size="lg">
+                  <Clock size={20} />
+                </ActionIcon>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder padding="lg" radius="md">
+              <Group justify="space-between" align="center">
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Today's Appointments</Text>
+                  <Title order={3}>{todayAppointments.length}</Title>
+                </Stack>
+                <ActionIcon variant="light" color="teal" size="lg">
+                  <CalendarIcon size={20} />
+                </ActionIcon>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder padding="lg" radius="md">
+              <Group justify="space-between" align="center">
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Completed Sessions</Text>
+                  <Title order={3}>{completedAppointments.length}</Title>
+                </Stack>
+                <ActionIcon variant="light" color="green" size="lg">
+                  <CheckCircle size={20} />
+                </ActionIcon>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder padding="lg" radius="md">
+              <Group justify="space-between" align="center">
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Cancelled Appointments</Text>
+                  <Title order={3}>{cancelledAppointments.length}</Title>
+                </Stack>
+                <ActionIcon variant="light" color="red" size="lg">
+                  <XCircle size={20} />
+                </ActionIcon>
+              </Group>
+            </Card>
+          </Grid.Col>
+        </Grid>
+
+        {/* Enhanced Filters and Search */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Grid align="end">
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+          <Group justify="space-between" align="center">
+            <Group align="center" gap="sm" wrap="wrap">
               <TextInput
                 placeholder="Search appointments..."
                 leftSection={<Search size={16} />}
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.currentTarget.value)}
+                w={{ base: '100%', sm: 280 }}
               />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
               <Select
                 placeholder="Filter by status"
                 leftSection={<Filter size={16} />}
@@ -380,27 +459,33 @@ export const SessionsPage: React.FC = () => {
                 value={statusFilter}
                 onChange={setStatusFilter}
                 clearable
+                w={{ base: '100%', sm: 220 }}
               />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-              <Button.Group>
-                <Button
+            </Group>
+            <Group align="center" gap="sm">
+              <Group gap="xs">
+                <ActionIcon
                   variant={viewMode === 'cards' ? 'filled' : 'light'}
+                  color="blue"
                   onClick={() => setViewMode('cards')}
-                  size="sm"
+                  aria-label="Cards view"
                 >
-                  Cards
-                </Button>
-                <Button
+                  <LayoutGrid size={18} />
+                </ActionIcon>
+                <ActionIcon
                   variant={viewMode === 'table' ? 'filled' : 'light'}
+                  color="blue"
                   onClick={() => setViewMode('table')}
-                  size="sm"
+                  aria-label="Table view"
                 >
-                  Table
-                </Button>
-              </Button.Group>
-            </Grid.Col>
-          </Grid>
+                  <Rows size={18} />
+                </ActionIcon>
+              </Group>
+              <Button variant="light" onClick={handleClearFilters}>
+                Clear Filters
+              </Button>
+            </Group>
+          </Group>
         </Card>
 
         {/* Tabs */}
