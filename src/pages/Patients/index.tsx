@@ -37,12 +37,12 @@ import {
   Filter,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { usePatients } from '../../hooks/useMockData';
+import { usePatients, useAppointments } from '../../hooks/useQuery';
 import { Patient } from '../../types';
 import { CreatePatientModal } from '../../components/CreatePatientModal';
 import { EditPatientModal } from '../../components/EditPatientModal';
-import { Users, CalendarDays, ClipboardList, UserCheck } from 'lucide-react';
-import { useAppointments } from '../../hooks/useMockData';
+import { Users, CalendarDays, ClipboardList, UserCheck, AlertCircle } from 'lucide-react';
+import { Alert } from '@mantine/core';
 import type { Appointment } from '../../types';
 
 /**
@@ -273,63 +273,7 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
           </Text>
         </Stack>
 
-        <Stack gap="xs">
-          <Text fw={500}>Products & Subscriptions</Text>
-          {/* Mock subscription data for demonstration */}
-          <Card withBorder p="sm" radius="sm">
-            <Stack gap="xs">
-              <Group justify="space-between">
-                <Text size="sm" fw={500}>Semaglutide (Ozempic) - Weekly</Text>
-                <Badge color="green" size="sm">Active</Badge>
-              </Group>
-              <Text size="xs" c="dimmed">
-                <strong>Started:</strong> {new Date('2024-01-15').toLocaleDateString()}
-              </Text>
-              <Text size="xs" c="dimmed">
-                <strong>Next Billing:</strong> {new Date('2024-02-15').toLocaleDateString()}
-              </Text>
-              <Text size="xs" c="dimmed">
-                <strong>Monthly Cost:</strong> $299/month
-              </Text>
-            </Stack>
-          </Card>
-          
-          <Card withBorder p="sm" radius="sm">
-            <Stack gap="xs">
-              <Group justify="space-between">
-                <Text size="sm" fw={500}>Monthly Consultation Plan</Text>
-                <Badge color="blue" size="sm">Active</Badge>
-              </Group>
-              <Text size="xs" c="dimmed">
-                <strong>Started:</strong> {new Date('2024-01-10').toLocaleDateString()}
-              </Text>
-              <Text size="xs" c="dimmed">
-                <strong>Next Billing:</strong> {new Date('2024-02-10').toLocaleDateString()}
-              </Text>
-              <Text size="xs" c="dimmed">
-                <strong>Monthly Cost:</strong> $149/month
-              </Text>
-            </Stack>
-          </Card>
-
-          <Card withBorder p="sm" radius="sm">
-            <Stack gap="xs">
-              <Group justify="space-between">
-                <Text size="sm" fw={500}>Health Monitoring Package</Text>
-                <Badge color="orange" size="sm">Paused</Badge>
-              </Group>
-              <Text size="xs" c="dimmed">
-                <strong>Started:</strong> {new Date('2023-12-01').toLocaleDateString()}
-              </Text>
-              <Text size="xs" c="dimmed">
-                <strong>Paused Since:</strong> {new Date('2024-01-20').toLocaleDateString()}
-              </Text>
-              <Text size="xs" c="dimmed">
-                <strong>Monthly Cost:</strong> $79/month
-              </Text>
-            </Stack>
-          </Card>
-        </Stack>
+        {/* Removed mock subscription/product cards to reflect real FHIR-backed patient data */}
 
         <Group justify="flex-end" mt="md">
           <Button variant="light" onClick={onClose}>
@@ -348,11 +292,11 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
 /**
  * PatientsPage Component
  *
- * Purpose: Provide a non-FHIR patient directory UI that mirrors the Insurance page layout,
+ * Purpose: Provide a FHIR-backed patient directory UI that mirrors the Insurance page layout,
  * including summary metric cards and a single-row filter toolbar, while preserving existing
- * patient listing functionality (cards/table, modals, pagination).
+ * patient listing functionality (cards/table, modals, pagination) using Medplum hooks.
  *
- * Inputs: None (reads mock data via hooks and local UI state)
+ * Inputs: None (reads real FHIR data via hooks and local UI state)
  * Outputs: Renders patient management UI with search/filter/toggle and modals
  */
 export const PatientsPage: React.FC = () => {
@@ -374,39 +318,60 @@ export const PatientsPage: React.FC = () => {
   });
 
   // Additional data for summary metrics
-  const { data: allPatientsData } = usePatients({ page: 1, limit: 1000 });
   const { data: appointmentsData } = useAppointments();
-
-  // Debug logging
-  console.log('PatientsPage - patients data:', patients);
-  console.log('PatientsPage - isLoading:', isLoading);
-  console.log('PatientsPage - error:', error);
-
+  /**
+   * Handle viewing a patient
+   * Purpose: Open details modal for selected patient.
+   * Inputs: patient (Patient)
+   * Outputs: Opens PatientDetailsModal with patient info.
+   */
   const handleViewPatient = (patient: Patient) => {
     setSelectedPatient(patient);
     openDetails();
   };
 
+  /**
+   * Handle editing a patient
+   * Purpose: Open edit modal for selected patient.
+   * Inputs: patient (Patient)
+   * Outputs: Opens EditPatientModal with patient info.
+   */
   const handleEditPatient = (patient: Patient) => {
     setEditPatient(patient);
     openEditModal();
   };
 
+  /**
+   * Handle creating a new patient
+   * Purpose: Open create patient modal.
+   * Inputs: none
+   * Outputs: Opens CreatePatientModal.
+   */
   const handleCreatePatient = () => {
     openCreateModal();
   };
 
+  /**
+   * Clear filters
+   * Purpose: Reset search, status filter, and pagination.
+   * Inputs: none
+   * Outputs: Resets local filter state.
+   */
   const handleClearFilters = () => {
     setSearchQuery('');
     setStatusFilter(null);
     setCurrentPage(1);
   };
 
-  const filteredPatients = patients?.data || [];
-  const totalPages = Math.ceil((patients?.total || 0) / 12);
+  // Client-side pagination over FHIR-backed patient list
+  const filteredPatients = patients || [];
+  const PAGE_SIZE = 12;
+  const totalPages = Math.ceil((filteredPatients.length || 0) / PAGE_SIZE);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const displayedPatients = filteredPatients.slice(startIndex, startIndex + PAGE_SIZE);
 
   // Summary metrics (mirroring Insurance page card style)
-  const allPatients = allPatientsData?.data || [];
+  const allPatients = filteredPatients;
   const activePatients = allPatients.filter((p) => p.status === 'active').length;
   const now = new Date();
   const newPatientsThisMonth = allPatients.filter((p) => {
@@ -422,7 +387,9 @@ export const PatientsPage: React.FC = () => {
   if (error) {
     return (
       <Container size="xl" py="md">
-        <Text color="red">Error loading patients: {error.message}</Text>
+        <Alert icon={<AlertCircle size={16} />} title="FHIR Server Error" color="red">
+          Error loading patients from Medplum FHIR server: {error.message}
+        </Alert>
       </Container>
     );
   }
@@ -557,7 +524,7 @@ export const PatientsPage: React.FC = () => {
           <>
             {viewMode === 'cards' ? (
               <Grid>
-                {filteredPatients.map((patient) => (
+                {displayedPatients.map((patient) => (
                   <Grid.Col key={patient.id} span={{ base: 12, sm: 6, lg: 4 }}>
                     <PatientCard
                       patient={patient}
@@ -582,7 +549,7 @@ export const PatientsPage: React.FC = () => {
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
-                    {filteredPatients.map((patient) => (
+                    {displayedPatients.map((patient) => (
                       <Table.Tr key={patient.id}>
                         <Table.Td>
                           <Group gap="sm">

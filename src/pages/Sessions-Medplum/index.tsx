@@ -1,6 +1,10 @@
 /**
  * Sessions-Medplum Page Component
- * Manages appointments and telehealth sessions using FHIR data
+ * Purpose: Render the Medplum-backed sessions UI that mirrors the mock Sessions page
+ *          including summary metric cards, enhanced header, filter toolbar with view toggle,
+ *          tabs, cards/table views, and modals.
+ * Inputs: None (loads FHIR appointments via `useAppointments` hook)
+ * Outputs: JSX UI for managing appointments (cards/table views, modals)
  */
 
 import React, { useState, useMemo } from 'react';
@@ -25,6 +29,7 @@ import {
   Alert,
   Tabs,
   Table,
+  ThemeIcon,
 } from '@mantine/core';
 import {
   Search,
@@ -37,6 +42,10 @@ import {
   Filter,
   Eye,
   Edit,
+  LayoutGrid,
+  Rows,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   Database,
 } from 'lucide-react';
@@ -48,7 +57,11 @@ import EditAppointmentModal from '../../components/EditAppointmentModal';
 import { useAppointments } from '../../hooks/useQuery';
 
 /**
- * FHIR Appointment Card Component
+ * FHIRAppointmentCard
+ * Purpose: Display a single appointment in card form with status, type, names, date/time,
+ *          and actions to view, edit, and conditionally join.
+ * Inputs: `appointment` (Appointment), `onView` (fn), `onEdit` (fn), optional `onJoin` (fn)
+ * Outputs: Renders a Mantine Card with appointment details and action handlers
  */
 interface FHIRAppointmentCardProps {
   appointment: Appointment;
@@ -168,7 +181,10 @@ const FHIRAppointmentCard: React.FC<FHIRAppointmentCardProps> = ({
 };
 
 /**
- * FHIR Appointment Details Modal
+ * FHIRAppointmentDetailsModal
+ * Purpose: Show comprehensive appointment details in a modal for review.
+ * Inputs: `appointment` (Appointment | null), `opened` (boolean), `onClose` (fn)
+ * Outputs: Renders a Mantine Modal with details and close/edit actions
  */
 interface FHIRAppointmentDetailsModalProps {
   appointment: Appointment | null;
@@ -255,7 +271,11 @@ const FHIRAppointmentDetailsModal: React.FC<FHIRAppointmentDetailsModalProps> = 
 };
 
 /**
- * Main Sessions-Medplum Page Component
+ * SessionsMedplumPage
+ * Purpose: Main page component that renders summary metrics, filters, tabs and views
+ *          for appointments sourced from Medplum FHIR via `useAppointments`.
+ * Inputs: None
+ * Outputs: Page UI, modals for create/edit/view
  */
 const SessionsMedplumPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>('upcoming');
@@ -269,22 +289,45 @@ const SessionsMedplumPage: React.FC = () => {
 
   const { data: appointments, isLoading, error } = useAppointments();
 
+  /**
+   * handleViewAppointment
+   * Purpose: Open the details modal populated with the selected appointment
+   * Inputs: `appointment` (Appointment)
+   * Outputs: Sets local state and opens modal; no return value
+   */
   const handleViewAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     openDetails();
   };
 
+  /**
+   * handleEditAppointment
+   * Purpose: Open the edit modal populated with the selected appointment
+   * Inputs: `appointment` (Appointment)
+   * Outputs: Sets local state and opens modal; no return value
+   */
   const handleEditAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     openEditModal();
   };
 
+  /**
+   * handleJoinSession
+   * Purpose: Placeholder handler for joining a video/phone session
+   * Inputs: `appointment` (Appointment)
+   * Outputs: Currently logs intent; in real integration, launches session
+   */
   const handleJoinSession = (appointment: Appointment) => {
     // TODO: Implement video session joining
     console.log('Join session:', appointment);
   };
 
-  // Filter appointments based on search query and status filter
+  /**
+   * filteredAppointments
+   * Purpose: Derive list of appointments filtered by search query and status
+   * Inputs: `appointments` from hook, `searchQuery`, `statusFilter`
+   * Outputs: Filtered Appointment[] used by tabs and views
+   */
   const filteredAppointments = useMemo(() => {
     if (!appointments) return [];
     
@@ -308,6 +351,12 @@ const SessionsMedplumPage: React.FC = () => {
     return filtered;
   }, [appointments, searchQuery, statusFilter]);
 
+  /**
+   * filterAppointmentsByTab
+   * Purpose: Slice the appointments by logical tab group (upcoming/today/past/cancelled)
+   * Inputs: `appointments` (Appointment[]), `tab` (string)
+   * Outputs: Appointment[] for the specified tab
+   */
   const filterAppointmentsByTab = (appointments: Appointment[], tab: string) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
@@ -341,7 +390,9 @@ const SessionsMedplumPage: React.FC = () => {
   if (error) {
     return (
       <Container size="xl" py="md">
-        <Text color="red">Error loading appointments: {error.message}</Text>
+        <Alert icon={<AlertCircle size={16} />} title="Unable to load appointments" color="red" variant="light">
+          {error?.message || 'Failed to fetch appointments. Please check your connection and try again.'}
+        </Alert>
       </Container>
     );
   }
@@ -360,9 +411,73 @@ const SessionsMedplumPage: React.FC = () => {
           </Button>
         </Group>
 
+        {/* Summary Metrics */}
+        <Grid>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder shadow="sm" p="md" radius="md">
+              <Group justify="space-between" align="center">
+                <Group gap="sm" align="center">
+                  <ThemeIcon color="blue" variant="light" size={36}>
+                    <Clock size={18} />
+                  </ThemeIcon>
+                  <Stack gap={2}>
+                    <Text size="sm" c="dimmed">Upcoming Appointments</Text>
+                    <Title order={3}>{appointments ? appointments.filter(apt => apt?.date && apt.date > new Date() && apt.status !== 'cancelled').length : 0}</Title>
+                  </Stack>
+                </Group>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder shadow="sm" p="md" radius="md">
+              <Group justify="space-between" align="center">
+                <Group gap="sm" align="center">
+                  <ThemeIcon color="indigo" variant="light" size={36}>
+                    <CalendarIcon size={18} />
+                  </ThemeIcon>
+                  <Stack gap={2}>
+                    <Text size="sm" c="dimmed">Today's Appointments</Text>
+                    <Title order={3}>{appointments ? appointments.filter(apt => apt?.date && apt.date.toISOString().split('T')[0] === new Date().toISOString().split('T')[0]).length : 0}</Title>
+                  </Stack>
+                </Group>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder shadow="sm" p="md" radius="md">
+              <Group justify="space-between" align="center">
+                <Group gap="sm" align="center">
+                  <ThemeIcon color="green" variant="light" size={36}>
+                    <CheckCircle size={18} />
+                  </ThemeIcon>
+                  <Stack gap={2}>
+                    <Text size="sm" c="dimmed">Completed Sessions</Text>
+                    <Title order={3}>{appointments ? appointments.filter(apt => apt?.status === 'completed').length : 0}</Title>
+                  </Stack>
+                </Group>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
+            <Card withBorder shadow="sm" p="md" radius="md">
+              <Group justify="space-between" align="center">
+                <Group gap="sm" align="center">
+                  <ThemeIcon color="red" variant="light" size={36}>
+                    <XCircle size={18} />
+                  </ThemeIcon>
+                  <Stack gap={2}>
+                    <Text size="sm" c="dimmed">Cancelled Appointments</Text>
+                    <Title order={3}>{appointments ? appointments.filter(apt => apt?.status === 'cancelled').length : 0}</Title>
+                  </Stack>
+                </Group>
+              </Group>
+            </Card>
+          </Grid.Col>
+        </Grid>
+
         {/* Filters */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Grid align="end">
+          <Grid align="center">
             <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
               <TextInput
                 placeholder="Search appointments..."
@@ -387,11 +502,12 @@ const SessionsMedplumPage: React.FC = () => {
               />
             </Grid.Col>
             <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-              <Button.Group>
+              <Group>
                 <Button
                   variant={viewMode === 'cards' ? 'filled' : 'light'}
                   onClick={() => setViewMode('cards')}
                   size="sm"
+                  leftSection={<LayoutGrid size={14} />}
                 >
                   Cards
                 </Button>
@@ -399,10 +515,24 @@ const SessionsMedplumPage: React.FC = () => {
                   variant={viewMode === 'table' ? 'filled' : 'light'}
                   onClick={() => setViewMode('table')}
                   size="sm"
+                  leftSection={<Rows size={14} />}
                 >
                   Table
                 </Button>
-              </Button.Group>
+              </Group>
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6, md: 2 }}>
+              <Button
+                variant="light"
+                color="gray"
+                leftSection={<XCircle size={14} />}
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter(null);
+                }}
+              >
+                Clear Filters
+              </Button>
             </Grid.Col>
           </Grid>
         </Card>
@@ -419,7 +549,7 @@ const SessionsMedplumPage: React.FC = () => {
             <Tabs.Tab value="past" leftSection={<User size={16} />}>
               Past ({pastAppointments.length})
             </Tabs.Tab>
-            <Tabs.Tab value="cancelled">
+            <Tabs.Tab value="cancelled" leftSection={<XCircle size={16} />}>
               Cancelled ({cancelledAppointments.length})
             </Tabs.Tab>
           </Tabs.List>

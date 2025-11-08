@@ -25,6 +25,7 @@ import {
   Loader,
   Table,
   ThemeIcon,
+  Alert,
 } from '@mantine/core';
 import {
   Search,
@@ -43,7 +44,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { useAppointments } from '../../hooks/useMockData';
+// Use Medplum-backed appointments hook
+import { useAppointments } from '../../hooks/useQuery';
 import { Appointment } from '../../types';
 import CreateAppointmentModal from '../../components/CreateAppointmentModal';
 import EditAppointmentModal from '../../components/EditAppointmentModal';
@@ -170,6 +172,9 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
 /**
  * Appointment Details Modal
+ * Purpose: Show comprehensive appointment details in a modal for review.
+ * Inputs: `appointment` (Appointment | null), `opened` (boolean), `onClose` (fn)
+ * Outputs: Mantine Modal with details and close/edit actions.
  */
 interface AppointmentDetailsModalProps {
   appointment: Appointment | null;
@@ -265,6 +270,12 @@ const AppointmentDetailsModal: React.FC<AppointmentDetailsModalProps> = ({
  * Inputs: None (data loaded via `useAppointments` hook)
  * Outputs: JSX UI for managing appointments (cards/table views, modals)
  */
+/**
+ * SessionsPage
+ * Purpose: Render telehealth sessions management UI with summary metrics, filters, tabs, and views.
+ * Inputs: None (data loaded via `useAppointments`)
+ * Outputs: Page UI and modals for create/edit/view.
+ */
 export const SessionsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
@@ -275,18 +286,42 @@ export const SessionsPage: React.FC = () => {
   const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
+  /**
+   * useAppointments hook (Medplum-backed)
+   * Purpose: Fetch appointments from Medplum FHIR server.
+   * Inputs: None
+   * Outputs: `appointments` (Appointment[]), `isLoading`, `error`
+   */
   const { data: appointments, isLoading, error } = useAppointments();
 
+  /**
+   * handleViewAppointment
+   * Purpose: Open details modal with selected appointment.
+   * Inputs: `appointment` (Appointment)
+   * Outputs: None
+   */
   const handleViewAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     openDetails();
   };
 
+  /**
+   * handleEditAppointment
+   * Purpose: Open edit modal with selected appointment.
+   * Inputs: `appointment` (Appointment)
+   * Outputs: None
+   */
   const handleEditAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     openEditModal();
   };
 
+  /**
+   * handleJoinSession
+   * Purpose: Placeholder to join video/phone session.
+   * Inputs: `appointment` (Appointment)
+   * Outputs: None
+   */
   const handleJoinSession = (appointment: Appointment) => {
     // TODO: Implement video session joining
     console.log('Join session:', appointment);
@@ -299,12 +334,24 @@ export const SessionsPage: React.FC = () => {
    * Inputs: None
    * Outputs: None (updates filter-related state)
    */
+  /**
+   * handleClearFilters
+   * Purpose: Reset search and status filters.
+   * Inputs: None
+   * Outputs: None
+   */
   const handleClearFilters = () => {
     setSearchQuery('');
     setStatusFilter(null);
   };
 
   // Filter appointments based on search query and status filter
+  /**
+   * filteredAppointments
+   * Purpose: Derive list of appointments filtered by search query and status.
+   * Inputs: `appointments`, `searchQuery`, `statusFilter`
+   * Outputs: Filtered Appointment[] used by tabs and views
+   */
   const filteredAppointments = useMemo(() => {
     if (!appointments) return [];
     
@@ -328,6 +375,12 @@ export const SessionsPage: React.FC = () => {
     return filtered;
   }, [appointments, searchQuery, statusFilter]);
 
+  /**
+   * filterAppointmentsByTab
+   * Purpose: Slice appointments by logical tab group (upcoming/today/past/cancelled).
+   * Inputs: `appointments` (Appointment[]), `tab` (string)
+   * Outputs: Appointment[] for the specified tab
+   */
   const filterAppointmentsByTab = (appointments: Appointment[], tab: string) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
@@ -362,7 +415,9 @@ export const SessionsPage: React.FC = () => {
   if (error) {
     return (
       <Container size="xl" py="md">
-        <Text color="red">Error loading appointments: {error.message}</Text>
+        <Alert title="Unable to load appointments" color="red" variant="light">
+          {error?.message || 'Failed to fetch appointments. Please check your connection and try again.'}
+        </Alert>
       </Container>
     );
   }

@@ -37,9 +37,13 @@ import {
   User,
   Filter,
   AlertCircle,
+  Users,
+  CalendarDays,
+  ClipboardList,
+  UserCheck,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { usePatients } from '../../hooks/useQuery';
+import { usePatients, useAppointments } from '../../hooks/useQuery';
 import { CreatePatientModal } from '../../components/CreatePatientModal';
 import { EditPatientModal } from '../../components/EditPatientModal';
 
@@ -144,7 +148,9 @@ const getMockPatients = (params?: {
 
 /**
  * Patient Card Component
- * Displays patient information in card format
+ * Purpose: Render a single patient card with key info and actions.
+ * Inputs: patient (FHIR-mapped patient object), onView(patient), onEdit(patient).
+ * Outputs: Renders UI and triggers callbacks on action icon clicks.
  */
 interface PatientCardProps {
   patient: any;
@@ -194,14 +200,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onView, onEdit }) =>
               </Group>
             </Stack>
           </Group>
-          <Group>
-            <Badge color={patient.status === 'active' ? 'green' : 'gray'}>
-              {patient.status}
-            </Badge>
-            <Badge color="blue" variant="light" size="sm">
-              FHIR
-            </Badge>
-          </Group>
+          <Badge color={patient.status === 'active' ? 'green' : 'gray'}>
+            {patient.status}
+          </Badge>
         </Group>
 
         <Stack gap="xs">
@@ -251,6 +252,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onView, onEdit }) =>
 
 /**
  * Patient Details Modal Component
+ * Purpose: Show detailed patient info in a modal dialog.
+ * Inputs: patient (selected patient or null), opened (boolean), onClose (function).
+ * Outputs: Renders modal with details and product/subscription mock sections.
  */
 interface PatientDetailsModalProps {
   patient: any | null;
@@ -281,7 +285,7 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={`${patient.firstName || ''} ${patient.lastName || ''} - FHIR Patient`}
+      title={`${patient.firstName || ''} ${patient.lastName || ''}`}
       size="lg"
     >
       <Stack gap="md">
@@ -296,9 +300,6 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
             <Group gap="xs">
               <Badge color={patient.status === 'active' ? 'green' : 'gray'}>
                 {patient.status}
-              </Badge>
-              <Badge color="blue" variant="light">
-                FHIR Patient
               </Badge>
               <Text size="sm" c="dimmed">
                 ID: {patient.id}
@@ -350,32 +351,60 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
         </Grid>
 
         <Stack gap="xs">
-          <Text fw={500}>FHIR Information</Text>
-          <Text size="sm">
-            <strong>Resource Type:</strong> Patient
-          </Text>
-          <Text size="sm">
-            <strong>Last Updated:</strong> {patient.lastVisit ? new Date(patient.lastVisit).toLocaleString() : 'Never'}
-          </Text>
-          <Text size="sm">
-            <strong>Emergency Contact:</strong> {patient.emergencyContact || 'Not provided'}
-          </Text>
-        </Stack>
-
-        <Stack gap="xs">
-          <Text fw={500}>FHIR Extensions & Identifiers</Text>
+          <Text fw={500}>Products & Subscriptions</Text>
+          {/* Mock subscription data for demonstration */}
           <Card withBorder p="sm" radius="sm">
-            <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
-              Resource loaded from Medplum FHIR server
-            </Text>
-            <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
-              Active: {patient.fhirResource?.active ? 'true' : 'false'}
-            </Text>
-            {patient.fhirResource?.identifier && (
-              <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
-                Identifiers: {patient.fhirResource.identifier.length} found
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Text size="sm" fw={500}>Semaglutide (Ozempic) - Weekly</Text>
+                <Badge color="green" size="sm">Active</Badge>
+              </Group>
+              <Text size="xs" c="dimmed">
+                <strong>Started:</strong> {new Date('2024-01-15').toLocaleDateString()}
               </Text>
-            )}
+              <Text size="xs" c="dimmed">
+                <strong>Next Billing:</strong> {new Date('2024-02-15').toLocaleDateString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                <strong>Monthly Cost:</strong> $299/month
+              </Text>
+            </Stack>
+          </Card>
+          
+          <Card withBorder p="sm" radius="sm">
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Text size="sm" fw={500}>Monthly Consultation Plan</Text>
+                <Badge color="blue" size="sm">Active</Badge>
+              </Group>
+              <Text size="xs" c="dimmed">
+                <strong>Started:</strong> {new Date('2024-01-10').toLocaleDateString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                <strong>Next Billing:</strong> {new Date('2024-02-10').toLocaleDateString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                <strong>Monthly Cost:</strong> $149/month
+              </Text>
+            </Stack>
+          </Card>
+
+          <Card withBorder p="sm" radius="sm">
+            <Stack gap="xs">
+              <Group justify="space-between">
+                <Text size="sm" fw={500}>Health Monitoring Package</Text>
+                <Badge color="orange" size="sm">Paused</Badge>
+              </Group>
+              <Text size="xs" c="dimmed">
+                <strong>Started:</strong> {new Date('2023-12-01').toLocaleDateString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                <strong>Paused Since:</strong> {new Date('2024-01-20').toLocaleDateString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                <strong>Monthly Cost:</strong> $79/month
+              </Text>
+            </Stack>
           </Card>
         </Stack>
 
@@ -391,7 +420,12 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
 };
 
 /**
- * Main Patients Page Component - Medplum Integration
+ * PatientsMedplumPage Component
+ * Purpose: Provide a FHIR-backed patient directory UI that mirrors the mock Patients page layout
+ *          including summary metric cards, single-row filters with clear button, cards/table views,
+ *          modals for view/edit/create, pagination, and improved empty state.
+ * Inputs: None (reads FHIR data via hooks and maintains local UI state).
+ * Outputs: Renders patient management UI with search/filter/toggle and modals.
  */
 const PatientsMedplumPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -411,6 +445,9 @@ const PatientsMedplumPage: React.FC = () => {
     limit: 12,
   });
 
+  // Additional data for summary metrics
+  const { data: appointmentsData } = useAppointments();
+
   const handleViewPatient = (patient: any) => {
     setSelectedPatient(patient);
     openDetails();
@@ -428,6 +465,26 @@ const PatientsMedplumPage: React.FC = () => {
   const filteredPatients = patients || [];
   const totalPages = Math.ceil((patients?.length || 0) / 12);
 
+  // Summary metrics (mirroring mock Patients page card style)
+  const allPatients = filteredPatients;
+  const activePatients = allPatients.filter((p) => p.status === 'active').length;
+  const now = new Date();
+  const newPatientsThisMonth = allPatients.filter((p) => {
+    const created = p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt || Date.now());
+    return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+  }).length;
+  const visitsCompleted = (appointmentsData || []).filter((a: any) => a.status === 'completed').length;
+  const visitsScheduled = (appointmentsData || []).filter((a: any) => a.status === 'scheduled').length;
+  const totalVisits = visitsCompleted + visitsScheduled;
+  const activeProviderIds = new Set((appointmentsData || []).map((a: any) => a.providerId));
+  const activeProviders = activeProviderIds.size;
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter(null);
+    setCurrentPage(1);
+  };
+
   if (error) {
     return (
       <Container size="xl" py="md">
@@ -444,25 +501,76 @@ const PatientsMedplumPage: React.FC = () => {
         {/* Header */}
         <Group justify="space-between" align="center">
           <div>
-            <Title order={2}>Patients - Medplum Integration</Title>
-            <Text c="dimmed">Manage patient records from FHIR server</Text>
+            <Title order={2}>Patients</Title>
+            <Text c="dimmed">Manage patient records and information</Text>
           </div>
-          <Group>
-            <Badge color="green" variant="light">
-              Live FHIR Data
-            </Badge>
-            <Button leftSection={<Plus size={16} />} onClick={handleCreatePatient}>
-              Add FHIR Patient
-            </Button>
-          </Group>
+          <Button leftSection={<Plus size={16} />} onClick={handleCreatePatient}>
+            Add New Patient
+          </Button>
         </Group>
 
-        {/* Filters and Search */}
+        {/* Summary Cards */}
+        <Grid>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Group align="center" gap="md">
+                <ActionIcon size={40} radius="xl" variant="light" color="blue">
+                  <Users size={20} />
+                </ActionIcon>
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Active Patients</Text>
+                  <Title order={3}>{activePatients}</Title>
+                </Stack>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Group align="center" gap="md">
+                <ActionIcon size={40} radius="xl" variant="light" color="green">
+                  <CalendarDays size={20} />
+                </ActionIcon>
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">New Patients This Month</Text>
+                  <Title order={3}>{newPatientsThisMonth}</Title>
+                </Stack>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Group align="center" gap="md">
+                <ActionIcon size={40} radius="xl" variant="light" color="violet">
+                  <ClipboardList size={20} />
+                </ActionIcon>
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Total Visits</Text>
+                  <Title order={3}>{totalVisits}</Title>
+                </Stack>
+              </Group>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+              <Group align="center" gap="md">
+                <ActionIcon size={40} radius="xl" variant="light" color="cyan">
+                  <UserCheck size={20} />
+                </ActionIcon>
+                <Stack gap={4}>
+                  <Text size="sm" c="dimmed">Active Providers</Text>
+                  <Title order={3}>{activeProviders}</Title>
+                </Stack>
+              </Group>
+            </Card>
+          </Grid.Col>
+        </Grid>
+
+        {/* Filters - Single Row (mirroring mock Patients layout) */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Grid align="end">
-            <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
+            <Grid.Col span={{ base: 12, sm: 6, md: 6 }}>
               <TextInput
-                placeholder="Search patients by name..."
+                placeholder="Search patients..."
                 leftSection={<Search size={16} />}
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.currentTarget.value)}
@@ -481,8 +589,11 @@ const PatientsMedplumPage: React.FC = () => {
                 clearable
               />
             </Grid.Col>
-            <Grid.Col span={{ base: 12, md: 5 }}>
+            <Grid.Col span={{ base: 12, sm: 12, md: 3 }}>
               <Group justify="flex-end">
+                <Button variant="light" onClick={handleClearFilters}>
+                  Clear Filters
+                </Button>
                 <Button.Group>
                   <Button
                     variant={viewMode === 'cards' ? 'filled' : 'light'}
@@ -507,7 +618,7 @@ const PatientsMedplumPage: React.FC = () => {
           <Center py="xl">
             <Stack align="center" gap="md">
               <Loader size="lg" />
-              <Text>Loading patients from FHIR server...</Text>
+              <Text>Loading patients...</Text>
             </Stack>
           </Center>
         )}
@@ -617,15 +728,15 @@ const PatientsMedplumPage: React.FC = () => {
                 <Stack align="center" gap="md">
                   <User size={48} color="gray" />
                   <Text size="lg" c="dimmed">
-                    No patients found in FHIR server
+                    No patients found
                   </Text>
                   <Text size="sm" c="dimmed" ta="center">
                     {searchQuery || statusFilter
                       ? 'Try adjusting your search criteria'
-                      : 'Get started by adding your first FHIR patient'}
+                      : 'Get started by adding your first patient'}
                   </Text>
                   <Button leftSection={<Plus size={16} />} onClick={handleCreatePatient}>
-                    Add FHIR Patient
+                    Add New Patient
                   </Button>
                 </Stack>
               </Center>

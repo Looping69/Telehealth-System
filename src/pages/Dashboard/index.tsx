@@ -30,18 +30,15 @@ import {
   FileText,
   DollarSign,
   TrendingUp,
-  Clock,
   Activity,
   Bell,
   ArrowRight,
   AlertCircle,
-  CheckCircle,
-  Plus,
 } from 'lucide-react';
-import { useDashboardMetrics as useMedplumDashboardMetrics, useTasks } from '../../hooks/useMedplum';
-import { useAppointments, usePatients } from '../../hooks/useQuery';
-import { formatHumanName, getReferenceDisplay, convertAppointmentFromFHIR, convertTaskFromFHIR } from '../../utils/fhir';
-import { useAuthStore } from '../../store/authStore';
+import { useDashboardMetrics, useAppointments } from '../../hooks/useQuery';
+import { convertTaskFromFHIR } from '../../utils/fhir';
+import { useQuery } from '@tanstack/react-query';
+import { medplumClient } from '../../config/medplum';
 import { useDisclosure } from '@mantine/hooks';
 import { useNavigate } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
@@ -107,12 +104,25 @@ const MetricCard: React.FC<MetricCardProps> = ({
 
 /**
  * Recent Activity Component
- * Shows recent patient activities and appointments using FHIR data
+ * Shows recent activities using real FHIR Task resources from Medplum
+ * Inputs: None
+ * Outputs: Card list of latest Task updates
  */
 const RecentActivity: React.FC = () => {
-  const { data: tasks, isLoading: tasksLoading } = useTasks({
-    _sort: '-_lastUpdated',
-    _count: '5',
+  const { data: tasks, isLoading: tasksLoading, error } = useQuery({
+    queryKey: ['dashboard-recent-tasks'],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        _sort: '-_lastUpdated',
+        _count: '5',
+      });
+      const response = await medplumClient.search('Task', params);
+      const resources = (response.entry || [])
+        .map((e: any) => e.resource)
+        .filter((r: any) => r?.resourceType === 'Task');
+      return resources;
+    },
+    retry: 2,
   });
 
   if (tasksLoading) {
@@ -126,7 +136,7 @@ const RecentActivity: React.FC = () => {
     );
   }
 
-  const activities = tasks?.map((task, index) => {
+  const activities = tasks?.map((task: any, index: number) => {
     const convertedTask = convertTaskFromFHIR(task);
     return {
       id: task.id || index,
@@ -160,6 +170,11 @@ const RecentActivity: React.FC = () => {
           View All
         </Button>
       </Group>
+      {error && (
+        <Alert icon={<AlertCircle size={16} />} title="Error" color="red" mb="sm">
+          Failed to load recent activities from FHIR server.
+        </Alert>
+      )}
       <ScrollArea h={300}>
         <Stack gap="sm">
           {activities.length > 0 ? (
@@ -190,7 +205,9 @@ const RecentActivity: React.FC = () => {
 
 /**
  * Upcoming Appointments Component
- * Displays today's upcoming appointments using mock data
+ * Displays today's upcoming appointments using real Medplum appointments
+ * Inputs: None
+ * Outputs: Card list of today's sessions
  */
 const UpcomingAppointments: React.FC = () => {
   const { data: appointments, isLoading: appointmentsLoading } = useAppointments();
@@ -206,11 +223,10 @@ const UpcomingAppointments: React.FC = () => {
     );
   }
 
-  // Filter appointments for today from mock data
+  // Filter appointments for today from real data
   const today = new Date().toISOString().split('T')[0];
   const todayAppointments = appointments?.filter(apt => {
-    if (!apt.start) return false;
-    const aptDate = new Date(apt.start).toISOString().split('T')[0];
+    const aptDate = apt?.date ? new Date(apt.date).toISOString().split('T')[0] : '';
     return aptDate === today;
   }).slice(0, 4) || [];
 
@@ -225,34 +241,29 @@ const UpcomingAppointments: React.FC = () => {
       <ScrollArea h={300}>
         <Stack gap="sm">
           {todayAppointments.length > 0 ? (
-            todayAppointments.map((appointment) => {
-              const converted = convertAppointmentFromFHIR(appointment as any);
-              return (
-                <Card key={appointment.id} padding="sm" withBorder>
-                  <Group justify="space-between">
-                    <div>
-                      <Text fw={500} size="sm">
-                        {getReferenceDisplay(appointment.participant?.find(p => 
-                          p.actor?.reference?.startsWith('Patient/')
-                        )?.actor) || 'Unknown Patient'}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {converted.startTime.toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })} - {converted.type}
-                      </Text>
-                    </div>
-                    <Badge 
-                      color={appointment.status === 'scheduled' ? 'blue' : 'gray'} 
-                      size="sm"
-                    >
-                      {appointment.status}
-                    </Badge>
-                  </Group>
-                </Card>
-              );
-            })
+            todayAppointments.map((appointment) => (
+              <Card key={appointment.id} padding="sm" withBorder>
+                <Group justify="space-between">
+                  <div>
+                    <Text fw={500} size="sm">
+                      {appointment.patientName || 'Unknown Patient'}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {new Date(appointment.date).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })} - {appointment.type}
+                    </Text>
+                  </div>
+                  <Badge
+                    color={appointment.status === 'scheduled' ? 'blue' : appointment.status === 'arrived' ? 'green' : 'gray'}
+                    size="sm"
+                  >
+                    {appointment.status}
+                  </Badge>
+                </Group>
+              </Card>
+            ))
           ) : (
             <Center h={200}>
               <Stack align="center" gap="xs">
@@ -268,7 +279,11 @@ const UpcomingAppointments: React.FC = () => {
 };
 
 /**
- * Main Dashboard Page Component
+ * DashboardPage
+ * Purpose: Render the main dashboard with real-time metrics, recent activity,
+ *          and today's appointments sourced from Medplum (FHIR) backend.
+ * Inputs: None
+ * Outputs: Full dashboard UI with modals for create actions
  */
 export const DashboardPage: React.FC = () => {
   /**
@@ -282,7 +297,8 @@ export const DashboardPage: React.FC = () => {
   const [createOrderOpened, { open: openCreateOrder, close: closeCreateOrder }] = useDisclosure(false);
   const navigate = useNavigate();
 
-  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useMedplumDashboardMetrics();
+  // Fetch real Medplum-backed dashboard metrics
+  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useDashboardMetrics();
 
   if (metricsLoading) {
     return (
@@ -328,30 +344,30 @@ export const DashboardPage: React.FC = () => {
           <MetricCard
             title="Total Patients"
             value={metrics?.totalPatients || 0}
-            change="+12% from last month"
+            change="Real-time FHIR data"
             changeType="positive"
             icon={<Users size={20} />}
             color="blue"
           />
           <MetricCard
-            title="Today's Appointments"
-            value={metrics?.todayAppointments || 0}
-            change="Real-time data"
+            title="Total Appointments"
+            value={metrics?.totalAppointments || 0}
+            change="Live updates"
             changeType="neutral"
             icon={<Calendar size={20} />}
             color="green"
           />
           <MetricCard
-            title="Active Tasks"
-            value={metrics?.activeTasks || 0}
+            title="Pending Appointments"
+            value={metrics?.pendingAppointments || 0}
             change="FHIR integrated"
             changeType="neutral"
             icon={<Activity size={20} />}
             color="orange"
           />
           <MetricCard
-            title="Pending Orders"
-            value={metrics?.pendingOrders || 0}
+            title="Total Revenue"
+            value={`$${metrics?.totalRevenue || 0}`}
             change="Real-time updates"
             changeType="neutral"
             icon={<FileText size={20} />}
