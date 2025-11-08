@@ -557,62 +557,74 @@ const TasksMedplumPage: React.FC = () => {
         {/* Summary Cards */}
         <Grid>
           <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
                 <Text size="sm" c="dimmed" fw={500}>
                   Pending Tasks
                 </Text>
-                <ActionIcon variant="light" color="yellow" size="lg">
+                <ThemeIcon variant="light" color="yellow" size="lg" radius="md">
                   <Clock size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="yellow">
+              <Text size="xl" fw={700} c="yellow">
                 {pendingTasks}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Awaiting action
               </Text>
             </Card>
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
                 <Text size="sm" c="dimmed" fw={500}>
                   In Progress
                 </Text>
-                <ActionIcon variant="light" color="blue" size="lg">
+                <ThemeIcon variant="light" color="blue" size="lg" radius="md">
                   <User size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="blue">
+              <Text size="xl" fw={700} c="blue">
                 {inProgressTasks}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Currently active
               </Text>
             </Card>
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
                 <Text size="sm" c="dimmed" fw={500}>
                   Completed
                 </Text>
-                <ActionIcon variant="light" color="green" size="lg">
+                <ThemeIcon variant="light" color="green" size="lg" radius="md">
                   <CheckCircle size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="green">
+              <Text size="xl" fw={700} c="green">
                 {completedTasks}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Finished tasks
               </Text>
             </Card>
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
                 <Text size="sm" c="dimmed" fw={500}>
                   Overdue
                 </Text>
-                <ActionIcon variant="light" color="red" size="lg">
+                <ThemeIcon variant="light" color="red" size="lg" radius="md">
                   <AlertTriangle size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="red">
+              <Text size="xl" fw={700} c="red">
                 {overdueTasks}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Past deadline
               </Text>
             </Card>
           </Grid.Col>

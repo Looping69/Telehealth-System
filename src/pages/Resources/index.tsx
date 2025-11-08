@@ -36,6 +36,7 @@ import {
   NumberInput,
   MultiSelect,
   Notification,
+  ThemeIcon,
 } from '@mantine/core';
 import {
   Search,
@@ -1297,12 +1298,15 @@ export const ResourcesPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Total Resources
                 </Text>
-                <ActionIcon variant="light" color="blue" size="lg">
+                <ThemeIcon variant="light" color="blue" size="lg">
                   <FileText size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="blue">
+              <Text fw={700} size="xl" c="blue" className="summary-card-metric">
                 {totalResources}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                In library
               </Text>
             </Card>
           </Grid.Col>
@@ -1312,12 +1316,15 @@ export const ResourcesPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Public Resources
                 </Text>
-                <ActionIcon variant="light" color="green" size="lg">
+                <ThemeIcon variant="light" color="green" size="lg">
                   <Users size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="green">
+              <Text fw={700} size="xl" c="green" className="summary-card-metric">
                 {publicResources}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                Available to patients
               </Text>
             </Card>
           </Grid.Col>
@@ -1327,12 +1334,15 @@ export const ResourcesPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Total Views
                 </Text>
-                <ActionIcon variant="light" color="orange" size="lg">
+                <ThemeIcon variant="light" color="orange" size="lg">
                   <Eye size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="orange">
+              <Text fw={700} size="xl" c="orange" className="summary-card-metric">
                 {totalViews.toLocaleString()}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                Page views
               </Text>
             </Card>
           </Grid.Col>
@@ -1342,12 +1352,15 @@ export const ResourcesPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Total Downloads
                 </Text>
-                <ActionIcon variant="light" color="purple" size="lg">
+                <ThemeIcon variant="light" color="purple" size="lg">
                   <Download size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="purple">
+              <Text fw={700} size="xl" c="purple" className="summary-card-metric">
                 {totalDownloads.toLocaleString()}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                File downloads
               </Text>
             </Card>
           </Grid.Col>

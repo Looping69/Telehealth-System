@@ -17,6 +17,7 @@ import {
   TextInput,
   Select,
   ActionIcon,
+  ThemeIcon,
   Modal,
   Tabs,
   Table,
@@ -48,6 +49,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { useOrders } from '../../hooks/useMockData';
 import { Order } from '../../types';
+import { SummaryMetricCard } from '../../components/SummaryMetricCard';
 
 /**
  * Order Card Component
@@ -932,57 +934,37 @@ export const OrdersPage: React.FC = () => {
 
         {/* Summary Cards */}
         <Grid>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="lg" radius="md">
-              <Group justify="space-between" align="center">
-                <Stack gap={4}>
-                  <Text size="sm" c="dimmed">Total Orders</Text>
-                  <Title order={3}>{totalOrdersCount}</Title>
-                </Stack>
-                <ActionIcon variant="light" color="blue" size="lg">
-                  <FileText size={20} />
-                </ActionIcon>
-              </Group>
-            </Card>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <SummaryMetricCard
+              label="Total Orders"
+              value={totalOrdersCount}
+              color="blue"
+              icon={<FileText size={20} />}
+            />
           </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="lg" radius="md">
-              <Group justify="space-between" align="center">
-                <Stack gap={4}>
-                  <Text size="sm" c="dimmed">Pending Orders</Text>
-                  <Title order={3}>{pendingOrdersCount}</Title>
-                </Stack>
-                <ActionIcon variant="light" color="yellow" size="lg">
-                  <Clock size={20} />
-                </ActionIcon>
-              </Group>
-            </Card>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <SummaryMetricCard
+              label="Pending Orders"
+              value={pendingOrdersCount}
+              color="yellow"
+              icon={<Clock size={20} />}
+            />
           </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="lg" radius="md">
-              <Group justify="space-between" align="center">
-                <Stack gap={4}>
-                  <Text size="sm" c="dimmed">Completed Orders</Text>
-                  <Title order={3}>{completedOrdersCount}</Title>
-                </Stack>
-                <ActionIcon variant="light" color="green" size="lg">
-                  <CheckCircle size={20} />
-                </ActionIcon>
-              </Group>
-            </Card>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <SummaryMetricCard
+              label="Completed Orders"
+              value={completedOrdersCount}
+              color="green"
+              icon={<CheckCircle size={20} />}
+            />
           </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="lg" radius="md">
-              <Group justify="space-between" align="center">
-                <Stack gap={4}>
-                  <Text size="sm" c="dimmed">Urgent Orders</Text>
-                  <Title order={3}>{urgentOrdersCount}</Title>
-                </Stack>
-                <ActionIcon variant="light" color="red" size="lg">
-                  <AlertTriangle size={20} />
-                </ActionIcon>
-              </Group>
-            </Card>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <SummaryMetricCard
+              label="Urgent Orders"
+              value={urgentOrdersCount}
+              color="red"
+              icon={<AlertTriangle size={20} />}
+            />
           </Grid.Col>
         </Grid>
 

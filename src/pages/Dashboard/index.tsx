@@ -15,6 +15,7 @@ import {
   Badge,
   Button,
   ActionIcon,
+  ThemeIcon,
   Progress,
   Center,
   Loader,
@@ -50,7 +51,9 @@ import CreateOrderModal from '../../components/CreateOrderModal';
 
 /**
  * Metric Card Component
- * Displays individual dashboard metrics with icons and trends
+ * Purpose: Render a summary card showing a metric with an icon and optional change indicator.
+ * Inputs: MetricCardProps (title, value, change?, changeType?, icon, color?)
+ * Outputs: Mantine Card element styled to match the standard summary card pattern.
  */
 interface MetricCardProps {
   title: string;
@@ -81,16 +84,16 @@ const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder>
+    <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
       <Group justify="space-between" mb="xs">
         <Text size="sm" c="dimmed" fw={500}>
           {title}
         </Text>
-        <ActionIcon variant="light" color={color} size="lg">
+        <ThemeIcon variant="light" color={color} size="lg" radius="md">
           {icon}
-        </ActionIcon>
+        </ThemeIcon>
       </Group>
-      <Text fw={700} size="xl" mb="xs">
+      <Text fw={700} size="xl" mb="xs" c={color}>
         {value}
       </Text>
       {change && (

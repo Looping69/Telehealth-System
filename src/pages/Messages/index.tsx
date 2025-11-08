@@ -28,6 +28,7 @@ import {
   UnstyledButton,
   Indicator,
   Table,
+  ThemeIcon,
 } from '@mantine/core';
 import {
   Search,
@@ -48,6 +49,9 @@ import {
   CheckCircle2,
   Eye,
   Edit,
+  Mail,
+  AlertTriangle,
+  TrendingUp,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { Message } from '../../types';
@@ -813,7 +817,11 @@ const ViewMessageModal: React.FC<ViewMessageModalProps> = ({
 };
 
 /**
- * Messages Page Component
+ * MessagesPage
+ * Renders secure messaging UI. Reorders layout so summary cards are on top and filters beneath.
+ *
+ * Inputs: None (uses local mock data and component state)
+ * Outputs: Messaging UI with conversations/cards/table views and modals
  */
 const MessagesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -955,6 +963,19 @@ const MessagesPage: React.FC = () => {
   const totalConversations = conversations.length;
   const urgentMessages = messages.filter(msg => msg.priority === 'urgent' && !msg.isRead).length;
 
+  /**
+   * handleClearFilters
+   * Resets search, status, and priority filters.
+   *
+   * Inputs: None
+   * Outputs: None (updates filter-related state)
+   */
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter(null);
+    setPriorityFilter(null);
+  };
+
   return (
     <Container size="xl" py="md">
       <Stack gap="lg">
@@ -968,6 +989,85 @@ const MessagesPage: React.FC = () => {
             Compose Message
           </Button>
         </Group>
+
+        {/* Summary Cards */}
+        <Grid>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Unread Messages
+                </Text>
+                <ThemeIcon variant="light" color="orange" size="lg" radius="md">
+                  <Mail size={20} />
+                </ThemeIcon>
+              </Group>
+              <Text size="xl" fw={700} c="orange">
+                {unreadMessages}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Requires attention
+              </Text>
+            </Card>
+          </Grid.Col>
+          
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Total Conversations
+                </Text>
+                <ThemeIcon variant="light" color="blue" size="lg" radius="md">
+                  <MessageCircle size={20} />
+                </ThemeIcon>
+              </Group>
+              <Text size="xl" fw={700} c="blue">
+                {totalConversations}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Active discussions
+              </Text>
+            </Card>
+          </Grid.Col>
+          
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Urgent Messages
+                </Text>
+                <ThemeIcon variant="light" color="red" size="lg" radius="md">
+                  <AlertTriangle size={20} />
+                </ThemeIcon>
+              </Group>
+              <Text size="xl" fw={700} c="red">
+                {urgentMessages}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                High priority
+              </Text>
+            </Card>
+          </Grid.Col>
+          
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Response Rate
+                </Text>
+                <ThemeIcon variant="light" color="green" size="lg" radius="md">
+                  <TrendingUp size={20} />
+                </ThemeIcon>
+              </Group>
+              <Text size="xl" fw={700} c="green">
+                94%
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                This month
+              </Text>
+            </Card>
+          </Grid.Col>
+        </Grid>
 
         {/* Filters and Search */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -1008,7 +1108,7 @@ const MessagesPage: React.FC = () => {
               />
             </Grid.Col>
             <Grid.Col span={{ base: 12, md: 5 }}>
-              <Group justify="flex-end">
+              <Group justify="flex-end" gap="sm" wrap="wrap">
                 <Button.Group>
                   <Button
                     variant={viewMode === 'conversations' ? 'filled' : 'light'}
@@ -1029,6 +1129,7 @@ const MessagesPage: React.FC = () => {
                     Table
                   </Button>
                 </Button.Group>
+                <Button variant="light" onClick={handleClearFilters}>Clear Filters</Button>
               </Group>
             </Grid.Col>
           </Grid>
@@ -1036,84 +1137,17 @@ const MessagesPage: React.FC = () => {
 
         {/* Conditional Rendering based on view mode */}
         {viewMode === 'conversations' ? (
-          // Original conversation interface
-          <>
-            {/* Summary Cards */}
-            <Grid>
-              <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
-                  <Group justify="space-between" mb="xs">
-                    <Text size="sm" c="dimmed" fw={500}>
-                      Unread Messages
-                    </Text>
-                    <ActionIcon variant="light" color="blue" size="lg">
-                      <MessageCircle size={20} />
-                    </ActionIcon>
-                  </Group>
-                  <Text fw={700} size="xl" c="blue">
-                    {unreadMessages}
-                  </Text>
-                </Card>
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
-                  <Group justify="space-between" mb="xs">
-                    <Text size="sm" c="dimmed" fw={500}>
-                      Total Conversations
-                    </Text>
-                    <ActionIcon variant="light" color="green" size="lg">
-                      <MessageCircle size={20} />
-                    </ActionIcon>
-                  </Group>
-                  <Text fw={700} size="xl" c="green">
-                    {totalConversations}
-                  </Text>
-                </Card>
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
-                  <Group justify="space-between" mb="xs">
-                    <Text size="sm" c="dimmed" fw={500}>
-                      Urgent Messages
-                    </Text>
-                    <ActionIcon variant="light" color="red" size="lg">
-                      <MessageCircle size={20} />
-                    </ActionIcon>
-                  </Group>
-                  <Text fw={700} size="xl" c="red">
-                    {urgentMessages}
-                  </Text>
-                </Card>
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
-                  <Group justify="space-between" mb="xs">
-                    <Text size="sm" c="dimmed" fw={500}>
-                      Response Rate
-                    </Text>
-                    <ActionIcon variant="light" color="indigo" size="lg">
-                      <CheckCircle2 size={20} />
-                    </ActionIcon>
-                  </Group>
-                  <Text fw={700} size="xl" c="indigo">
-                    95%
-                  </Text>
-                </Card>
-              </Grid.Col>
-            </Grid>
-
-            {/* Main Messages Interface */}
-            <Card shadow="sm" padding={0} radius="md" withBorder style={{ height: '600px' }}>
-              <Center style={{ height: '100%' }}>
-                <Stack align="center" gap="md">
-                  <MessageCircle size={48} color="gray" />
-                  <Text size="lg" c="dimmed">
-                    Conversation interface will be displayed here
-                  </Text>
-                </Stack>
-              </Center>
-            </Card>
-          </>
+          // Conversation interface (summary cards are already above)
+          <Card shadow="sm" padding={0} radius="md" withBorder style={{ height: '600px' }}>
+            <Center style={{ height: '100%' }}>
+              <Stack align="center" gap="md">
+                <MessageCircle size={48} color="gray" />
+                <Text size="lg" c="dimmed">
+                  Conversation interface will be displayed here
+                </Text>
+              </Stack>
+            </Center>
+          </Card>
         ) : viewMode === 'cards' ? (
           // Card View
           <Grid>

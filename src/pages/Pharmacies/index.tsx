@@ -46,6 +46,7 @@ import {
   Filter,
   Globe,
 } from 'lucide-react';
+import { ThemeIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 
@@ -1193,62 +1194,74 @@ export const PharmaciesPage: React.FC = () => {
         {/* Summary Cards */}
         <Grid>
           <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
                 <Text size="sm" c="dimmed" fw={500}>
                   Active Pharmacies
                 </Text>
-                <ActionIcon variant="light" color="green" size="lg">
+                <ThemeIcon variant="light" color="green" size="lg" radius="md">
                   <Building size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="green">
+              <Text size="xl" fw={700} c="green">
                 {activePharmacies}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Currently operational
               </Text>
             </Card>
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
                 <Text size="sm" c="dimmed" fw={500}>
                   Total Prescriptions
                 </Text>
-                <ActionIcon variant="light" color="blue" size="lg">
+                <ThemeIcon variant="light" color="blue" size="lg" radius="md">
                   <Package size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="blue">
+              <Text size="xl" fw={700} c="blue">
                 {totalPrescriptions.toLocaleString()}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Filled this month
               </Text>
             </Card>
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
                 <Text size="sm" c="dimmed" fw={500}>
                   Average Rating
                 </Text>
-                <ActionIcon variant="light" color="yellow" size="lg">
+                <ThemeIcon variant="light" color="yellow" size="lg" radius="md">
                   <Star size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="yellow">
+              <Text size="xl" fw={700} c="yellow">
                 {avgRating.toFixed(1)}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Customer satisfaction
               </Text>
             </Card>
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
                 <Text size="sm" c="dimmed" fw={500}>
                   Delivery Available
                 </Text>
-                <ActionIcon variant="light" color="indigo" size="lg">
+                <ThemeIcon variant="light" color="indigo" size="lg" radius="md">
                   <Truck size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="indigo">
+              <Text size="xl" fw={700} c="indigo">
                 {deliveryPharmacies}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Home delivery service
               </Text>
             </Card>
           </Grid.Col>

@@ -24,6 +24,7 @@ import {
   Center,
   Loader,
   Table,
+  ThemeIcon,
 } from '@mantine/core';
 import {
   Search,
@@ -382,56 +383,76 @@ export const SessionsPage: React.FC = () => {
 
         {/* Summary Cards */}
         <Grid>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="lg" radius="md">
-              <Group justify="space-between" align="center">
-                <Stack gap={4}>
-                  <Text size="sm" c="dimmed">Upcoming Appointments</Text>
-                  <Title order={3}>{upcomingAppointments.length}</Title>
-                </Stack>
-                <ActionIcon variant="light" color="blue" size="lg">
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Upcoming Appointments
+                </Text>
+                <ThemeIcon variant="light" color="blue" size="lg" radius="md">
                   <Clock size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
+              <Text size="xl" fw={700} c="blue">
+                {upcomingAppointments.length}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Scheduled sessions
+              </Text>
             </Card>
           </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="lg" radius="md">
-              <Group justify="space-between" align="center">
-                <Stack gap={4}>
-                  <Text size="sm" c="dimmed">Today's Appointments</Text>
-                  <Title order={3}>{todayAppointments.length}</Title>
-                </Stack>
-                <ActionIcon variant="light" color="teal" size="lg">
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Today's Appointments
+                </Text>
+                <ThemeIcon variant="light" color="teal" size="lg" radius="md">
                   <CalendarIcon size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
+              <Text size="xl" fw={700} c="teal">
+                {todayAppointments.length}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Sessions today
+              </Text>
             </Card>
           </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="lg" radius="md">
-              <Group justify="space-between" align="center">
-                <Stack gap={4}>
-                  <Text size="sm" c="dimmed">Completed Sessions</Text>
-                  <Title order={3}>{completedAppointments.length}</Title>
-                </Stack>
-                <ActionIcon variant="light" color="green" size="lg">
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Completed Sessions
+                </Text>
+                <ThemeIcon variant="light" color="green" size="lg" radius="md">
                   <CheckCircle size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
+              <Text size="xl" fw={700} c="green">
+                {completedAppointments.length}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Finished sessions
+              </Text>
             </Card>
           </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card withBorder padding="lg" radius="md">
-              <Group justify="space-between" align="center">
-                <Stack gap={4}>
-                  <Text size="sm" c="dimmed">Cancelled Appointments</Text>
-                  <Title order={3}>{cancelledAppointments.length}</Title>
-                </Stack>
-                <ActionIcon variant="light" color="red" size="lg">
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Cancelled Appointments
+                </Text>
+                <ThemeIcon variant="light" color="red" size="lg" radius="md">
                   <XCircle size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
+              <Text size="xl" fw={700} c="red">
+                {cancelledAppointments.length}
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Cancelled sessions
+              </Text>
             </Card>
           </Grid.Col>
         </Grid>

@@ -55,6 +55,7 @@ import {
   Settings,
   RefreshCw,
 } from 'lucide-react';
+import { ThemeIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 
 /**
@@ -449,31 +450,34 @@ const AuditSummaryComponent: React.FC = () => {
   return (
     <Grid>
       <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Group justify="space-between" mb="xs">
+        <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+          <Group justify="space-between" align="center" mb="xs">
             <Text size="sm" c="dimmed" fw={500}>
               Total Logs
             </Text>
-            <ActionIcon variant="light" color="blue" size="lg">
+            <ThemeIcon variant="light" color="blue" size="lg" radius="md">
               <FileText size={20} />
-            </ActionIcon>
+            </ThemeIcon>
           </Group>
-          <Text fw={700} size="xl" c="blue">
+          <Text size="xl" fw={700} c="blue">
             {summary.totalLogs.toLocaleString()}
+          </Text>
+          <Text size="xs" c="dimmed" mt={4}>
+            All system events
           </Text>
         </Card>
       </Grid.Col>
       <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Group justify="space-between" mb="xs">
+        <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+          <Group justify="space-between" align="center" mb="xs">
             <Text size="sm" c="dimmed" fw={500}>
               Successful Actions
             </Text>
-            <ActionIcon variant="light" color="green" size="lg">
+            <ThemeIcon variant="light" color="green" size="lg" radius="md">
               <CheckCircle size={20} />
-            </ActionIcon>
+            </ThemeIcon>
           </Group>
-          <Text fw={700} size="xl" c="green">
+          <Text size="xl" fw={700} c="green">
             {summary.successfulActions.toLocaleString()}
           </Text>
           <Progress
@@ -482,19 +486,22 @@ const AuditSummaryComponent: React.FC = () => {
             size="xs"
             mt="xs"
           />
+          <Text size="xs" c="dimmed" mt={4}>
+            Successfully completed
+          </Text>
         </Card>
       </Grid.Col>
       <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Group justify="space-between" mb="xs">
+        <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+          <Group justify="space-between" align="center" mb="xs">
             <Text size="sm" c="dimmed" fw={500}>
               Failed Actions
             </Text>
-            <ActionIcon variant="light" color="red" size="lg">
+            <ThemeIcon variant="light" color="red" size="lg" radius="md">
               <XCircle size={20} />
-            </ActionIcon>
+            </ThemeIcon>
           </Group>
-          <Text fw={700} size="xl" c="red">
+          <Text size="xl" fw={700} c="red">
             {summary.failedActions.toLocaleString()}
           </Text>
           <Progress
@@ -503,20 +510,26 @@ const AuditSummaryComponent: React.FC = () => {
             size="xs"
             mt="xs"
           />
+          <Text size="xs" c="dimmed" mt={4}>
+            Authorization failures
+          </Text>
         </Card>
       </Grid.Col>
       <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Group justify="space-between" mb="xs">
+        <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+          <Group justify="space-between" align="center" mb="xs">
             <Text size="sm" c="dimmed" fw={500}>
               Unique Users
             </Text>
-            <ActionIcon variant="light" color="purple" size="lg">
+            <ThemeIcon variant="light" color="purple" size="lg" radius="md">
               <User size={20} />
-            </ActionIcon>
+            </ThemeIcon>
           </Group>
-          <Text fw={700} size="xl" c="purple">
+          <Text size="xl" fw={700} c="purple">
             {summary.uniqueUsers}
+          </Text>
+          <Text size="xs" c="dimmed" mt={4}>
+            Active system users
           </Text>
         </Card>
       </Grid.Col>

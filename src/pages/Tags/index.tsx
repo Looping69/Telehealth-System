@@ -30,6 +30,7 @@ import {
   NumberInput,
   Menu,
   rem,
+  ThemeIcon,
 } from '@mantine/core';
 import {
   Search,
@@ -892,12 +893,15 @@ export const TagsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Active Tags
                 </Text>
-                <ActionIcon variant="light" color="green" size="lg">
+                <ThemeIcon variant="light" color="green" size="lg">
                   <Tag size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="green">
+              <Text fw={700} size="xl" c="green" className="summary-card-metric">
                 {activeTags}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                Currently in use
               </Text>
             </Card>
           </Grid.Col>
@@ -907,12 +911,15 @@ export const TagsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Total Usage
                 </Text>
-                <ActionIcon variant="light" color="blue" size="lg">
+                <ThemeIcon variant="light" color="blue" size="lg">
                   <Hash size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="blue">
+              <Text fw={700} size="xl" c="blue" className="summary-card-metric">
                 {totalUsage.toLocaleString()}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                Times applied
               </Text>
             </Card>
           </Grid.Col>
@@ -922,12 +929,15 @@ export const TagsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Categories
                 </Text>
-                <ActionIcon variant="light" color="orange" size="lg">
+                <ThemeIcon variant="light" color="orange" size="lg">
                   <Palette size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="orange">
+              <Text fw={700} size="xl" c="orange" className="summary-card-metric">
                 {categories}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                Different types
               </Text>
             </Card>
           </Grid.Col>
@@ -937,12 +947,15 @@ export const TagsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Avg Usage
                 </Text>
-                <ActionIcon variant="light" color="indigo" size="lg">
+                <ThemeIcon variant="light" color="indigo" size="lg">
                   <Eye size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="indigo">
+              <Text fw={700} size="xl" c="indigo" className="summary-card-metric">
                 {avgUsage}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                Per tag
               </Text>
             </Card>
           </Grid.Col>

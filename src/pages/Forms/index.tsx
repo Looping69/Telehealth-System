@@ -19,6 +19,7 @@ import {
   Modal,
   Select,
   ActionIcon,
+  ThemeIcon,
   Tooltip,
   Alert,
   Table,
@@ -419,6 +420,70 @@ export default function FormsPage() {
           </Group>
         </Group>
 
+        {/* Quick Stats */}
+        <Grid>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Available Forms
+                </Text>
+                <ThemeIcon variant="light" color="blue" radius="md" size="lg">
+                  <FileText size={20} />
+                </ThemeIcon>
+              </Group>
+              <Text size="xl" fw={700} c="blue">
+                {existingForms.length}
+              </Text>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Completed
+                </Text>
+                <ThemeIcon variant="light" color="green" radius="md" size="lg">
+                  <CheckCircle size={20} />
+                </ThemeIcon>
+              </Group>
+              <Text size="xl" fw={700} c="green">
+                {submissions.filter(s => s.status === 'submitted').length}
+              </Text>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  In Progress
+                </Text>
+                <ThemeIcon variant="light" color="orange" radius="md" size="lg">
+                  <Clock size={20} />
+                </ThemeIcon>
+              </Group>
+              <Text size="xl" fw={700} c="orange">
+                {submissions.filter(s => s.status === 'draft').length}
+              </Text>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" align="center" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Templates
+                </Text>
+                <ThemeIcon variant="light" color="violet" radius="md" size="lg">
+                  <Users size={20} />
+                </ThemeIcon>
+              </Group>
+              <Text size="xl" fw={700} c="violet">
+                {formTemplates.length}
+              </Text>
+            </Card>
+          </Grid.Col>
+        </Grid>
+
         {/* Search and Filters */}
         <Card padding="md">
           <Group justify="space-between" mb="md">
@@ -463,70 +528,6 @@ export default function FormsPage() {
             />
           </Group>
         </Card>
-
-        {/* Quick Stats */}
-        <Grid>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card padding="lg">
-              <Group justify="space-between">
-                <div>
-                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                    Available Forms
-                  </Text>
-                  <Text fw={700} size="xl">
-                    {existingForms.length}
-                  </Text>
-                </div>
-                <FileText size={24} color="var(--mantine-color-blue-6)" />
-              </Group>
-            </Card>
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card padding="lg">
-              <Group justify="space-between">
-                <div>
-                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                    Completed
-                  </Text>
-                  <Text fw={700} size="xl">
-                    {submissions.filter(s => s.status === 'submitted').length}
-                  </Text>
-                </div>
-                <CheckCircle size={24} color="var(--mantine-color-green-6)" />
-              </Group>
-            </Card>
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card padding="lg">
-              <Group justify="space-between">
-                <div>
-                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                    In Progress
-                  </Text>
-                  <Text fw={700} size="xl">
-                    {submissions.filter(s => s.status === 'draft').length}
-                  </Text>
-                </div>
-                <Clock size={24} color="var(--mantine-color-orange-6)" />
-              </Group>
-            </Card>
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, md: 3 }}>
-            <Card padding="lg">
-              <Group justify="space-between">
-                <div>
-                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                    Templates
-                  </Text>
-                  <Text fw={700} size="xl">
-                    {formTemplates.length}
-                  </Text>
-                </div>
-                <Users size={24} color="var(--mantine-color-violet-6)" />
-              </Group>
-            </Card>
-          </Grid.Col>
-        </Grid>
 
         {/* Available Forms */}
         <div>

@@ -30,6 +30,7 @@ import {
   Menu,
   rem,
   Checkbox,
+  ThemeIcon,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import {
@@ -1102,12 +1103,15 @@ export const DiscountsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Active Discounts
                 </Text>
-                <ActionIcon variant="light" color="green" size="lg">
+                <ThemeIcon variant="light" color="green" size="lg">
                   <Percent size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="green">
+              <Text fw={700} size="xl" c="green" className="summary-card-metric">
                 {activeDiscounts}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                Currently available
               </Text>
             </Card>
           </Grid.Col>
@@ -1117,12 +1121,15 @@ export const DiscountsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Total Usage
                 </Text>
-                <ActionIcon variant="light" color="blue" size="lg">
+                <ThemeIcon variant="light" color="blue" size="lg">
                   <TrendingUp size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="blue">
+              <Text fw={700} size="xl" c="blue" className="summary-card-metric">
                 {totalUsage.toLocaleString()}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                Times redeemed
               </Text>
             </Card>
           </Grid.Col>
@@ -1132,12 +1139,15 @@ export const DiscountsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Total Savings
                 </Text>
-                <ActionIcon variant="light" color="orange" size="lg">
+                <ThemeIcon variant="light" color="orange" size="lg">
                   <DollarSign size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="orange">
+              <Text fw={700} size="xl" c="orange" className="summary-card-metric">
                 ${totalSavings.toLocaleString()}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                Customer savings
               </Text>
             </Card>
           </Grid.Col>
@@ -1147,12 +1157,15 @@ export const DiscountsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Expiring Soon
                 </Text>
-                <ActionIcon variant="light" color="red" size="lg">
+                <ThemeIcon variant="light" color="red" size="lg">
                   <Clock size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
-              <Text fw={700} size="xl" c="red">
+              <Text fw={700} size="xl" c="red" className="summary-card-metric">
                 {expiringSoon}
+              </Text>
+              <Text size="xs" c="dimmed" align="center">
+                Within 7 days
               </Text>
             </Card>
           </Grid.Col>

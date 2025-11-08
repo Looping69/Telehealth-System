@@ -32,6 +32,7 @@ import {
   Menu,
   Progress,
   Alert,
+  ThemeIcon,
   rem,
 } from '@mantine/core';
 import {
@@ -1330,62 +1331,74 @@ export const ProductsPage: React.FC = () => {
         {/* Summary Cards */}
         <Grid>
           <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
               <Group justify="space-between" mb="xs">
                 <Text size="sm" c="dimmed" fw={500}>
                   Active Products
                 </Text>
-                <ActionIcon variant="light" color="green" size="lg">
+                <ThemeIcon variant="light" color="green" size="lg" align="center">
                   <Package size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
               <Text fw={700} size="xl" c="green">
                 {activeProducts}
               </Text>
+              <Text size="xs" c="dimmed" mt={5}>
+                Currently operational
+              </Text>
             </Card>
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
               <Group justify="space-between" mb="xs">
                 <Text size="sm" c="dimmed" fw={500}>
                   Total Revenue
                 </Text>
-                <ActionIcon variant="light" color="blue" size="lg">
+                <ThemeIcon variant="light" color="blue" size="lg" align="center">
                   <DollarSign size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
               <Text fw={700} size="xl" c="blue">
                 ${totalRevenue.toLocaleString()}
               </Text>
-            </Card>
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Group justify="space-between" mb="xs">
-                <Text size="sm" c="dimmed" fw={500}>
-                  Total Bookings
-                </Text>
-                <ActionIcon variant="light" color="orange" size="lg">
-                  <ShoppingCart size={20} />
-                </ActionIcon>
-              </Group>
-              <Text fw={700} size="xl" c="orange">
-                {totalBookings.toLocaleString()}
+              <Text size="xs" c="dimmed" mt={5}>
+                Generated from bookings
               </Text>
             </Card>
           </Grid.Col>
           <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
+              <Group justify="space-between" mb="xs">
+                <Text size="sm" c="dimmed" fw={500}>
+                  Total Bookings
+                </Text>
+                <ThemeIcon variant="light" color="orange" size="lg" align="center">
+                  <ShoppingCart size={20} />
+                </ThemeIcon>
+              </Group>
+              <Text fw={700} size="xl" c="orange">
+                {totalBookings.toLocaleString()}
+              </Text>
+              <Text size="xs" c="dimmed" mt={5}>
+                Completed service orders
+              </Text>
+            </Card>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder className="summary-card-metric">
               <Group justify="space-between" mb="xs">
                 <Text size="sm" c="dimmed" fw={500}>
                   Average Rating
                 </Text>
-                <ActionIcon variant="light" color="yellow" size="lg">
+                <ThemeIcon variant="light" color="yellow" size="lg" align="center">
                   <Star size={20} />
-                </ActionIcon>
+                </ThemeIcon>
               </Group>
               <Text fw={700} size="xl" c="yellow">
                 {avgRating.toFixed(1)}
+              </Text>
+              <Text size="xs" c="dimmed" mt={5}>
+                Customer satisfaction score
               </Text>
             </Card>
           </Grid.Col>
