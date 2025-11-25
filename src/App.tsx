@@ -3,7 +3,7 @@
  * Sets up routing, authentication, and global providers
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { MantineProvider, createTheme } from '@mantine/core';
@@ -14,12 +14,16 @@ import '@mantine/dates/styles.css';
 
 import { queryClient } from './hooks/useQuery';
 import LoginPage from './components/auth/LoginPage';
+import OAuthLoginPage from './components/auth/OAuthLoginPage';
+import OAuthCallback from './components/auth/OAuthCallback';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { PatientProtectedRoute } from './components/auth/PatientProtectedRoute';
 import { UnauthorizedPage } from './components/common/UnauthorizedPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { ModeProvider, useMode } from './contexts/ModeContext';
-import { initializeMedplumAuth } from './config/medplum';
+import { useOAuthAuthStore } from './store/oauthAuthStore';
+// Disable direct Medplum auth init to prevent CORS and OAuth failures
+// import { initializeMedplumAuth } from './config/medplum';
 
 // Lazy load page components for better performance
 const DashboardPage = React.lazy(() => import('./pages/Dashboard').then(m => ({ default: m.DashboardPage })));
@@ -34,11 +38,12 @@ const ProvidersPage = React.lazy(() => import('./pages/Providers').then(m => ({ 
 const PharmaciesPage = React.lazy(() => import('./pages/Pharmacies').then(m => ({ default: m.PharmaciesPage })));
 const TagsPage = React.lazy(() => import('./pages/Tags').then(m => ({ default: m.TagsPage })));
 const DiscountsPage = React.lazy(() => import('./pages/Discounts').then(m => ({ default: m.DiscountsPage })));
-const ProductsPage = React.lazy(() => import('./pages/Products').then(m => ({ default: m.ProductsPage })));
-const FormsPage = React.lazy(() => import('./pages/Forms'));
-const ResourcesPage = React.lazy(() => import('./pages/Resources').then(m => ({ default: m.ResourcesPage })));
-const SettingsPage = React.lazy(() => import('./pages/Settings').then(m => ({ default: m.SettingsPage })));
-const AuditPage = React.lazy(() => import('./pages/Audit').then(m => ({ default: m.AuditPage })));
+  const ProductsPage = React.lazy(() => import('./pages/Products').then(m => ({ default: m.ProductsPage })));
+  const FormsPage = React.lazy(() => import('./pages/Forms'));
+  const ResourcesPage = React.lazy(() => import('./pages/Resources').then(m => ({ default: m.ResourcesPage })));
+  const SettingsPage = React.lazy(() => import('./pages/Settings').then(m => ({ default: m.SettingsPage })));
+  const AuditPage = React.lazy(() => import('./pages/Audit').then(m => ({ default: m.AuditPage })));
+  const PatientsExamplePage = React.lazy(() => import('./pages/PatientsExample'));
 
 // Lazy load Medplum page components (FHIR versions)
 const DashboardMedplumPage = React.lazy(() => import('./pages/Dashboard-Medplum'));
@@ -94,6 +99,12 @@ const theme = createTheme({
 
 function AppContent() {
   const { mode } = useMode();
+  const { initializeFromStorage } = useOAuthAuthStore();
+
+  // Initialize OAuth authentication on app startup
+  useEffect(() => {
+    initializeFromStorage();
+  }, [initializeFromStorage]);
 
   // Helper function to get the appropriate component based on mode with Suspense
   const getPageComponent = (mockComponent: React.ComponentType, fhirComponent: React.ComponentType) => {
@@ -109,7 +120,8 @@ function AppContent() {
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={<OAuthLoginPage />} />
+        <Route path="/auth/callback" element={<OAuthCallback />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
         {/* Patient Portal Routes */}
@@ -211,6 +223,12 @@ function AppContent() {
           <Route path="resources" element={getPageComponent(ResourcesPage, ResourcesMedplumPage)} />
           <Route path="forms" element={getPageComponent(FormsPage, FormsMedplumPage)} />
           <Route path="form-builder" element={getPageComponent(() => <div>Form Builder (Mock)</div>, FormBuilderMedplumPage)} />
+          {/* Example route to demonstrate backend FHIR patients retrieval */}
+          <Route path="patients-example" element={
+            <React.Suspense fallback={<div>Loading...</div>}>
+              <PatientsExamplePage />
+            </React.Suspense>
+          } />
 
           {/* System */}
           <Route path="settings" element={getPageComponent(SettingsPage, SettingsMedplumPage)} />
@@ -225,23 +243,8 @@ function AppContent() {
 }
 
 function App() {
-  // Initialize Medplum authentication when app starts
-  React.useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const isAuthenticated = await initializeMedplumAuth();
-        if (isAuthenticated) {
-          console.log('Medplum authentication initialized successfully');
-        } else {
-          console.warn('Medplum authentication failed - using mock data mode');
-        }
-      } catch (error) {
-        console.error('Error initializing Medplum authentication:', error);
-      }
-    };
-    
-    initAuth();
-  }, []);
+  // Medplum authentication initialization disabled: all FHIR calls go through backend
+  // This avoids direct calls to api.medplum.com that cause CORS/OAuth errors in dev.
 
   return (
     <MantineProvider theme={theme}>

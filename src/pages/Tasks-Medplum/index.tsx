@@ -58,8 +58,9 @@ import {
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { medplumClient } from '../../config/medplum';
+
 import { Task } from '@medplum/fhirtypes';
+import { backendFHIRService } from '../../services/backendFHIRService';
 
 /**
  * FHIR Task Card Component
@@ -386,21 +387,14 @@ const TasksMedplumPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const response = await medplumClient.search('Task', {
+        const response = await backendFHIRService.searchResources('Task', {
           _sort: '-authored-on',
           _count: '50',
           _include: 'Task:patient,Task:owner'
         });
-
-        if (response.entry) {
-          const taskData = response.entry
-            .filter(entry => entry.resource?.resourceType === 'Task')
-            .map(entry => entry.resource as Task);
-          
-          setTasks(taskData);
-        } else {
-          setTasks([]);
-        }
+        const taskData = (response.data ?? [])
+          .filter((res: any) => res?.resourceType === 'Task') as Task[];
+        setTasks(taskData);
       } catch (err) {
         console.error('Error fetching FHIR tasks:', err);
         setError('Failed to fetch tasks from FHIR server. Please check your connection.');
@@ -483,7 +477,8 @@ const TasksMedplumPage: React.FC = () => {
 
     try {
       const updatedTask = { ...task, status: 'completed' as const };
-      await medplumClient.updateResource(updatedTask);
+      // Update FHIR Task via backend service (resourceType, id, payload)
+      await backendFHIRService.updateResource('Task', task.id as string, updatedTask);
       
       // Refresh tasks
       setTasks(prev => prev.map(t => t.id === task.id ? updatedTask : t));

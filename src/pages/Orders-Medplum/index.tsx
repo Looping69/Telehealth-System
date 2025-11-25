@@ -42,14 +42,32 @@ import {
   Clock,
   AlertCircle,
   Database,
+  Package,
+  CheckCircle,
+  LayoutGrid,
+  Rows,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ServiceRequest, MedicationRequest } from '@medplum/fhirtypes';
 import { useOrders } from '../../hooks/useQuery';
 import CreateOrderModal from '../../components/CreateOrderModal';
+import SummaryMetricCard from '../../components/SummaryMetricCard';
 
 type FHIROrder = ServiceRequest | MedicationRequest;
+
+/**
+ * Formats the `authoredOn` date for a given FHIR order.
+ * Inputs: `order` - a `ServiceRequest` or `MedicationRequest`.
+ * Output: A localized date string or 'Unknown' if missing.
+ */
+const formatAuthoredOn = (order: FHIROrder): string => {
+  const authored = order.resourceType === 'MedicationRequest'
+    ? (order as MedicationRequest).authoredOn
+    : (order as ServiceRequest).authoredOn;
+
+  return authored ? new Date(authored as string).toLocaleDateString() : 'Unknown';
+};
 
 /**
  * FHIR Order Card Component
@@ -372,6 +390,8 @@ const OrdersMedplumPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<FHIROrder | null>(null);
+  // Controls list/cards rendering of orders
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
@@ -420,6 +440,17 @@ const OrdersMedplumPage: React.FC = () => {
     openEdit();
   };
 
+  /**
+   * Clears all filter controls on the Orders page.
+   * Inputs: none
+   * Outputs: none; updates local state for `searchTerm`, `statusFilter`, and `typeFilter`.
+   */
+  const handleClearFilters = (): void => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+  };
+
   if (loading) {
     return (
       <Container size="xl" py="xl">
@@ -440,13 +471,7 @@ const OrdersMedplumPage: React.FC = () => {
         <Group justify="space-between" align="center">
           <Stack gap="xs">
             <Title order={1}>Orders</Title>
-            <Group gap="xs">
-              <Badge color="green" variant="light">
-                <Database size={12} style={{ marginRight: 4 }} />
-                Live FHIR Data
-              </Badge>
-              <Text c="dimmed">Manage medical orders, prescriptions, and lab requests</Text>
-            </Group>
+            <Text c="dimmed">Manage medical orders, prescriptions, and lab requests</Text>
           </Stack>
           <Button leftSection={<Plus size={16} />} onClick={openCreate}>
             New Order
@@ -460,18 +485,57 @@ const OrdersMedplumPage: React.FC = () => {
           </Alert>
         )}
 
+        {/* Summary Cards */}
+        <Grid>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <SummaryMetricCard
+              label="Total Orders"
+              value={filteredOrders.length}
+              color="blue"
+              icon={<Package size={20} />}
+              helperText="All matching orders"
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <SummaryMetricCard
+              label="Active Orders"
+              value={filteredOrders.filter(o => o.status === 'active').length}
+              color="green"
+              icon={<AlertCircle size={20} />}
+              helperText="Currently active"
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <SummaryMetricCard
+              label="Completed Orders"
+              value={filteredOrders.filter(o => o.status === 'completed').length}
+              color="teal"
+              icon={<CheckCircle size={20} />}
+              helperText="Finished orders"
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6, lg: 3 }}>
+            <SummaryMetricCard
+              label="Pending Orders"
+              value={filteredOrders.filter(o => o.status === 'draft' || o.status === 'on-hold').length}
+              color="orange"
+              icon={<Clock size={20} />}
+              helperText="Draft or on hold"
+            />
+          </Grid.Col>
+        </Grid>
+
         {/* Filters */}
-        <Card withBorder padding="md">
-          <Grid>
-            <Grid.Col span={{ base: 12, md: 4 }}>
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Group justify="space-between" align="center">
+            <Group align="center" gap="sm" wrap="wrap">
               <TextInput
                 placeholder="Search orders..."
                 leftSection={<Search size={16} />}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.currentTarget.value)}
+                w={{ base: '100%', sm: 280 }}
               />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, md: 3 }}>
               <Select
                 placeholder="Filter by status"
                 leftSection={<Filter size={16} />}
@@ -485,9 +549,9 @@ const OrdersMedplumPage: React.FC = () => {
                   { value: 'cancelled', label: 'Cancelled' },
                   { value: 'on-hold', label: 'On Hold' },
                 ]}
+                clearable
+                w={{ base: '100%', sm: 220 }}
               />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, md: 3 }}>
               <Select
                 placeholder="Filter by type"
                 value={typeFilter}
@@ -497,17 +561,37 @@ const OrdersMedplumPage: React.FC = () => {
                   { value: 'ServiceRequest', label: 'Service Request' },
                   { value: 'MedicationRequest', label: 'Medication Request' },
                 ]}
+                clearable
+                w={{ base: '100%', sm: 200 }}
               />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, md: 2 }}>
-              <Text size="sm" c="dimmed">
-                {filteredOrders.length} orders
-              </Text>
-            </Grid.Col>
-          </Grid>
+            </Group>
+            <Group align="center" gap="sm">
+              <Group gap="xs">
+                <ActionIcon
+                  variant={viewMode === 'cards' ? 'filled' : 'light'}
+                  color="blue"
+                  onClick={() => setViewMode('cards')}
+                  aria-label="Cards view"
+                >
+                  <LayoutGrid size={18} />
+                </ActionIcon>
+                <ActionIcon
+                  variant={viewMode === 'table' ? 'filled' : 'light'}
+                  color="blue"
+                  onClick={() => setViewMode('table')}
+                  aria-label="Table view"
+                >
+                  <Rows size={18} />
+                </ActionIcon>
+              </Group>
+              <Button variant="light" onClick={handleClearFilters}>
+                Clear Filters
+              </Button>
+            </Group>
+          </Group>
         </Card>
 
-        {/* Orders Grid */}
+        {/* Orders Display */}
         {filteredOrders.length === 0 ? (
           <Center py="xl">
             <Stack align="center" gap="md">
@@ -518,7 +602,7 @@ const OrdersMedplumPage: React.FC = () => {
               </Text>
             </Stack>
           </Center>
-        ) : (
+        ) : viewMode === 'cards' ? (
           <Grid>
             {filteredOrders.map((order) => (
               <Grid.Col key={order.id} span={{ base: 12, md: 6, lg: 4 }}>
@@ -530,6 +614,79 @@ const OrdersMedplumPage: React.FC = () => {
               </Grid.Col>
             ))}
           </Grid>
+        ) : (
+          <Table striped highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Order</Table.Th>
+                <Table.Th>Patient</Table.Th>
+                <Table.Th>Type</Table.Th>
+                <Table.Th>Status</Table.Th>
+                <Table.Th>Priority</Table.Th>
+                <Table.Th>Date</Table.Th>
+                <Table.Th>Actions</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {filteredOrders.map((order) => (
+                <Table.Tr key={order.id}>
+                  <Table.Td>
+                    <Stack gap={2}>
+                      <Text size="sm" fw={500}>
+                        {order.resourceType === 'MedicationRequest'
+                          ? (order as MedicationRequest).medicationCodeableConcept?.text || 'Medication Request'
+                          : (order as ServiceRequest).code?.text || 'Service Request'}
+                      </Text>
+                      <Text size="xs" c="dimmed">#{order.id}</Text>
+                    </Stack>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm">{order.subject?.display || 'Unknown Patient'}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge size="sm" variant="light">
+                      {order.resourceType === 'MedicationRequest' ? 'Medication' : 'Service'}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge color={
+                      order.status === 'active' ? 'green' :
+                      order.status === 'completed' ? 'blue' :
+                      order.status === 'draft' ? 'yellow' :
+                      order.status === 'cancelled' ? 'red' :
+                      order.status === 'on-hold' ? 'orange' : 'gray'
+                    }>
+                      {order.status}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge size="sm" color={
+                      order.priority === 'urgent' || order.priority === 'stat' ? 'red' :
+                      order.priority === 'asap' ? 'orange' :
+                      order.priority === 'routine' ? 'blue' : 'blue'
+                    }>
+                      {order.priority || 'routine'}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm">
+                      {formatAuthoredOn(order)}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Group gap="xs">
+                      <ActionIcon variant="light" color="blue" size="sm" onClick={() => handleViewOrder(order)}>
+                        <Eye size={14} />
+                      </ActionIcon>
+                      <ActionIcon variant="light" color="orange" size="sm" onClick={() => handleEditOrder(order)}>
+                        <Edit size={14} />
+                      </ActionIcon>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
         )}
 
         {/* Modals */}

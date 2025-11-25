@@ -52,8 +52,9 @@ import {
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { medplumClient } from '../../config/medplum';
+
 import { Organization } from '@medplum/fhirtypes';
+import { backendFHIRService } from '../../services/backendFHIRService';
 
 /**
  * FHIR Pharmacy Card Component
@@ -699,21 +700,14 @@ const PharmaciesMedplumPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const response = await medplumClient.search('Organization', {
+        const response = await backendFHIRService.searchResources('Organization', {
           type: 'prov',
           _sort: 'name',
           _count: '50'
         });
 
-        if (response.entry) {
-          const pharmacyData = response.entry
-            .filter(entry => entry.resource?.resourceType === 'Organization')
-            .map(entry => entry.resource as Organization);
-          
-          setPharmacies(pharmacyData);
-        } else {
-          setPharmacies([]);
-        }
+        const pharmacyData = (response?.data ?? []) as Organization[];
+        setPharmacies(pharmacyData);
       } catch (err) {
         console.error('Error fetching FHIR pharmacies:', err);
         setError('Failed to fetch pharmacies from FHIR server. Please check your connection.');
@@ -892,7 +886,7 @@ const PharmaciesMedplumPage: React.FC = () => {
                   { value: 'pending', label: 'Pending' },
                 ]}
                 value={statusFilter}
-                onChange={setStatusFilter}
+                onChange={(value) => setStatusFilter(value || 'all')}
                 clearable
               />
             </Grid.Col>

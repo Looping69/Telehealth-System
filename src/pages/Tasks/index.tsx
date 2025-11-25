@@ -834,7 +834,7 @@ export const TasksPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Pending Tasks
                 </Text>
-                <ThemeIcon variant="light" color="yellow" size="lg" align="center">
+                <ThemeIcon variant="light" color="yellow" size="lg">
                   <Clock size={20} />
                 </ThemeIcon>
               </Group>
@@ -852,7 +852,7 @@ export const TasksPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   In Progress
                 </Text>
-                <ThemeIcon variant="light" color="blue" size="lg" align="center">
+                <ThemeIcon variant="light" color="blue" size="lg">
                   <User size={20} />
                 </ThemeIcon>
               </Group>
@@ -870,7 +870,7 @@ export const TasksPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Completed
                 </Text>
-                <ThemeIcon variant="light" color="green" size="lg" align="center">
+                <ThemeIcon variant="light" color="green" size="lg">
                   <CheckCircle size={20} />
                 </ThemeIcon>
               </Group>
@@ -888,7 +888,7 @@ export const TasksPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Overdue
                 </Text>
-                <ThemeIcon variant="light" color="red" size="lg" align="center">
+                <ThemeIcon variant="light" color="red" size="lg">
                   <AlertTriangle size={20} />
                 </ThemeIcon>
               </Group>

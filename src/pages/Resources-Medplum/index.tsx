@@ -75,8 +75,9 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { medplumClient } from '../../config/medplum';
+
 import { DocumentReference } from '@medplum/fhirtypes';
+import { backendFHIRService } from '../../services/backendFHIRService';
 
 /**
  * FHIR Document Card Component
@@ -846,21 +847,13 @@ const ResourcesMedplumPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const response = await medplumClient.search('DocumentReference', {
+        const response = await backendFHIRService.searchResources('DocumentReference', {
           _sort: '-date',
           _count: '50',
           _include: 'DocumentReference:subject,DocumentReference:author'
         });
-
-        if (response.entry) {
-          const documentData = response.entry
-            .filter(entry => entry.resource?.resourceType === 'DocumentReference')
-            .map(entry => entry.resource as DocumentReference);
-          
-          setDocuments(documentData);
-        } else {
-          setDocuments([]);
-        }
+        const documentData = (response?.data ?? []) as DocumentReference[];
+        setDocuments(documentData);
       } catch (err) {
         console.error('Error fetching FHIR documents:', err);
         setError('Failed to fetch resources from FHIR server. Please check your connection.');
@@ -948,7 +941,7 @@ const ResourcesMedplumPage: React.FC = () => {
       if (selectedDocument) {
         // Update existing document via FHIR
         const updatedDocument = { ...selectedDocument, ...documentData };
-        await medplumClient.updateResource(updatedDocument);
+        await backendFHIRService.updateResource('DocumentReference', selectedDocument.id!, updatedDocument);
         
         setDocuments(prev => prev.map(d => 
           d.id === selectedDocument.id ? updatedDocument : d
@@ -956,7 +949,7 @@ const ResourcesMedplumPage: React.FC = () => {
         setNotification({ type: 'success', message: 'Document updated successfully!' });
       } else {
         // Create new document via FHIR
-        const newDocument = await medplumClient.createResource({
+        const newDocument = await backendFHIRService.createResource('DocumentReference', {
           resourceType: 'DocumentReference',
           ...documentData,
         } as DocumentReference);
@@ -977,7 +970,7 @@ const ResourcesMedplumPage: React.FC = () => {
   const handleDeleteDocument = async (documentId: string) => {
     setLoading(true);
     try {
-      await medplumClient.deleteResource('DocumentReference', documentId);
+      await backendFHIRService.deleteResource('DocumentReference', documentId);
       setDocuments(prev => prev.filter(d => d.id !== documentId));
       setNotification({ type: 'success', message: 'Document deleted successfully!' });
       closeDelete();
@@ -999,7 +992,7 @@ const ResourcesMedplumPage: React.FC = () => {
         date: new Date().toISOString(),
       };
       
-      const newDocument = await medplumClient.createResource(duplicatedDocument);
+      const newDocument = await backendFHIRService.createResource('DocumentReference', duplicatedDocument);
       setDocuments(prev => [...prev, newDocument]);
       setNotification({ type: 'success', message: 'Document duplicated successfully!' });
     } catch (error) {
@@ -1016,7 +1009,7 @@ const ResourcesMedplumPage: React.FC = () => {
     setLoading(true);
     try {
       await Promise.all(
-        selectedDocuments.map(id => medplumClient.deleteResource('DocumentReference', id))
+        selectedDocuments.map(id => backendFHIRService.deleteResource('DocumentReference', id))
       );
       
       setDocuments(prev => prev.filter(d => !selectedDocuments.includes(d.id!)));
@@ -1039,7 +1032,7 @@ const ResourcesMedplumPage: React.FC = () => {
         const document = documents.find(d => d.id === id);
         if (document) {
           const updatedDocument = { ...document, status: status as any };
-          return medplumClient.updateResource(updatedDocument);
+          return backendFHIRService.updateResource('DocumentReference', id, updatedDocument);
         }
       });
       

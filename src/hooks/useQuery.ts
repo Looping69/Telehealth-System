@@ -1,10 +1,11 @@
 /**
  * React Query configuration and custom hooks
- * Provides data fetching and caching utilities for the application
+ * Provides data fetching and caching utilities for the application, using backend FHIR service
  */
 
 import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { medplumClient } from '../config/medplum';
+import type { SearchResult } from '../services/backendFHIRService';
+// backendFHIRService is already imported below; skip duplicate import
 import { Patient, Appointment, Order, Invoice, Task, Provider, Message } from '../types';
 import { Patient as FHIRPatient, Appointment as FHIRAppointment } from '@medplum/fhirtypes';
 
@@ -20,10 +21,19 @@ export const queryClient = new QueryClient({
   },
 });
 
+// Import the useAuthStore to get the current user's role
+import { useAuthStore } from '../store/authStore';
+import { notifications } from '@mantine/notifications';
+import { backendFHIRService } from '../services/backendFHIRService';
+;
+
 // Custom hooks for data fetching
 
 /**
  * Fetch patients with optional search filters
+ * Purpose: Retrieve patient list from backend FHIR gateway with filtering.
+ * Inputs: `searchQuery` object or string controlling filters like status, gender, sort.
+ * Outputs: Array of normalized `Patient` objects for display.
  */
 export function usePatients(searchQuery?: string | { 
   search?: string; 
@@ -49,29 +59,30 @@ export function usePatients(searchQuery?: string | {
     queryKey: ['patients', queryString, statusFilter, genderFilter, insuranceFilter, ageRangeFilter, sortBy, sortOrder],
     queryFn: async () => {
       try {
-        console.log('Fetching patients from Medplum...');
+        console.log('Fetching patients from backend FHIR service...');
         
         // Build search parameters
-        const searchParams = new URLSearchParams({
-          '_sort': '-_lastUpdated',
-          '_count': '50'
-        });
+        const searchParams: any = {
+          _sort: '-_lastUpdated',
+          _count: '50'
+        };
         
         if (queryString) {
-          searchParams.append('name', queryString);
+          searchParams.name = queryString;
         }
         
         if (statusFilter && statusFilter !== 'all') {
-          searchParams.append('active', statusFilter === 'active' ? 'true' : 'false');
+          searchParams.active = statusFilter === 'active' ? 'true' : 'false';
         }
         
         if (genderFilter && genderFilter !== 'all') {
-          searchParams.append('gender', genderFilter);
+          searchParams.gender = genderFilter;
         }
         
-        const patients = await medplumClient.searchResources('Patient', searchParams);
+        const response = await backendFHIRService.searchPatients(searchParams);
+        const patientsData = Array.isArray(response?.data) ? response.data : [];
         
-        const result: Patient[] = patients.map((patient: any) => ({
+        const result: Patient[] = patientsData.map((patient: any) => ({
           id: patient.id,
           name: `${patient.name?.[0]?.given?.[0] || 'Unknown'} ${patient.name?.[0]?.family || 'Unknown'}`,
           firstName: patient.name?.[0]?.given?.[0] || 'Unknown',
@@ -93,10 +104,10 @@ export function usePatients(searchQuery?: string | {
           nextAppointment: undefined,
         }));
         
-        console.log(`Successfully fetched ${result.length} patients from Medplum`);
+        console.log(`Successfully fetched ${result.length} patients from backend FHIR service`);
         return result;
       } catch (error) {
-        console.error('Failed to fetch patients from Medplum:', error);
+        console.error('Failed to fetch patients from backend FHIR service:', error);
         throw error;
       }
     },
@@ -111,8 +122,8 @@ export function usePatient(patientId: string) {
     queryKey: ['patient', patientId],
     queryFn: async () => {
       try {
-        console.log(`Fetching patient ${patientId} from Medplum...`);
-        const patient = await medplumClient.readResource('Patient', patientId);
+        console.log(`Fetching patient ${patientId} from backend FHIR service...`);
+        const patient = await backendFHIRService.getPatient(patientId);
         
         const result: Patient = {
           id: patient.id,
@@ -128,10 +139,10 @@ export function usePatient(patientId: string) {
           updatedAt: new Date(patient.meta?.lastUpdated || Date.now()),
         };
         
-        console.log(`Successfully fetched patient from Medplum:`, result.name);
+        console.log(`Successfully fetched patient from backend FHIR service:`, result.name);
         return result;
       } catch (error) {
-        console.log(`Failed to fetch patient ${patientId} from Medplum, using mock data:`, error);
+        console.log(`Failed to fetch patient ${patientId} from backend FHIR service, using mock data:`, error);
         
         // Comprehensive mock data - always returned
         return {
@@ -155,29 +166,32 @@ export function usePatient(patientId: string) {
 
 /**
  * Fetch appointments with optional filters
+ * Purpose: Retrieve appointments from backend FHIR gateway for the given date.
+ * Inputs: Optional `date` to constrain results; supports FHIR date range.
+ * Outputs: Array of normalized `Appointment` objects.
  */
 export function useAppointments(date?: Date) {
   return useQuery({
     queryKey: ['appointments', date?.toISOString()],
     queryFn: async () => {
       try {
-        console.log('Fetching appointments from Medplum...');
+        console.log('Fetching appointments from backend FHIR service...');
         
         // Build search parameters
-        const searchParams = new URLSearchParams({
-          '_sort': '-date',
-          '_count': '50'
-        });
+        const searchParams: any = {
+          _sort: '-date',
+          _count: '50'
+        };
         
         if (date) {
           const dateStr = date.toISOString().split('T')[0];
-          searchParams.append('date', `ge${dateStr}`);
-          searchParams.append('date', `lt${dateStr}T23:59:59`);
+          searchParams.date = [`ge${dateStr}`, `lt${dateStr}T23:59:59`];
         }
         
-        const appointments = await medplumClient.searchResources('Appointment', searchParams);
+        const response = await backendFHIRService.searchAppointments(searchParams);
+        const appointmentsData = Array.isArray(response?.data) ? response.data : [];
         
-        const result: Appointment[] = appointments.map((apt: any) => ({
+        const result: Appointment[] = appointmentsData.map((apt: any) => ({
           id: apt.id,
           patientId: apt.participant?.find((p: any) => p.actor?.reference?.startsWith('Patient/'))?.actor?.reference?.split('/')[1] || '',
           patientName: apt.participant?.find((p: any) => p.actor?.display)?.actor?.display || 'Unknown Patient',
@@ -196,12 +210,12 @@ export function useAppointments(date?: Date) {
           diagnosis: apt.diagnosis?.[0]?.condition?.display || null,
           prescription: null,
           followUpRequired: apt.supportingInformation?.length > 0 || false,
-        }));
+        })).filter(apt => apt.patientId && apt.providerId); // Filter out appointments without valid patient or provider IDs
         
-        console.log(`Successfully fetched ${result.length} appointments from Medplum`);
+        console.log(`Successfully fetched ${result.length} appointments from backend FHIR service`);
         return result;
       } catch (error) {
-        console.log('Failed to fetch appointments from Medplum, using mock data:', error);
+        console.log('Failed to fetch appointments from backend FHIR service, using mock data:', error);
         
         // Comprehensive mock data - fallback only
         // Generate dates relative to current date for realistic testing
@@ -399,10 +413,10 @@ export function useOrders(params?: { search?: string; status?: string }) {
     queryKey: ['orders', params?.search, params?.status],
     queryFn: async () => {
       try {
-        console.log('Fetching orders from Medplum...');
+        console.log('Fetching orders from backend FHIR service...');
         
         // Build base search parameters
-        const baseParams: any = {
+        const baseParams: Record<string, string> = {
           _sort: '-_lastUpdated',
           _count: '50'
         };
@@ -417,30 +431,30 @@ export function useOrders(params?: { search?: string; status?: string }) {
         
         // Create separate search parameters for each resource type
         // Start with basic patient includes only to avoid FHIR validation errors
-        const serviceRequestParams = {
+        const serviceRequestParams: Record<string, string> = {
           ...baseParams,
           _include: 'ServiceRequest:patient'
         };
         
-        const medicationRequestParams = {
+        const medicationRequestParams: Record<string, string> = {
           ...baseParams,
           _include: 'MedicationRequest:patient'
         };
         
         // Fetch both ServiceRequest and MedicationRequest resources
-        const [serviceRequests, medicationRequests] = await Promise.all([
-          medplumClient.searchResources('ServiceRequest', serviceRequestParams),
-          medplumClient.searchResources('MedicationRequest', medicationRequestParams)
+        const [serviceRequests, medicationRequests]: [SearchResult<any>, SearchResult<any>] = await Promise.all([
+          backendFHIRService.searchResources('ServiceRequest', serviceRequestParams),
+          backendFHIRService.searchResources('MedicationRequest', medicationRequestParams)
         ]);
         
         // Combine and return both types of orders
-        const allOrders = [...serviceRequests, ...medicationRequests];
-        console.log('Successfully fetched orders from Medplum:', allOrders.length);
+        const allOrders = [...(serviceRequests?.data ?? []), ...(medicationRequests?.data ?? [])];
+        console.log('Successfully fetched orders from backend FHIR service:', allOrders.length);
         return allOrders;
       } catch (err) {
-        console.error('Error fetching orders from Medplum:', err);
+        console.error('Error fetching orders from backend FHIR service:', err);
         // Re-throw the error so the UI can handle it properly
-        throw new Error(`Failed to fetch orders from Medplum server: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        throw new Error(`Failed to fetch orders from backend FHIR service: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     },
   });
@@ -454,17 +468,17 @@ export function useAuditEvents(params?: { search?: string; status?: string }) {
     queryKey: ['auditEvents', params?.search, params?.status],
     queryFn: async () => {
       try {
-        console.log('Fetching audit events from Medplum...');
-        const auditEvents = await medplumClient.searchResources('AuditEvent', {
+        console.log('Fetching audit events from backend FHIR service...');
+        const auditEvents = await backendFHIRService.searchResources('AuditEvent', {
           _sort: '-date',
-          _count: 50,
-          ...(params?.search && { 'entity.name': params.search }),
-          ...(params?.status && { outcome: params.status === 'success' ? 0 : 1 }),
+          _count: '50',
+          ...(params?.search ? { 'entity.name': params.search } : {}),
+          ...(params?.status ? { outcome: params.status === 'success' ? '0' : '1' } : {}),
         });
-        console.log('Successfully fetched audit events:', auditEvents);
-        return auditEvents;
+        console.log('Successfully fetched audit events from backend FHIR service:', auditEvents?.total ?? 0);
+        return auditEvents.data ?? [];
       } catch (err) {
-        console.error('Error fetching audit events from Medplum:', err);
+        console.error('Error fetching audit events from backend FHIR service:', err);
         return [];
       }
     },
@@ -482,22 +496,19 @@ export function useDashboardMetrics() {
   return useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: async () => {
-      console.log('Fetching dashboard metrics from Medplum...');
+      console.log('Fetching dashboard metrics from backend FHIR service...');
       try {
         // Use Bundle results to get accurate counts
-        const [appointmentsBundle, patientsBundle, scheduledBundle] = await Promise.all([
-          medplumClient.search('Appointment', new URLSearchParams({ _summary: 'count' })),
-          medplumClient.search('Patient', new URLSearchParams({ _summary: 'count' })),
-          medplumClient.search('Appointment', new URLSearchParams({ status: 'scheduled', _summary: 'count' })),
+        const [appointmentsResult, patientsResult, scheduledResult]: [SearchResult<any>, SearchResult<any>, SearchResult<any>] = await Promise.all([
+          backendFHIRService.searchResources('Appointment', { _summary: 'count' }),
+          backendFHIRService.searchResources('Patient', { _summary: 'count' }),
+          backendFHIRService.searchResources('Appointment', { status: 'booked', _summary: 'count' }),
         ]);
 
         // Revenue requires fetching actual invoices and summing amounts
-        const paidInvoices = await medplumClient.searchResources(
-          'Invoice',
-          new URLSearchParams({ status: 'balanced', _count: '200' })
-        );
+        const paidInvoicesResult: SearchResult<any> = await backendFHIRService.searchResources('Invoice', { status: 'balanced', _count: '200' });
 
-        const totalRevenue = paidInvoices.reduce((sum: number, inv: any) => {
+        const totalRevenue = (paidInvoicesResult.data ?? []).reduce((sum: number, inv: any) => {
           const gross = inv.totalGross?.value ?? 0;
           const net = inv.totalNet?.value ?? 0;
           // Prefer gross if present, otherwise net
@@ -505,18 +516,18 @@ export function useDashboardMetrics() {
         }, 0);
 
         const metrics = {
-          totalAppointments: (appointmentsBundle as any)?.total ?? 0,
-          totalPatients: (patientsBundle as any)?.total ?? 0,
+          totalAppointments: appointmentsResult?.total ?? 0,
+          totalPatients: patientsResult?.total ?? 0,
           totalRevenue,
-          pendingAppointments: (scheduledBundle as any)?.total ?? 0,
+          pendingAppointments: scheduledResult?.total ?? 0,
         };
 
-        console.log('Successfully fetched dashboard metrics:', metrics);
+        console.log('Successfully fetched dashboard metrics from backend FHIR service:', metrics);
         return metrics;
       } catch (err: any) {
-        // Propagate error so UI shows an error instead of silent mock fallback
+        // Propagate error so UI shows an error
         const message = err?.message || 'Unknown error';
-        console.error('Error fetching dashboard metrics from Medplum:', message);
+        console.error('Error fetching dashboard metrics from backend FHIR service:', message);
         throw new Error(`Dashboard metrics fetch failed: ${message}`);
       }
     },
@@ -530,9 +541,9 @@ export function useCreatePatient() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (patientData: Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>) => {
+    mutationFn: async (patientData: Omit<Patient, 'id' | 'createdAt' | 'updatedAt' | 'address' | 'emergencyContact' | 'insurance' | 'medicalHistory' | 'allergies' | 'lastVisit' | 'nextAppointment'>) => {
       try {
-        console.log('Creating patient in Medplum...');
+        console.log('Creating patient in backend FHIR service...');
         
         const medplumPatient: FHIRPatient = {
           resourceType: 'Patient',
@@ -546,10 +557,10 @@ export function useCreatePatient() {
             ...(patientData.phone ? [{ system: 'phone' as const, value: patientData.phone }] : []),
           ],
           gender: patientData.gender as 'male' | 'female' | 'other' | 'unknown',
-          birthDate: patientData.dateOfBirth,
+ birthDate: patientData.dateOfBirth,
         };
         
-        const createdPatient = await medplumClient.createResource(medplumPatient);
+        const createdPatient = await backendFHIRService.createPatient(medplumPatient);
         
         const result: Patient = {
           id: createdPatient.id,
@@ -563,12 +574,19 @@ export function useCreatePatient() {
           status: patientData.status,
           createdAt: new Date(),
           updatedAt: new Date(),
+          address: '', // Default empty for now
+          emergencyContact: '', // Default empty for now
+          insurance: { provider: '', policyNumber: '', groupNumber: '' }, // Default empty for now
+          medicalHistory: [], // Default empty for now
+          allergies: [], // Default empty for now
+          lastVisit: undefined, // Default empty for now
+          nextAppointment: undefined, // Default empty for now
         };
         
-        console.log('Successfully created patient in Medplum:', result.name);
+        console.log('Successfully created patient in backend FHIR service:', result.name);
         return result;
       } catch (error) {
-        console.log('Failed to create patient in Medplum, using mock creation:', error);
+        console.log('Failed to create patient in backend FHIR service, using mock creation:', error);
         
         // Fallback to mock creation
         const newPatient: Patient = {
@@ -576,6 +594,13 @@ export function useCreatePatient() {
           id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           createdAt: new Date(),
           updatedAt: new Date(),
+          address: '',
+          emergencyContact: '',
+          insurance: { provider: '', policyNumber: '', groupNumber: '' },
+          medicalHistory: [],
+          allergies: [],
+          lastVisit: undefined,
+          nextAppointment: undefined,
         };
         return newPatient;
       }
@@ -596,10 +621,10 @@ export function useUpdatePatient() {
   return useMutation({
     mutationFn: async ({ id, ...patientData }: Partial<Patient> & { id: string }) => {
       try {
-        console.log(`Updating patient ${id} in Medplum...`);
+        console.log(`Updating patient ${id} in backend FHIR service...`);
         
-        // First get the existing patient
-        const existingPatient = await medplumClient.readResource('Patient', id);
+        // First get the existing patient to merge data
+        const existingPatient = await backendFHIRService.getPatient(id);
         
         const updatedMedplumPatient = {
           ...existingPatient,
@@ -613,26 +638,40 @@ export function useUpdatePatient() {
             ...(patientData.phone ? [{ system: 'phone' as const, value: patientData.phone }] : []),
           ],
           gender: patientData.gender as 'male' | 'female' | 'other' | 'unknown',
-          birthDate: patientData.dateOfBirth,
+ birthDate: patientData.dateOfBirth,
         };
         
-        const updatedPatient = await medplumClient.updateResource(updatedMedplumPatient as any);
+        const updatedPatient = await backendFHIRService.updatePatient(id, updatedMedplumPatient);
         
         const result: Patient = {
           ...patientData as Patient,
           id,
+          name: patientData.name || existingPatient.name?.[0] ? `${existingPatient.name[0].given?.[0] || ''} ${existingPatient.name[0].family || ''}`.trim() : 'Unknown Patient',
+          firstName: patientData.firstName || existingPatient.name?.[0]?.given?.[0] || '',
+          lastName: patientData.lastName || existingPatient.name?.[0]?.family || '',
+          email: patientData.email || existingPatient.telecom?.find((t: any) => t.system === 'email')?.value || '',
+          phone: patientData.phone || existingPatient.telecom?.find((t: any) => t.system === 'phone')?.value || '',
+          dateOfBirth: patientData.dateOfBirth || existingPatient.birthDate || '',
+          gender: patientData.gender || existingPatient.gender || 'unknown',
           updatedAt: new Date(),
         };
         
-        console.log('Successfully updated patient in Medplum:', result.name);
+        console.log('Successfully updated patient in backend FHIR service:', result.name);
         return result;
       } catch (error) {
-        console.log(`Failed to update patient ${id} in Medplum, using mock update:`, error);
+        console.log(`Failed to update patient ${id} in backend FHIR service, using mock update:`, error);
         
         // Fallback to mock update
         const updatedPatient: Patient = {
           ...patientData as Patient,
           id,
+          name: patientData.name || 'Mock Patient',
+          firstName: patientData.firstName || 'Mock',
+          lastName: patientData.lastName || 'Patient',
+          email: patientData.email || 'mock@example.com',
+          phone: patientData.phone || '555-123-4567',
+          dateOfBirth: patientData.dateOfBirth || '2000-01-01',
+          gender: patientData.gender || 'unknown',
           updatedAt: new Date(),
         };
         return updatedPatient;
@@ -654,7 +693,7 @@ export function useCreateAppointment() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (appointmentData: Omit<Appointment, 'id'>) => {
+    mutationFn: async (appointmentData: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt' | 'diagnosis' | 'prescription' | 'followUpRequired'>) => {
       try {
         console.log('Creating appointment in Medplum...');
         
@@ -669,10 +708,10 @@ export function useCreateAppointment() {
             const patientSearchParams = new URLSearchParams({
               'name': appointmentData.patientName,
               '_count': '1'
-            });
-            const patients = await medplumClient.searchResources('Patient', patientSearchParams);
-            if (patients.length > 0) {
-              patientId = patients[0].id;
+            }) as any; // Cast to any to match SearchParams type
+            const { data: patients } = await backendFHIRService.searchPatients(patientSearchParams);
+            if ((patients?.length ?? 0) > 0) {
+              patientId = patients![0].id;
             } else {
               throw new Error(`Patient not found: ${appointmentData.patientName}`);
             }
@@ -688,10 +727,10 @@ export function useCreateAppointment() {
             const providerSearchParams = new URLSearchParams({
               'name': appointmentData.providerName,
               '_count': '1'
-            });
-            const practitioners = await medplumClient.searchResources('Practitioner', providerSearchParams);
-            if (practitioners.length > 0) {
-              providerId = practitioners[0].id;
+            }) as any; // Cast to any to match SearchParams type
+            const { data: practitioners } = await backendFHIRService.searchPractitioners(providerSearchParams);
+            if ((practitioners?.length ?? 0) > 0) {
+              providerId = practitioners![0].id;
             } else {
               throw new Error(`Provider not found: ${appointmentData.providerName}`);
             }
@@ -706,7 +745,7 @@ export function useCreateAppointment() {
           status: appointmentData.status as 'proposed' | 'pending' | 'booked' | 'arrived' | 'fulfilled' | 'cancelled' | 'noshow' | 'entered-in-error' | 'checked-in' | 'waitlist',
           start: appointmentData.start || appointmentData.date.toISOString(),
           end: appointmentData.end || new Date(appointmentData.date.getTime() + (appointmentData.duration || 30) * 60000).toISOString(),
-          minutesDuration: appointmentData.duration,
+ minutesDuration: appointmentData.duration, // Ensure minutesDuration is set
           participant: (appointmentData.participant?.map(p => ({
             ...p,
             status: p.status as 'accepted' | 'declined' | 'tentative' | 'needs-action'
@@ -729,19 +768,26 @@ export function useCreateAppointment() {
           comment: appointmentData.notes,
         };
         
-        const createdAppointment = await medplumClient.createResource(medplumAppointment);
+        const createdAppointment = await backendFHIRService.createAppointment(medplumAppointment);
         
         const result: Appointment = {
           ...appointmentData,
           id: createdAppointment.id,
           patientId: patientId,
           providerId: providerId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          diagnosis: null,
+          prescription: null,
+          followUpRequired: false,
+          start: appointmentData.start || appointmentData.date.toISOString(),
+          end: appointmentData.end || new Date(appointmentData.date.getTime() + (appointmentData.duration || 30) * 60000).toISOString(),
         };
         
-        console.log('Successfully created appointment in Medplum');
+        console.log('Successfully created appointment in backend FHIR service');
         return result;
       } catch (error) {
-        console.log('Failed to create appointment in Medplum, using mock creation:', error);
+        console.log('Failed to create appointment in backend FHIR service, using mock creation:', error);
         
         // Fallback to mock creation
         const newAppointment: Appointment = {
@@ -749,6 +795,13 @@ export function useCreateAppointment() {
           id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           patientId: appointmentData.patientId || `patient-${Date.now()}`,
           providerId: appointmentData.providerId || `provider-${Date.now()}`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          diagnosis: null,
+          prescription: null,
+          followUpRequired: false,
+          start: appointmentData.start || appointmentData.date.toISOString(),
+          end: appointmentData.end || new Date(appointmentData.date.getTime() + (appointmentData.duration || 30) * 60000).toISOString(),
         };
         return newAppointment;
       }
@@ -781,11 +834,11 @@ export function useCreateOrder() {
       let patientId = orderData.patientId;
       if (!patientId && orderData.patientName) {
         try {
-          const patients = await medplumClient.searchResources('Patient', {
+          const { data: patients } = await backendFHIRService.searchPatients({
             name: orderData.patientName,
-          });
-          if (patients.length > 0) {
-            patientId = patients[0].id;
+          } as any); // Cast to any to match SearchParams type
+          if ((patients?.length ?? 0) > 0) {
+            patientId = patients![0].id;
           } else {
             patientId = `patient-${Date.now()}`;
           }
@@ -806,7 +859,7 @@ export function useCreateOrder() {
           subject: {
             reference: `Patient/${patientId}`,
             display: orderData.patientName || 'Unknown Patient',
-          },
+          }, // Ensure subject is correctly set
           code: {
             text: orderData.description,
             coding: [
@@ -820,7 +873,7 @@ export function useCreateOrder() {
           category: orderData.category ? [
             {
               coding: [
-                {
+                { // Ensure category coding is correct
                   system: 'http://snomed.info/sct',
                   code: orderData.category === 'laboratory' ? '108252007' : '363679005',
                   display: orderData.category === 'laboratory' ? 'Laboratory procedure' : 'Imaging',
@@ -830,7 +883,7 @@ export function useCreateOrder() {
           ] : undefined,
           requester: orderData.requesterName ? {
             display: orderData.requesterName,
-          } : undefined,
+          } : undefined, // Ensure requester is set
           note: orderData.notes ? [
             {
               text: orderData.notes,
@@ -848,7 +901,7 @@ export function useCreateOrder() {
           subject: {
             reference: `Patient/${patientId}`,
             display: orderData.patientName || 'Unknown Patient',
-          },
+          }, // Ensure subject is correctly set
           medicationCodeableConcept: {
             text: orderData.description,
             coding: [
@@ -861,7 +914,7 @@ export function useCreateOrder() {
           },
           requester: orderData.requesterName ? {
             display: orderData.requesterName,
-          } : undefined,
+          } : undefined, // Ensure requester is set
           note: orderData.notes ? [
             {
               text: orderData.notes,
@@ -876,9 +929,11 @@ export function useCreateOrder() {
         };
       }
       
-      const createdOrder = await medplumClient.createResource(medplumOrder as any);
+      const createdOrder = orderData.orderType === 'ServiceRequest' 
+          ? await backendFHIRService.createResource('ServiceRequest', medplumOrder)
+          : await backendFHIRService.createResource('MedicationRequest', medplumOrder);
       
-      console.log('Successfully created order in Medplum:', createdOrder);
+      console.log('Successfully created order in backend FHIR service:', createdOrder);
       return createdOrder;
     },
     onSuccess: () => {
@@ -907,14 +962,10 @@ export function useCoverage(searchQuery?: string | {
     queryKey: ['coverage', searchQuery],
     queryFn: async () => {
       try {
-        console.log('Fetching coverage from Medplum...');
+        console.log('Fetching coverage from backend FHIR service...');
         
         // Build search parameters
-        const searchParams: any = {
-          _sort: '-_lastUpdated',
-          _count: '50',
-          _include: 'Coverage:beneficiary,Coverage:payor'
-        };
+        const searchParams: Record<string, string> = {};
 
         // Handle search query
         if (typeof searchQuery === 'string' && searchQuery.trim()) {
@@ -936,16 +987,16 @@ export function useCoverage(searchQuery?: string | {
           }
         }
 
-        const response = await medplumClient.searchResources('Coverage', searchParams);
-        console.log(`Successfully fetched ${response.length} coverage records from Medplum`);
+        const { data, total }: SearchResult<any> = await backendFHIRService.searchResources('Coverage', searchParams);
+        console.log(`Successfully fetched ${total} coverage records from backend FHIR service`);
         
         // Transform FHIR Coverage resources to our format
-        let coverageList = response.map((coverage: any) => ({
+        let coverageList = (data ?? []).map((coverage: any) => ({
           id: coverage.id,
           resourceType: coverage.resourceType,
           status: coverage.status,
           beneficiary: coverage.beneficiary,
-          payor: coverage.payor,
+          payor: coverage.payor, // Ensure payor is correctly mapped
           period: coverage.period,
           class: coverage.class,
           network: coverage.network,
@@ -954,7 +1005,7 @@ export function useCoverage(searchQuery?: string | {
           contract: coverage.contract,
           meta: coverage.meta,
           // Additional fields for UI compatibility
-          patientName: coverage.beneficiary?.display || 'Unknown Patient',
+          patientName: coverage.beneficiary?.display || 'Unknown Patient', // Ensure patientName is correctly mapped
           payorName: coverage.payor?.[0]?.display || 'Unknown Payor',
           createdAt: new Date(coverage.meta?.lastUpdated || Date.now()),
           updatedAt: new Date(coverage.meta?.lastUpdated || Date.now()),
@@ -1018,7 +1069,7 @@ export function useCoverage(searchQuery?: string | {
         
         return coverageList;
       } catch (error) {
-        console.log('Failed to fetch coverage from Medplum, using mock data:', error);
+        console.log('Failed to fetch coverage from backend FHIR service, using mock data:', error);
         
         // Mock coverage data for fallback (only for connection errors, not auth errors)
         if (error instanceof Error && (
@@ -1163,12 +1214,12 @@ export function useCreateProduct() {
           } : undefined,
         };
         
-        const createdMedication = await medplumClient.createResource(medplumMedication);
+        const createdMedication = await backendFHIRService.createResource('Medication', medplumMedication);
         
-        console.log('Successfully created medication in Medplum');
+        console.log('Successfully created medication in backend FHIR service');
         return createdMedication;
       } catch (error) {
-        console.log('Failed to create medication in Medplum, using mock creation:', error);
+        console.log('Failed to create medication in backend FHIR service, using mock creation:', error);
         
         // Fallback to mock creation
         const mockMedication = {
@@ -1225,25 +1276,25 @@ export function useProducts(searchQuery?: string | {
     queryKey: ['products', queryString, statusFilter, sortBy, sortOrder],
     queryFn: async () => {
       try {
-        console.log('Fetching medications/products from Medplum...');
+        console.log('Fetching medications/products from backend FHIR service...');
         
-        // Build search parameters
-        const searchParams = new URLSearchParams({
-          '_sort': '-_lastUpdated',
-          '_count': '50'
-        });
+        // Build search parameters (object form)
+        const searchParams: Record<string, string> = {
+          _sort: '-_lastUpdated',
+          _count: '50'
+        };
         
         if (queryString) {
-          searchParams.append('code:text', queryString);
+          searchParams['code:text'] = queryString;
         }
         
         if (statusFilter && statusFilter !== 'all') {
-          searchParams.append('status', statusFilter);
+          searchParams.status = statusFilter;
         }
+
+        const { data }: SearchResult<any> = await backendFHIRService.searchResources('Medication', searchParams);
         
-        const medications = await medplumClient.searchResources('Medication', searchParams);
-        
-        const result = medications.map((medication: any) => ({
+        const result = (data ?? []).map((medication: any) => ({
           id: medication.id,
           name: medication.code?.text || medication.code?.coding?.[0]?.display || 'Unknown Medication',
           description: medication.code?.text || medication.code?.coding?.[0]?.display || '',
@@ -1260,10 +1311,10 @@ export function useProducts(searchQuery?: string | {
           updatedAt: new Date(medication.meta?.lastUpdated || Date.now()),
         }));
         
-        console.log(`Successfully fetched ${result.length} medications/products from Medplum`);
+        console.log(`Successfully fetched ${result.length} medications/products from backend FHIR service`);
         return result;
       } catch (error) {
-        console.error('Failed to fetch medications/products from Medplum:', error);
+        console.error('Failed to fetch medications/products from backend FHIR service:', error);
         console.log('Using mock product data as fallback');
         
         // Fallback mock data
@@ -1361,8 +1412,8 @@ export function useSystemMetadata() {
     queryKey: ['systemMetadata'],
     queryFn: async () => {
       try {
-        console.log('Fetching FHIR system metadata...');
-        const metadata = await medplumClient.get('metadata');
+        console.log('Fetching FHIR system metadata from backend...');
+        const metadata = await backendFHIRService.getMetadata();
         console.log('Successfully fetched FHIR metadata:', metadata);
         return metadata;
       } catch (err) {
@@ -1419,7 +1470,7 @@ export function useCommunications(params?: {
     queryKey: ['communications', params],
     queryFn: async () => {
       try {
-        console.log('Fetching FHIR Communications from Medplum...');
+        console.log('Fetching FHIR Communications from backend FHIR service...');
         
         // Build search parameters
         const searchParams: Record<string, string> = {
@@ -1443,21 +1494,13 @@ export function useCommunications(params?: {
           searchParams.category = params.category;
         }
 
-        const response = await medplumClient.search('Communication', searchParams);
-        
-        if (response.entry) {
-          const communications = response.entry
-            .filter(entry => entry.resource?.resourceType === 'Communication')
-            .map(entry => entry.resource);
-          
-          console.log(`✅ Fetched ${communications.length} FHIR Communications`);
-          return communications;
-        }
-        
-        return [];
+        const { data }: SearchResult<any> = await backendFHIRService.searchResources('Communication', searchParams);
+        const communications = (data ?? []).filter((c: any) => c?.resourceType === 'Communication');
+        console.log(`✅ Fetched ${communications.length} FHIR Communications from backend`);
+        return communications;
       } catch (error) {
         console.error('❌ Failed to fetch FHIR Communications:', error);
-        console.log('Using mock communications data (Medplum server not available)');
+        console.log('Using mock communications data (backend FHIR service not available)');
         
         // Mock FHIR Communication resources
         const mockCommunications = [
@@ -1652,7 +1695,7 @@ export function useCreateCommunication() {
       senderId?: string;
     }) => {
       try {
-        console.log('Creating FHIR Communication in Medplum...');
+        console.log('Creating FHIR Communication in backend FHIR service...');
         
         // Create FHIR Communication resource
         const communication = {
@@ -1692,8 +1735,8 @@ export function useCreateCommunication() {
           priority: communicationData.priority || 'routine'
         };
 
-        const created = await medplumClient.createResource(communication);
-        console.log('✅ FHIR Communication created successfully:', created.id);
+        const created = await backendFHIRService.createResource('Communication', communication);
+        console.log('✅ FHIR Communication created successfully in backend:', created.id);
         return created;
       } catch (error) {
         console.error('❌ Failed to create FHIR Communication:', error);
@@ -1737,7 +1780,7 @@ export function useCreateCommunication() {
           priority: communicationData.priority || 'routine'
         };
 
-        console.log('✅ Mock FHIR Communication created (Medplum server not available)');
+        console.log('✅ Mock FHIR Communication created (backend FHIR service not available)');
         return mockCreated;
       }
     },
@@ -1765,10 +1808,10 @@ export function useInvoices(searchQuery?: string | {
     queryKey: ['invoices', searchQuery],
     queryFn: async () => {
       try {
-        console.log('Fetching invoices from Medplum...');
+        console.log('Fetching invoices from backend FHIR service...');
         
         // Build search parameters
-        const searchParams: any = {
+        const searchParams: Record<string, string> = {
           _sort: '-_lastUpdated',
           _count: '50',
           _include: 'Invoice:subject,Invoice:issuer'
@@ -1792,11 +1835,11 @@ export function useInvoices(searchQuery?: string | {
           }
         }
 
-        const response = await medplumClient.searchResources('Invoice', searchParams);
-        console.log(`Successfully fetched ${response.length} invoices from Medplum`);
+        const { data, total }: SearchResult<any> = await backendFHIRService.searchResources('Invoice', searchParams);
+        console.log(`Successfully fetched ${total} invoices from backend FHIR service`);
         
         // Transform FHIR Invoice resources to our format
-        let invoiceList = response.map((invoice: any) => ({
+        let invoiceList = (data ?? []).map((invoice: any) => ({
           id: invoice.id,
           resourceType: invoice.resourceType,
           status: invoice.status,
@@ -1876,7 +1919,7 @@ export function useInvoices(searchQuery?: string | {
 
         return invoiceList;
       } catch (error) {
-        console.log('Failed to fetch invoices from Medplum, using mock data:', error);
+        console.log('Failed to fetch invoices from backend FHIR service, using mock data:', error);
         
         // Mock FHIR Invoice data for fallback
         const mockInvoices = [
@@ -2174,7 +2217,7 @@ export function useCreateInvoice() {
       notes?: string;
     }) => {
       try {
-        console.log('Creating invoice in Medplum...', invoiceData);
+        console.log('Creating invoice in backend FHIR service...', invoiceData);
 
         // Calculate totals
         const totalNet = invoiceData.lineItems?.reduce((sum, item) => sum + item.total, 0) || invoiceData.amount;
@@ -2269,11 +2312,11 @@ export function useCreateInvoice() {
           });
         }
 
-        const createdInvoice = await medplumClient.createResource(fhirInvoice);
-        console.log('✅ Invoice created successfully in Medplum:', createdInvoice.id);
+        const createdInvoice = await backendFHIRService.createResource('Invoice', fhirInvoice);
+        console.log('✅ Invoice created successfully in backend FHIR service:', createdInvoice.id);
         return createdInvoice;
       } catch (error) {
-        console.error('Failed to create invoice in Medplum:', error);
+        console.error('Failed to create invoice in backend FHIR service:', error);
         
         // Fallback to mock creation
         const mockInvoice = {
@@ -2333,7 +2376,7 @@ export function useCreateInvoice() {
           }
         };
 
-        console.log('✅ Mock FHIR Invoice created (Medplum server not available)');
+        console.log('✅ Mock FHIR Invoice created (backend FHIR service not available)');
         return mockInvoice;
       }
     },

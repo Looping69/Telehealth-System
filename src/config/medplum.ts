@@ -26,69 +26,15 @@ export const medplumClient = createMedplumClient();
  * Initialize authentication for the Medplum client
  * This should be called when the app starts or when user logs in
  */
+/**
+ * initializeMedplumAuth
+ * Purpose: Stubbed in dev to avoid direct Medplum calls that trigger CORS.
+ * Inputs: none
+ * Outputs: boolean indicating initialization (always false in stub)
+ */
 export const initializeMedplumAuth = async (): Promise<boolean> => {
-  try {
-    // Check if we have stored credentials
-    const storedToken = localStorage.getItem('medplum_access_token');
-    
-    if (storedToken) {
-      medplumClient.setAccessToken(storedToken);
-      
-      // Verify the token is still valid by making a test request
-      try {
-        await medplumClient.get('metadata');
-        console.log('Medplum authentication successful with stored token');
-        return true;
-      } catch (error) {
-        // Token is invalid, remove it
-        localStorage.removeItem('medplum_access_token');
-        console.warn('Stored Medplum token is invalid, removed from storage');
-      }
-    }
-    
-    // Try OAuth2 client credentials flow for authentication
-    try {
-      console.log('Attempting OAuth2 client credentials authentication...');
-      
-      // Use the Medplum client's built-in authentication method
-      const authResult = await medplumClient.startClientLogin(
-        medplumConfig.clientId,
-        medplumConfig.clientSecret || ''
-      );
-      
-      if (authResult) {
-        console.log('Medplum OAuth2 authentication successful');
-        // Store the access token for future use
-        const profile = await medplumClient.getProfile();
-        if (profile) {
-          localStorage.setItem('medplum_access_token', medplumClient.getAccessToken() || '');
-          return true;
-        }
-      }
-    } catch (oauthError) {
-      console.warn('OAuth2 authentication error:', oauthError);
-    }
-    
-    // Fallback: Test if we can access FHIR endpoints without authentication (development mode)
-    console.log('Trying development mode without authentication...');
-    try {
-      const response = await medplumClient.get('Patient?_summary=count');
-      
-      if (response) {
-        console.log('Medplum server accessible without authentication (development mode)');
-        return true;
-      } else {
-        console.warn('Medplum server requires authentication');
-      }
-    } catch (error) {
-      console.error('Error testing FHIR endpoint:', error);
-    }
-    
-    return false;
-  } catch (error) {
-    console.error('Error initializing Medplum authentication:', error);
-    return false;
-  }
+  console.warn('initializeMedplumAuth is disabled in development; using backend FHIR gateway.');
+  return false;
 };
 
 /**

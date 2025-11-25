@@ -58,7 +58,8 @@ import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { Coverage, Reference, CodeableConcept, Period, Identifier } from '@medplum/fhirtypes';
 import { useCoverage } from '../../hooks/useQuery';
-import { medplumClient } from '../../config/medplum';
+import { backendFHIRService } from '../../services/backendFHIRService';
+
 import { useForm } from '@mantine/form';
 
 /**
@@ -1507,8 +1508,8 @@ const InsuranceMedplumPage: React.FC = () => {
     try {
       console.log('Creating new FHIR Coverage resource:', coverage);
       
-      // Create the Coverage resource using Medplum client
-      const createdCoverage = await medplumClient.createResource(coverage as Coverage);
+      // Create the Coverage resource using backend FHIR service
+      const createdCoverage = await backendFHIRService.createResource('Coverage', coverage as Coverage);
       
       console.log('Successfully created Coverage resource:', createdCoverage);
       

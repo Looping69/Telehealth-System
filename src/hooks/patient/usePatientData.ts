@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { medplum } from '@/lib/medplum';
+import { backendFHIRService } from '@/services/backendFHIRService';
 import { Patient, Observation, MedicationRequest, Communication, Appointment } from '@medplum/fhirtypes';
 import { useAuthStore } from '@/store/authStore';
 
@@ -19,6 +19,12 @@ import { useAuthStore } from '@/store/authStore';
  */
 
 // Patient Profile Hook
+/**
+ * usePatientProfile
+ * Purpose: Fetch the authenticated patient's profile via backend FHIR gateway.
+ * Inputs: Patient ID from auth store (derived from logged-in user).
+ * Outputs: FHIR Patient resource or null when not found.
+ */
 export const usePatientProfile = () => {
   const { user } = useAuthStore();
   
@@ -28,13 +34,13 @@ export const usePatientProfile = () => {
       if (!user?.id) return null;
       
       try {
-        // Search for patient by user ID or email
-        const searchResult = await medplum.searchResources('Patient', {
+        // Search patient via backend FHIR gateway
+        const result = await backendFHIRService.searchResources('Patient', {
           identifier: user.id,
           _count: 1
         });
-        
-        return searchResult.length > 0 ? searchResult[0] : null;
+        const patients = result?.data ?? [];
+        return patients.length > 0 ? (patients[0] as Patient) : null;
       } catch (error) {
         console.error('Error fetching patient profile:', error);
         throw error;
@@ -46,6 +52,12 @@ export const usePatientProfile = () => {
 };
 
 // Patient Observations Hook (Weight, Vitals, etc.)
+/**
+ * usePatientObservations
+ * Purpose: Retrieve patient observations (optionally filtered by category).
+ * Inputs: Optional `category` string; uses patient ID from auth store.
+ * Outputs: Array of FHIR Observation resources.
+ */
 export const usePatientObservations = (category?: string) => {
   const { user } = useAuthStore();
   
@@ -64,9 +76,9 @@ export const usePatientObservations = (category?: string) => {
         if (category) {
           searchParams.category = category;
         }
-        
-        const observations = await medplum.searchResources('Observation', searchParams);
-        return observations;
+        // Fetch observations through backend FHIR gateway
+        const result = await backendFHIRService.searchResources('Observation', searchParams);
+        return (result?.data as Observation[]) ?? [];
       } catch (error) {
         console.error('Error fetching patient observations:', error);
         return [];
@@ -78,6 +90,12 @@ export const usePatientObservations = (category?: string) => {
 };
 
 // Weight Tracking Hook
+/**
+ * useWeightTracking
+ * Purpose: Retrieve recent body weight observations for the patient.
+ * Inputs: None; uses patient ID from auth store.
+ * Outputs: Array of FHIR Observation resources (weight entries).
+ */
 export const useWeightTracking = () => {
   const { user } = useAuthStore();
   
@@ -87,14 +105,13 @@ export const useWeightTracking = () => {
       if (!user?.id) return [];
       
       try {
-        const weightObservations = await medplum.searchResources('Observation', {
+        const result = await backendFHIRService.searchResources('Observation', {
           subject: `Patient/${user.id}`,
           code: '29463-7', // LOINC code for body weight
           _sort: '-date',
           _count: 30
         });
-        
-        return weightObservations;
+        return (result?.data as Observation[]) ?? [];
       } catch (error) {
         console.error('Error fetching weight data:', error);
         return [];
@@ -106,6 +123,12 @@ export const useWeightTracking = () => {
 };
 
 // Medication Requests Hook
+/**
+ * usePatientMedications
+ * Purpose: Retrieve recent medication requests for the patient.
+ * Inputs: None; uses patient ID from auth store.
+ * Outputs: Array of FHIR MedicationRequest resources.
+ */
 export const usePatientMedications = () => {
   const { user } = useAuthStore();
   
@@ -115,13 +138,13 @@ export const usePatientMedications = () => {
       if (!user?.id) return [];
       
       try {
-        const medications = await medplum.searchResources('MedicationRequest', {
+        // Use generic resource search for MedicationRequest via backend
+        const result = await backendFHIRService.searchResources('MedicationRequest', {
           subject: `Patient/${user.id}`,
           _sort: '-authored-on',
           _count: 20
         });
-        
-        return medications;
+        return (result?.data as MedicationRequest[]) ?? [];
       } catch (error) {
         console.error('Error fetching patient medications:', error);
         return [];
@@ -133,6 +156,12 @@ export const usePatientMedications = () => {
 };
 
 // Patient Communications Hook
+/**
+ * usePatientCommunications
+ * Purpose: Retrieve recent communications for the patient.
+ * Inputs: None; uses patient ID from auth store.
+ * Outputs: Array of FHIR Communication resources.
+ */
 export const usePatientCommunications = () => {
   const { user } = useAuthStore();
   
@@ -142,13 +171,12 @@ export const usePatientCommunications = () => {
       if (!user?.id) return [];
       
       try {
-        const communications = await medplum.searchResources('Communication', {
+        const result = await backendFHIRService.searchResources('Communication', {
           subject: `Patient/${user.id}`,
           _sort: '-sent',
           _count: 50
         });
-        
-        return communications;
+        return (result?.data as Communication[]) ?? [];
       } catch (error) {
         console.error('Error fetching patient communications:', error);
         return [];
@@ -160,6 +188,12 @@ export const usePatientCommunications = () => {
 };
 
 // Patient Appointments Hook
+/**
+ * usePatientAppointments
+ * Purpose: Retrieve upcoming appointments for the patient.
+ * Inputs: None; uses patient ID from auth store.
+ * Outputs: Array of FHIR Appointment resources.
+ */
 export const usePatientAppointments = () => {
   const { user } = useAuthStore();
   
@@ -169,13 +203,12 @@ export const usePatientAppointments = () => {
       if (!user?.id) return [];
       
       try {
-        const appointments = await medplum.searchResources('Appointment', {
+        const result = await backendFHIRService.searchResources('Appointment', {
           actor: `Patient/${user.id}`,
           _sort: 'date',
           _count: 20
         });
-        
-        return appointments;
+        return (result?.data as Appointment[]) ?? [];
       } catch (error) {
         console.error('Error fetching patient appointments:', error);
         return [];
@@ -187,6 +220,12 @@ export const usePatientAppointments = () => {
 };
 
 // Create Observation Mutation
+/**
+ * useCreateObservation
+ * Purpose: Create a new Observation for the patient via backend FHIR.
+ * Inputs: Partial Observation payload (e.g., code, value, effectiveDateTime).
+ * Outputs: Created FHIR Observation resource.
+ */
 export const useCreateObservation = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -214,7 +253,9 @@ export const useCreateObservation = () => {
         ...observationData
       };
       
-      return await medplum.createResource(observation);
+      // Create observation via backend FHIR gateway
+      const created = await backendFHIRService.createResource('Observation', observation);
+      return created as Observation;
     },
     onSuccess: () => {
       // Invalidate related queries
@@ -228,6 +269,12 @@ export const useCreateObservation = () => {
 };
 
 // Create Communication Mutation
+/**
+ * useCreateCommunication
+ * Purpose: Create a new Communication for the patient via backend FHIR.
+ * Inputs: Partial Communication payload (e.g., payload content, sent time).
+ * Outputs: Created FHIR Communication resource.
+ */
 export const useCreateCommunication = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -246,7 +293,9 @@ export const useCreateCommunication = () => {
         ...communicationData
       };
       
-      return await medplum.createResource(communication);
+      // Create communication via backend FHIR gateway
+      const created = await backendFHIRService.createResource('Communication', communication);
+      return created as Communication;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patient-communications', user?.id] });
@@ -258,6 +307,12 @@ export const useCreateCommunication = () => {
 };
 
 // Update Patient Profile Mutation
+/**
+ * useUpdatePatientProfile
+ * Purpose: Update the authenticated patient's profile via backend FHIR.
+ * Inputs: Partial Patient payload with fields to update.
+ * Outputs: Updated FHIR Patient resource.
+ */
 export const useUpdatePatientProfile = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -266,10 +321,12 @@ export const useUpdatePatientProfile = () => {
     mutationFn: async (patientData: Partial<Patient>): Promise<Patient> => {
       if (!user?.id) throw new Error('User not authenticated');
       
-      // First get the current patient resource
-      const currentPatient = await medplum.searchOne('Patient', {
-        identifier: user.id
+      // First get the current patient resource via backend
+      const search = await backendFHIRService.searchResources('Patient', {
+        identifier: user.id,
+        _count: 1
       });
+      const currentPatient = (search?.data ?? [])[0] as Patient | undefined;
       
       if (!currentPatient) {
         throw new Error('Patient profile not found');
@@ -280,7 +337,9 @@ export const useUpdatePatientProfile = () => {
         ...patientData
       };
       
-      return await medplum.updateResource(updatedPatient);
+      // Update patient via backend FHIR gateway
+      const updated = await backendFHIRService.updateResource('Patient', currentPatient.id as string, updatedPatient);
+      return updated as Patient;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patient-profile', user?.id] });
@@ -292,6 +351,12 @@ export const useUpdatePatientProfile = () => {
 };
 
 // Create Appointment Request Mutation
+/**
+ * useCreateAppointmentRequest
+ * Purpose: Create a proposed Appointment for the patient via backend FHIR.
+ * Inputs: Partial Appointment payload (e.g., description, start time).
+ * Outputs: Created FHIR Appointment resource.
+ */
 export const useCreateAppointmentRequest = () => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -314,7 +379,9 @@ export const useCreateAppointmentRequest = () => {
         ...appointmentData
       };
       
-      return await medplum.createResource(appointment);
+      // Create appointment via backend FHIR gateway
+      const created = await backendFHIRService.createResource('Appointment', appointment);
+      return created as Appointment;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patient-appointments', user?.id] });

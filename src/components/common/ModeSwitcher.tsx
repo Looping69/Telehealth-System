@@ -9,7 +9,10 @@ import { Database, TestTube } from 'lucide-react';
 import { useMode } from '../../contexts/ModeContext';
 
 interface ModeSwitcherProps {
-  size?: 'sm' | 'md' | 'lg';
+  // Control the visual size of labels; supports Mantine text sizes
+  // Inputs: 'xs' | 'sm' | 'md' | 'lg'
+  // Output: Adjusted typography and spacing
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   showLabel?: boolean;
   variant?: 'default' | 'compact';
 }

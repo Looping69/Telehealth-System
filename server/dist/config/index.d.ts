@@ -13,6 +13,7 @@ export declare const config: {
         clientId: string;
         clientSecret: string;
         token: string;
+        useMock: boolean;
     };
     email: {
         host: string;

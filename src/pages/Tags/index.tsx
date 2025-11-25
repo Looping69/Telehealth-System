@@ -505,6 +505,9 @@ const TagUsageModal: React.FC<TagUsageModalProps> = ({ tag, opened, onClose }) =
 
 /**
  * Main Tags Page Component
+ * Purpose: Manage tags UI and interactions. Fix Mantine Text type errors by using `ta` for text alignment.
+ * Inputs: None (internal state and mock data used).
+ * Outputs: Renders the Tags management page with summary cards, filters, and tag lists.
  */
 export const TagsPage: React.FC = () => {
   // State management
@@ -900,7 +903,8 @@ export const TagsPage: React.FC = () => {
               <Text fw={700} size="xl" c="green" className="summary-card-metric">
                 {activeTags}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 Currently in use
               </Text>
             </Card>
@@ -918,7 +922,8 @@ export const TagsPage: React.FC = () => {
               <Text fw={700} size="xl" c="blue" className="summary-card-metric">
                 {totalUsage.toLocaleString()}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 Times applied
               </Text>
             </Card>
@@ -936,7 +941,8 @@ export const TagsPage: React.FC = () => {
               <Text fw={700} size="xl" c="orange" className="summary-card-metric">
                 {categories}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 Different types
               </Text>
             </Card>
@@ -954,7 +960,8 @@ export const TagsPage: React.FC = () => {
               <Text fw={700} size="xl" c="indigo" className="summary-card-metric">
                 {avgUsage}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 Per tag
               </Text>
             </Card>

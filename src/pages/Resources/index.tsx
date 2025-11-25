@@ -1030,6 +1030,9 @@ const ResourceFormModal: React.FC<ResourceFormModalProps> = ({ resource, opened,
 
 /**
  * Main Resources Page Component
+ * Purpose: Manage resources UI and interactions. Fix Mantine Text type errors by using `ta` for text alignment.
+ * Inputs: None (local state and mock data).
+ * Outputs: Renders the Resources management page including summary metrics, filters, tables, and modals.
  */
 export const ResourcesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -1305,7 +1308,8 @@ export const ResourcesPage: React.FC = () => {
               <Text fw={700} size="xl" c="blue" className="summary-card-metric">
                 {totalResources}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 In library
               </Text>
             </Card>
@@ -1323,7 +1327,8 @@ export const ResourcesPage: React.FC = () => {
               <Text fw={700} size="xl" c="green" className="summary-card-metric">
                 {publicResources}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 Available to patients
               </Text>
             </Card>
@@ -1341,7 +1346,8 @@ export const ResourcesPage: React.FC = () => {
               <Text fw={700} size="xl" c="orange" className="summary-card-metric">
                 {totalViews.toLocaleString()}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 Page views
               </Text>
             </Card>
@@ -1359,7 +1365,8 @@ export const ResourcesPage: React.FC = () => {
               <Text fw={700} size="xl" c="purple" className="summary-card-metric">
                 {totalDownloads.toLocaleString()}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 File downloads
               </Text>
             </Card>

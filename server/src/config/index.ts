@@ -31,7 +31,7 @@ const getEnvVar = (envVar: string, defaultValue?: string): string => {
 export const config = {
   // Server configuration
   nodeEnv: getEnvVar('NODE_ENV', 'development'),
-  port: parseInt(getEnvVar('PORT', '3001'), 10),
+  port: parseInt(getEnvVar('PORT', '3000'), 10),
   apiVersion: getEnvVar('API_VERSION', 'v1'),
 
   // Note: Database functionality handled by Medplum hosted service
@@ -49,7 +49,9 @@ export const config = {
     baseUrl: getEnvVar('MEDPLUM_BASE_URL', 'https://api.medplum.com'),
     clientId: process.env['MEDPLUM_CLIENT_ID'] || '',
     clientSecret: process.env['MEDPLUM_CLIENT_SECRET'] || '',
-    token: process.env['MEDPLUM_TOKEN'] || ''
+    token: process.env['MEDPLUM_TOKEN'] || '',
+    // Enable mock data mode for development when credentials are missing
+    useMock: getEnvVar('MEDPLUM_USE_MOCK', 'false') === 'true'
   },
 
   // Email configuration

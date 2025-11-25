@@ -11,7 +11,7 @@ const getEnvVar = (envVar, defaultValue) => {
 };
 export const config = {
     nodeEnv: getEnvVar('NODE_ENV', 'development'),
-    port: parseInt(getEnvVar('PORT', '3001'), 10),
+    port: parseInt(getEnvVar('PORT', '3000'), 10),
     apiVersion: getEnvVar('API_VERSION', 'v1'),
     jwt: {
         secret: getEnvVar('JWT_SECRET'),
@@ -23,7 +23,8 @@ export const config = {
         baseUrl: getEnvVar('MEDPLUM_BASE_URL', 'https://api.medplum.com'),
         clientId: process.env['MEDPLUM_CLIENT_ID'] || '',
         clientSecret: process.env['MEDPLUM_CLIENT_SECRET'] || '',
-        token: process.env['MEDPLUM_TOKEN'] || ''
+        token: process.env['MEDPLUM_TOKEN'] || '',
+        useMock: getEnvVar('MEDPLUM_USE_MOCK', 'false') === 'true'
     },
     email: {
         host: getEnvVar('SMTP_HOST', 'smtp.gmail.com'),

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authRoutes from './auth.js';
+import fhirRoutes from './fhir.js';
 const router = Router();
 router.get('/health', (_req, res) => {
     res.json({
@@ -11,6 +12,7 @@ router.get('/health', (_req, res) => {
     });
 });
 router.use('/auth', authRoutes);
+router.use('/fhir', fhirRoutes);
 router.get('/services', (_req, res) => {
     res.json({
         success: true,

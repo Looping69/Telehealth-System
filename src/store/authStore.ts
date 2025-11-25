@@ -71,11 +71,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   error: null,
   medplumClient: null,
 
+  /**
+   * initializeMedplum
+   * Purpose: Restore user session from localStorage and ensure a dev auth token exists.
+   * Inputs: none
+   * Outputs: Populates store with user state; sets `authToken` for backend API calls.
+   */
   initializeMedplum: () => {
     // Medplum client initialization disabled to prevent loops
     // Using mock authentication only
     console.log('Medplum client initialization disabled - using mock authentication');
-    
+
     // Check for existing authentication
     const storedUser = localStorage.getItem('telehealth_user');
     if (storedUser) {
@@ -90,6 +96,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             error: null,
           });
           console.log('Restored user session:', user.name);
+
+          // Ensure a mock Authorization token exists for backend API calls
+          const existingToken = localStorage.getItem('authToken');
+          if (!existingToken) {
+            const mockToken = `mock-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+            localStorage.setItem('authToken', mockToken);
+            console.log('Created mock dev auth token for API access');
+          }
         } else {
           console.warn('Invalid stored user data, clearing localStorage');
           localStorage.removeItem('telehealth_user');
@@ -101,6 +115,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
+  /**
+   * login
+   * Purpose: Perform mock login for development and set a mock auth token.
+   * Inputs: `email` and `password` strings
+   * Outputs: Sets user state; stores `telehealth_user` and `authToken` in localStorage.
+   */
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
 
@@ -124,6 +144,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
         // Store user in localStorage for persistence
         localStorage.setItem('telehealth_user', JSON.stringify(user));
+        // Store a mock Authorization token for backend API calls
+        const mockToken = `mock-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+        localStorage.setItem('authToken', mockToken);
         
         set({
           user,
@@ -166,11 +189,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
+  /**
+   * logout
+   * Purpose: Clear user session and dev auth token, and sign out Medplum client if present.
+   * Inputs: none
+   * Outputs: Resets authentication state and localStorage.
+   */
   logout: () => {
     const { medplumClient } = get();
     
     // Clear stored user data
     localStorage.removeItem('telehealth_user');
+    localStorage.removeItem('authToken');
     
     // Sign out from Medplum if client exists
     if (medplumClient) {

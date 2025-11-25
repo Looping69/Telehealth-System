@@ -44,8 +44,9 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
-import { medplumClient } from '../../config/medplum';
+
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { backendFHIRService } from '../../services/backendFHIRService';
 
 /**
  * FHIR Form Builder Card Component
@@ -227,36 +228,18 @@ const FormBuilderMedplumPage: React.FC = () => {
         setError(null);
 
         // Fetch questionnaires
-        const questionnaireResponse = await medplumClient.search('Questionnaire', {
+        const questionnaireResponse = await backendFHIRService.searchResources('Questionnaire', {
           _sort: '-date',
           _count: '50'
         });
-
-        if (questionnaireResponse.entry) {
-          const questionnaireData = questionnaireResponse.entry
-            .filter(entry => entry.resource?.resourceType === 'Questionnaire')
-            .map(entry => entry.resource as Questionnaire);
-          
-          setQuestionnaires(questionnaireData);
-        } else {
-          setQuestionnaires([]);
-        }
+        setQuestionnaires((questionnaireResponse?.data ?? []) as Questionnaire[]);
 
         // Fetch questionnaire responses for analytics
-        const responseResponse = await medplumClient.search('QuestionnaireResponse', {
+        const responseResponse = await backendFHIRService.searchResources('QuestionnaireResponse', {
           _sort: '-authored',
           _count: '100'
         });
-
-        if (responseResponse.entry) {
-          const responseData = responseResponse.entry
-            .filter(entry => entry.resource?.resourceType === 'QuestionnaireResponse')
-            .map(entry => entry.resource as QuestionnaireResponse);
-          
-          setResponses(responseData);
-        } else {
-          setResponses([]);
-        }
+        setResponses((responseResponse?.data ?? []) as QuestionnaireResponse[]);
       } catch (err) {
         console.error('Error fetching FHIR data:', err);
         setError('Failed to fetch form builder data from FHIR server. Please check your connection.');

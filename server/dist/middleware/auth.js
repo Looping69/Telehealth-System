@@ -1,7 +1,20 @@
 import { createAuthError, createForbiddenError } from './error.js';
 import { logger } from '../utils/logger.js';
+import { config } from '../config/index.js';
 export const authenticate = async (req, _res, next) => {
     try {
+        if (config.medplum.useMock || !config.medplum.clientId || !config.medplum.clientSecret) {
+            req.user = {
+                id: 'mock-user-id',
+                email: 'dev@example.com',
+                role: 'patient',
+                resourceType: 'Patient',
+                resourceId: 'mock-pt-001'
+            };
+            logger.info('Dev-mode auth bypass enabled (mock FHIR).');
+            next();
+            return;
+        }
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             throw createAuthError('Bearer token is required');

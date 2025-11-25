@@ -51,7 +51,8 @@ import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import { MultiStepForm } from '../../components/forms/MultiStepForm';
 import { FormBuilder } from '../../components/forms/FormBuilder';
-import { medplumClient } from '../../config/medplum';
+import { backendFHIRService } from '../../services/backendFHIRService';
+
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 
 /**
@@ -208,36 +209,18 @@ const FormsMedplumPage: React.FC = () => {
         setError(null);
 
         // Fetch questionnaires
-        const questionnaireResponse = await medplumClient.search('Questionnaire', {
+        const questionnaireResponse = await backendFHIRService.searchResources('Questionnaire', {
           _sort: 'title',
           _count: '50'
         });
-
-        if (questionnaireResponse.entry) {
-          const questionnaireData = questionnaireResponse.entry
-            .filter(entry => entry.resource?.resourceType === 'Questionnaire')
-            .map(entry => entry.resource as Questionnaire);
-          
-          setQuestionnaires(questionnaireData);
-        } else {
-          setQuestionnaires([]);
-        }
+        setQuestionnaires((questionnaireResponse?.data ?? []) as Questionnaire[]);
 
         // Fetch questionnaire responses
-        const responseResponse = await medplumClient.search('QuestionnaireResponse', {
+        const responseResponse = await backendFHIRService.searchResources('QuestionnaireResponse', {
           _sort: '-authored',
           _count: '50'
         });
-
-        if (responseResponse.entry) {
-          const responseData = responseResponse.entry
-            .filter(entry => entry.resource?.resourceType === 'QuestionnaireResponse')
-            .map(entry => entry.resource as QuestionnaireResponse);
-          
-          setResponses(responseData);
-        } else {
-          setResponses([]);
-        }
+        setResponses((responseResponse?.data ?? []) as QuestionnaireResponse[]);
       } catch (err) {
         console.error('Error fetching FHIR data:', err);
         setError('Failed to fetch forms from FHIR server. Please check your connection.');
@@ -321,21 +304,15 @@ const FormsMedplumPage: React.FC = () => {
         date: new Date().toISOString(),
       };
       
-      const result = await medplumClient.createResource(duplicatedQuestionnaire);
+      const result = await backendFHIRService.createResource('Questionnaire', duplicatedQuestionnaire);
       
       // Refresh questionnaires list
-      const questionnaireResponse = await medplumClient.search('Questionnaire', {
-        _sort: 'title',
-        _count: '50'
-      });
+            const questionnaireResponse = await backendFHIRService.searchResources('Questionnaire', {
+              _sort: 'title',
+              _count: '50'
+            });
 
-      if (questionnaireResponse.entry) {
-        const questionnaireData = questionnaireResponse.entry
-          .filter(entry => entry.resource?.resourceType === 'Questionnaire')
-          .map(entry => entry.resource as Questionnaire);
-        
-        setQuestionnaires(questionnaireData);
-      }
+      setQuestionnaires((questionnaireResponse?.data ?? []) as Questionnaire[]);
       
       notifications.show({
         title: 'Questionnaire Duplicated',
@@ -373,21 +350,15 @@ const FormsMedplumPage: React.FC = () => {
         setLoading(true);
         try {
           if (questionnaire.id) {
-            await medplumClient.deleteResource('Questionnaire', questionnaire.id);
+            await backendFHIRService.deleteResource('Questionnaire', questionnaire.id!);
             
             // Refresh questionnaires list
-            const questionnaireResponse = await medplumClient.search('Questionnaire', {
+            const questionnaireResponse = await backendFHIRService.searchResources('Questionnaire', {
               _sort: 'title',
               _count: '50'
             });
 
-            if (questionnaireResponse.entry) {
-              const questionnaireData = questionnaireResponse.entry
-                .filter(entry => entry.resource?.resourceType === 'Questionnaire')
-                .map(entry => entry.resource as Questionnaire);
-              
-              setQuestionnaires(questionnaireData);
-            }
+            setQuestionnaires((questionnaireResponse?.data ?? []) as Questionnaire[]);
             
             notifications.show({
               title: 'Questionnaire Deleted',
@@ -947,7 +918,7 @@ const FormsMedplumPage: React.FC = () => {
                     }))
                   };
 
-                  await medplumClient.createResource(response as QuestionnaireResponse);
+                  await backendFHIRService.createResource('QuestionnaireResponse', response as QuestionnaireResponse);
                   
                   notifications.show({
                     title: 'Success',
@@ -958,8 +929,8 @@ const FormsMedplumPage: React.FC = () => {
                   
                   closeTake();
                   // Refresh responses
-                  const updatedResponses = await medplumClient.searchResources('QuestionnaireResponse');
-                  setResponses(updatedResponses);
+                  const updatedResponses = await backendFHIRService.searchResources('QuestionnaireResponse');
+                  setResponses((updatedResponses?.data ?? []) as QuestionnaireResponse[]);
                 } catch (error) {
                   console.error('Error submitting questionnaire response:', error);
                   notifications.show({
@@ -1133,10 +1104,7 @@ const FormsMedplumPage: React.FC = () => {
 
                 if (selectedQuestionnaire?.id) {
                   // Update existing questionnaire
-                  await medplumClient.updateResource({
-                    ...questionnaire,
-                    id: selectedQuestionnaire.id
-                  } as Questionnaire);
+                  await backendFHIRService.updateResource('Questionnaire', selectedQuestionnaire.id, questionnaire as Questionnaire);
                   notifications.show({
                     title: 'Success',
                     message: 'Questionnaire updated successfully',
@@ -1145,7 +1113,7 @@ const FormsMedplumPage: React.FC = () => {
                   });
                 } else {
                   // Create new questionnaire
-                  await medplumClient.createResource(questionnaire as Questionnaire);
+                  await backendFHIRService.createResource('Questionnaire', questionnaire as Questionnaire);
                   notifications.show({
                     title: 'Success',
                     message: 'Questionnaire created successfully',
@@ -1157,18 +1125,12 @@ const FormsMedplumPage: React.FC = () => {
                 setFormBuilderOpened(false);
                 setSelectedQuestionnaire(null);
                 // Refresh questionnaires
-                const questionnaireResponse = await medplumClient.search('Questionnaire', {
+                const questionnaireResponse = await backendFHIRService.searchResources('Questionnaire', {
                   _sort: 'title',
                   _count: '50'
                 });
 
-                if (questionnaireResponse.entry) {
-                  const questionnaireData = questionnaireResponse.entry
-                    .filter(entry => entry.resource?.resourceType === 'Questionnaire')
-                    .map(entry => entry.resource as Questionnaire);
-                  
-                  setQuestionnaires(questionnaireData);
-                }
+                setQuestionnaires((questionnaireResponse?.data ?? []) as Questionnaire[]);
               } catch (error) {
                 console.error('Error saving questionnaire:', error);
                 notifications.show({

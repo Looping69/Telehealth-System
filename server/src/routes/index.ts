@@ -5,6 +5,7 @@
 
 import { Router } from 'express';
 import authRoutes from './auth.js';
+import fhirRoutes from './fhir.js';
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.get('/health', (_req, res) => {
 
 // Register microservice routes
 router.use('/auth', authRoutes);
+router.use('/fhir', fhirRoutes);
 
 // Placeholder for future microservices
 router.get('/services', (_req, res) => {

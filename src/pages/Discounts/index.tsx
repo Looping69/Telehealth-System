@@ -754,6 +754,9 @@ const DiscountFormModal: React.FC<DiscountFormModalProps> = ({
 
 /**
  * Main Discounts Page Component
+ * Purpose: Manage discounts UI and interactions. Fix Mantine Text type errors by using `ta` for text alignment.
+ * Inputs: None (local state and mock data).
+ * Outputs: Renders the Discounts management page with summary metrics, filters, and lists.
  */
 export const DiscountsPage: React.FC = () => {
   const [discounts, setDiscounts] = useState<Discount[]>(initialDiscounts);
@@ -1110,7 +1113,8 @@ export const DiscountsPage: React.FC = () => {
               <Text fw={700} size="xl" c="green" className="summary-card-metric">
                 {activeDiscounts}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 Currently available
               </Text>
             </Card>
@@ -1128,7 +1132,8 @@ export const DiscountsPage: React.FC = () => {
               <Text fw={700} size="xl" c="blue" className="summary-card-metric">
                 {totalUsage.toLocaleString()}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 Times redeemed
               </Text>
             </Card>
@@ -1146,7 +1151,8 @@ export const DiscountsPage: React.FC = () => {
               <Text fw={700} size="xl" c="orange" className="summary-card-metric">
                 ${totalSavings.toLocaleString()}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 Customer savings
               </Text>
             </Card>
@@ -1164,7 +1170,8 @@ export const DiscountsPage: React.FC = () => {
               <Text fw={700} size="xl" c="red" className="summary-card-metric">
                 {expiringSoon}
               </Text>
-              <Text size="xs" c="dimmed" align="center">
+              {/* Mantine Text alignment fix: use `ta` instead of `align` */}
+              <Text size="xs" c="dimmed" ta="center">
                 Within 7 days
               </Text>
             </Card>

@@ -58,7 +58,8 @@ import {
 } from 'lucide-react';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
-import { medplumClient } from '../../config/medplum';
+import { backendFHIRService } from '../../services/backendFHIRService';
+
 import { CodeSystem } from '@medplum/fhirtypes';
 
 /**
@@ -467,13 +468,17 @@ const TagsMedplumPage: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
 
-  // Fetch CodeSystems from Medplum
+  // Fetch CodeSystems from backend FHIR service
   useEffect(() => {
     const fetchCodeSystems = async () => {
       try {
         setLoading(true);
-        const bundle = await medplumClient.searchResources('CodeSystem');
-        setCodeSystems(bundle);
+        const response = await backendFHIRService.searchResources('Basic', {
+          code: 'tag-system',
+          _sort: 'meta.lastUpdated',
+          _count: '50'
+        });
+        setCodeSystems((response?.data ?? []) as unknown as CodeSystem[]);
         setError(null);
       } catch (err) {
         console.error('Error fetching CodeSystems:', err);
@@ -565,7 +570,7 @@ const TagsMedplumPage: React.FC = () => {
       onConfirm: async () => {
          try {
            if (codeSystem.id) {
-             await medplumClient.deleteResource('CodeSystem', codeSystem.id);
+               await backendFHIRService.deleteResource('Basic', codeSystem.id);
              setCodeSystems(prev => prev.filter(cs => cs.id !== codeSystem.id));
              notifications.show({
                title: 'Success',
@@ -591,7 +596,7 @@ const TagsMedplumPage: React.FC = () => {
       const updatedCodeSystem = { ...codeSystem, status: newStatus };
       
       if (codeSystem.id) {
-         await medplumClient.updateResource(updatedCodeSystem);
+         await backendFHIRService.updateResource('Basic', codeSystem.id, updatedCodeSystem as CodeSystem);
          setCodeSystems(prev => prev.map(cs => 
            cs.id === codeSystem.id ? updatedCodeSystem as CodeSystem : cs
          ));
@@ -636,10 +641,11 @@ const TagsMedplumPage: React.FC = () => {
       setSaveLoading(true);
       
       if (isCreating) {
-         const newCodeSystem = await medplumClient.createResource({
-           resourceType: 'CodeSystem',
+         const newCodeSystem = await backendFHIRService.createResource('Basic', {
+           resourceType: 'Basic',
+           code: { coding: [{ system: 'http://medplum.com/tag-system', code: 'tag-system' }] },
            ...codeSystemData,
-         } as CodeSystem);
+         });
          setCodeSystems(prev => [...prev, newCodeSystem]);
          notifications.show({
            title: 'Success',
@@ -647,7 +653,7 @@ const TagsMedplumPage: React.FC = () => {
            color: 'green',
          });
        } else if (selectedCodeSystem?.id) {
-         const updatedCodeSystem = await medplumClient.updateResource({
+         const updatedCodeSystem = await backendFHIRService.updateResource('Basic', selectedCodeSystem.id!, {
            ...selectedCodeSystem,
            ...codeSystemData,
          });
@@ -690,7 +696,7 @@ const TagsMedplumPage: React.FC = () => {
       onConfirm: async () => {
         try {
            const deletePromises = Array.from(selectedTags).map(id => 
-             medplumClient.deleteResource('CodeSystem', id)
+             backendFHIRService.deleteResource('Basic', id)
            );
            await Promise.all(deletePromises);
            

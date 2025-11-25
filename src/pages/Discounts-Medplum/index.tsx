@@ -61,8 +61,9 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
-import { medplumClient } from '../../config/medplum';
+
 import { ChargeItem } from '@medplum/fhirtypes';
+import { backendFHIRService } from '../../services/backendFHIRService';
 
 /**
  * FHIR Discount interface (mapped from ChargeItem)
@@ -786,14 +787,14 @@ export const DiscountsMedplumPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
-        const response = await medplumClient.searchResources('ChargeItem', {
+        const response = await backendFHIRService.searchResources('ChargeItem', {
           _sort: '-_lastUpdated',
           _count: '50'
         });
 
-        if (response) {
-          setChargeItems(response);
-          const mappedDiscounts = response.map(mapChargeItemToDiscount);
+        if (response?.data) {
+          setChargeItems(response.data as ChargeItem[]);
+          const mappedDiscounts = (response.data as ChargeItem[]).map(mapChargeItemToDiscount);
           setDiscounts(mappedDiscounts);
         } else {
           setChargeItems([]);
@@ -840,7 +841,7 @@ export const DiscountsMedplumPage: React.FC = () => {
       onConfirm: async () => {
         setIsLoading(true);
         try {
-          await medplumClient.deleteResource('ChargeItem', discount.id);
+          await backendFHIRService.deleteResource('ChargeItem', discount.id);
           
           setDiscounts(prev => prev.filter(d => d.id !== discount.id));
           setChargeItems(prev => prev.filter(c => c.id !== discount.id));
@@ -870,7 +871,7 @@ export const DiscountsMedplumPage: React.FC = () => {
         status: discount.isActive ? 'not-billable' : 'billable',
       };
       
-      await medplumClient.updateResource(updatedChargeItem);
+      await backendFHIRService.updateResource('ChargeItem', discount.id, updatedChargeItem);
       
       setDiscounts(prev => prev.map(d => 
         d.id === discount.id 
@@ -930,7 +931,7 @@ export const DiscountsMedplumPage: React.FC = () => {
           ],
         };
 
-        const updated = await medplumClient.updateResource(updatedChargeItem);
+        const updated = await backendFHIRService.updateResource('ChargeItem', selectedDiscount.id!, updatedChargeItem);
         const updatedDiscount = mapChargeItemToDiscount(updated);
         
         setDiscounts(prev => prev.map(d => 
@@ -976,7 +977,7 @@ export const DiscountsMedplumPage: React.FC = () => {
           ],
         };
 
-        const created = await medplumClient.createResource(newChargeItem);
+        const created = await backendFHIRService.createResource('ChargeItem', newChargeItem);
         const newDiscount = mapChargeItemToDiscount(created);
         
         setDiscounts(prev => [...prev, newDiscount]);
@@ -1034,7 +1035,7 @@ export const DiscountsMedplumPage: React.FC = () => {
         extension: discount.chargeItem.extension,
       };
 
-      const created = await medplumClient.createResource(duplicatedChargeItem);
+      const created = await backendFHIRService.createResource('ChargeItem', duplicatedChargeItem);
       const duplicatedDiscount = mapChargeItemToDiscount(created);
       
       setDiscounts(prev => [...prev, duplicatedDiscount]);
@@ -1077,7 +1078,7 @@ export const DiscountsMedplumPage: React.FC = () => {
         setIsLoading(true);
         try {
           await Promise.all(
-            selectedDiscounts.map(id => medplumClient.deleteResource('ChargeItem', id))
+            selectedDiscounts.map(id => backendFHIRService.deleteResource('ChargeItem', id))
           );
           
           setDiscounts(prev => prev.filter(d => !selectedDiscounts.includes(d.id)));

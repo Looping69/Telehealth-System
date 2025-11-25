@@ -1336,7 +1336,7 @@ export const ProductsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Active Products
                 </Text>
-                <ThemeIcon variant="light" color="green" size="lg" align="center">
+                <ThemeIcon variant="light" color="green" size="lg">
                   <Package size={20} />
                 </ThemeIcon>
               </Group>
@@ -1354,7 +1354,7 @@ export const ProductsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Total Revenue
                 </Text>
-                <ThemeIcon variant="light" color="blue" size="lg" align="center">
+                <ThemeIcon variant="light" color="blue" size="lg">
                   <DollarSign size={20} />
                 </ThemeIcon>
               </Group>
@@ -1372,7 +1372,7 @@ export const ProductsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Total Bookings
                 </Text>
-                <ThemeIcon variant="light" color="orange" size="lg" align="center">
+                <ThemeIcon variant="light" color="orange" size="lg">
                   <ShoppingCart size={20} />
                 </ThemeIcon>
               </Group>
@@ -1390,7 +1390,7 @@ export const ProductsPage: React.FC = () => {
                 <Text size="sm" c="dimmed" fw={500}>
                   Average Rating
                 </Text>
-                <ThemeIcon variant="light" color="yellow" size="lg" align="center">
+                <ThemeIcon variant="light" color="yellow" size="lg">
                   <Star size={20} />
                 </ThemeIcon>
               </Group>

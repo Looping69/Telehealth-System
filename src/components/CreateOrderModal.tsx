@@ -90,8 +90,8 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   }, [products]);
   
   // Get selected patient name for form submission
-  const selectedPatient = patients?.find(p => p.id === selectedPatientId);
-  const selectedProduct = products?.find(p => p.id === selectedProductId);
+  const selectedPatient = patients?.find((p: any) => p.id === selectedPatientId);
+  const selectedProduct = products?.find((p: any) => p.id === selectedProductId);
 
   /**
    * Handles form submission to create a new order

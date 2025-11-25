@@ -59,8 +59,9 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
-import { medplumClient } from '../../config/medplum';
+
 import { Medication } from '@medplum/fhirtypes';
+import { backendFHIRService } from '../../services/backendFHIRService';
 import CreateProductModal from '../../components/CreateProductModal';
 
 /**
@@ -414,20 +415,12 @@ const ProductsMedplumPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const response = await medplumClient.search('Medication', {
-          _sort: 'code',
+        const response = await backendFHIRService.searchResources('Medication', {
+          _sort: 'code.text',
           _count: '50'
         });
 
-        if (response.entry) {
-          const medicationData = response.entry
-            .filter(entry => entry.resource?.resourceType === 'Medication')
-            .map(entry => entry.resource as Medication);
-          
-          setMedications(medicationData);
-        } else {
-          setMedications([]);
-        }
+        setMedications((response?.data ?? []) as Medication[]);
       } catch (err) {
         console.error('Error fetching medications:', err);
         setError('Failed to load FHIR medications');
@@ -519,7 +512,7 @@ const ProductsMedplumPage: React.FC = () => {
       confirmProps: { color: 'red' },
       onConfirm: async () => {
         try {
-          await medplumClient.deleteResource('Medication', medicationId);
+          await backendFHIRService.deleteResource('Medication', medicationId);
           setMedications(prev => prev.filter(m => m.id !== medicationId));
           setSelectedMedications(prev => prev.filter(id => id !== medicationId));
           
@@ -976,18 +969,11 @@ const ProductsMedplumPage: React.FC = () => {
             const fetchMedications = async () => {
               try {
                 setLoading(true);
-                const response = await medplumClient.search('Medication', {
+                const response = await backendFHIRService.searchResources('Medication', {
                   _sort: 'code',
                   _count: '50'
                 });
-
-                if (response.entry) {
-                  const medicationData = response.entry
-                    .filter(entry => entry.resource?.resourceType === 'Medication')
-                    .map(entry => entry.resource as Medication);
-                  
-                  setMedications(medicationData);
-                }
+                setMedications((response?.data ?? []) as Medication[]);
               } catch (err) {
                 console.error('Error fetching medications:', err);
               } finally {

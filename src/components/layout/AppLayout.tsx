@@ -220,7 +220,7 @@ export function AppLayout() {
 
           <Group gap="xs">
             {/* Mode Switcher */}
-            <ModeSwitcher size="xs" />
+            <ModeSwitcher size="sm" />
 
             {/* Notifications */}
             <Button variant="subtle" size="xs" p={4}>

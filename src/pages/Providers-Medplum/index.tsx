@@ -54,8 +54,9 @@ import {
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { medplumClient } from '../../config/medplum';
+
 import { Practitioner } from '@medplum/fhirtypes';
+import { backendFHIRService } from '../../services/backendFHIRService';
 
 /**
  * Props for FHIR Practitioner Card component
@@ -585,7 +586,7 @@ const CreateFHIRPractitionerModal: React.FC<CreateFHIRPractitionerModalProps> = 
         }] : undefined,
       };
 
-      const createdPractitioner = await medplumClient.createResource(newPractitioner);
+      const createdPractitioner = await backendFHIRService.createResource('Practitioner', newPractitioner);
       onPractitionerCreated(createdPractitioner);
       
       notifications.show({
@@ -785,7 +786,7 @@ const EditFHIRPractitionerModal: React.FC<EditFHIRPractitionerModalProps> = ({
         }] : undefined,
       };
 
-      const result = await medplumClient.updateResource(updatedPractitioner);
+      const result = await backendFHIRService.updateResource('Practitioner', practitioner.id!, updatedPractitioner);
       onPractitionerUpdated(result);
       
       notifications.show({
@@ -927,20 +928,13 @@ const ProvidersMedplumPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const response = await medplumClient.search('Practitioner', {
-        _sort: 'name',
-        _count: '50'
-      });
+      const response = await backendFHIRService.searchResources('Practitioner', {
+          _sort: 'name',
+          _count: '50'
+        });
 
-      if (response.entry) {
-        const practitionerData = response.entry
-          .filter(entry => entry.resource?.resourceType === 'Practitioner')
-          .map(entry => entry.resource as Practitioner);
-        
-        setPractitioners(practitionerData);
-      } else {
-        setPractitioners([]);
-      }
+      const practitionerData = (response?.data ?? []) as Practitioner[];
+      setPractitioners(practitionerData);
     } catch (err) {
       console.error('Error fetching FHIR practitioners:', err);
       setError('Failed to fetch providers from FHIR server. Please check your connection.');

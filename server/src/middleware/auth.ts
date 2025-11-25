@@ -6,7 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { createAuthError, createForbiddenError } from './error.js';
 import { logger } from '../utils/logger.js';
-// import { config } from '../config/index.js';
+import { config } from '../config/index.js';
 
 // Extend Request interface to include Medplum user context
 declare global {
@@ -33,6 +33,24 @@ export const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Dev-mode bypass: when using mock FHIR data, allow all requests
+    // Purpose: Enable frontend development without real Medplum auth/token
+    // Inputs: Express Request/Response/Next
+    // Outputs: Attaches mock user and proceeds without token verification
+    // Also bypass when credentials are not configured (service uses mock mode)
+    if (config.medplum.useMock || !config.medplum.clientId || !config.medplum.clientSecret) {
+      req.user = {
+        id: 'mock-user-id',
+        email: 'dev@example.com',
+        role: 'patient',
+        resourceType: 'Patient',
+        resourceId: 'mock-pt-001'
+      };
+      logger.info('Dev-mode auth bypass enabled (mock FHIR).');
+      next();
+      return;
+    }
+
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

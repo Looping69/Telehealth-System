@@ -36,9 +36,10 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useDashboardMetrics, useAppointments } from '../../hooks/useQuery';
+import { backendFHIRService } from '../../services/backendFHIRService';
 import { convertTaskFromFHIR } from '../../utils/fhir';
 import { useQuery } from '@tanstack/react-query';
-import { medplumClient } from '../../config/medplum';
+
 import { useDisclosure } from '@mantine/hooks';
 import { useNavigate } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
@@ -108,18 +109,22 @@ const MetricCard: React.FC<MetricCardProps> = ({
  * Inputs: None
  * Outputs: Card list of latest Task updates
  */
+/**
+ * RecentActivity Component
+ * Purpose: Display the 5 most recently updated FHIR Task resources.
+ * Inputs: None (fetches via `backendFHIRService.searchResources`).
+ * Outputs: Renders a card with recent task activity.
+ */
 const RecentActivity: React.FC = () => {
   const { data: tasks, isLoading: tasksLoading, error } = useQuery({
     queryKey: ['dashboard-recent-tasks'],
     queryFn: async () => {
-      const params = new URLSearchParams({
+      // Fetch recent FHIR Task resources using backend service
+      const { data } = await backendFHIRService.searchResources('Task', {
         _sort: '-_lastUpdated',
         _count: '5',
       });
-      const response = await medplumClient.search('Task', params);
-      const resources = (response.entry || [])
-        .map((e: any) => e.resource)
-        .filter((r: any) => r?.resourceType === 'Task');
+      const resources = (data ?? []).filter((r: any) => r?.resourceType === 'Task');
       return resources;
     },
     retry: 2,
@@ -256,7 +261,15 @@ const UpcomingAppointments: React.FC = () => {
                     </Text>
                   </div>
                   <Badge
-                    color={appointment.status === 'scheduled' ? 'blue' : appointment.status === 'arrived' ? 'green' : 'gray'}
+                    color={
+                      appointment.status === 'scheduled'
+                        ? 'blue'
+                        : appointment.status === 'in_progress'
+                        ? 'green'
+                        : appointment.status === 'completed'
+                        ? 'gray'
+                        : 'gray'
+                    }
                     size="sm"
                   >
                     {appointment.status}
