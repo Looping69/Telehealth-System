@@ -763,7 +763,7 @@ export const DiscountsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedDiscount, setSelectedDiscount] = useState<Discount | null>(null);
   const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -794,7 +794,7 @@ export const DiscountsPage: React.FC = () => {
         try {
           // Simulate API call
           await new Promise(resolve => setTimeout(resolve, 1000));
-          
+
           setDiscounts(prev => prev.filter(d => d.id !== discount.id));
           notifications.show({
             title: 'Success',
@@ -819,13 +819,13 @@ export const DiscountsPage: React.FC = () => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setDiscounts(prev => prev.map(d => 
-        d.id === discount.id 
+
+      setDiscounts(prev => prev.map(d =>
+        d.id === discount.id
           ? { ...d, isActive: !d.isActive }
           : d
       ));
-      
+
       notifications.show({
         title: 'Success',
         message: `Discount ${discount.isActive ? 'deactivated' : 'activated'} successfully`,
@@ -847,11 +847,11 @@ export const DiscountsPage: React.FC = () => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       if (selectedDiscount) {
         // Update existing discount
-        setDiscounts(prev => prev.map(d => 
-          d.id === selectedDiscount.id 
+        setDiscounts(prev => prev.map(d =>
+          d.id === selectedDiscount.id
             ? { ...d, ...discountData }
             : d
         ));
@@ -870,7 +870,7 @@ export const DiscountsPage: React.FC = () => {
           applicableServices: ['All Services'],
           ...discountData,
         } as Discount;
-        
+
         setDiscounts(prev => [...prev, newDiscount]);
         notifications.show({
           title: 'Success',
@@ -911,7 +911,7 @@ export const DiscountsPage: React.FC = () => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       const duplicatedDiscount: Discount = {
         ...discount,
         id: `DISC-${String(discounts.length + 1).padStart(3, '0')}`,
@@ -921,7 +921,7 @@ export const DiscountsPage: React.FC = () => {
         createdAt: new Date().toISOString().split('T')[0],
         createdBy: 'Current User',
       };
-      
+
       setDiscounts(prev => [...prev, duplicatedDiscount]);
       notifications.show({
         title: 'Success',
@@ -956,7 +956,7 @@ export const DiscountsPage: React.FC = () => {
         try {
           // Simulate API call
           await new Promise(resolve => setTimeout(resolve, 1000));
-          
+
           setDiscounts(prev => prev.filter(d => !selectedDiscounts.includes(d.id)));
           setSelectedDiscounts([]);
           notifications.show({
@@ -982,7 +982,7 @@ export const DiscountsPage: React.FC = () => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       const csvContent = [
         ['ID', 'Code', 'Name', 'Type', 'Value', 'Status', 'Usage', 'Start Date', 'End Date'].join(','),
         ...filteredDiscounts.map(discount => [
@@ -997,7 +997,7 @@ export const DiscountsPage: React.FC = () => {
           discount.endDate,
         ].join(','))
       ].join('\n');
-      
+
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1005,7 +1005,7 @@ export const DiscountsPage: React.FC = () => {
       a.download = 'discounts.csv';
       a.click();
       window.URL.revokeObjectURL(url);
-      
+
       notifications.show({
         title: 'Success',
         message: 'Discounts exported successfully',
@@ -1023,8 +1023,8 @@ export const DiscountsPage: React.FC = () => {
   };
 
   const handleSelectDiscount = (id: string, selected: boolean) => {
-    setSelectedDiscounts(prev => 
-      selected 
+    setSelectedDiscounts(prev =>
+      selected
         ? [...prev, id]
         : prev.filter(discountId => discountId !== id)
     );

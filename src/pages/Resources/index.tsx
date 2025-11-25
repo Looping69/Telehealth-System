@@ -242,15 +242,15 @@ interface ResourceCardProps {
   onSelect: (resourceId: string) => void;
 }
 
-const ResourceCard: React.FC<ResourceCardProps> = ({ 
-  resource, 
-  onView, 
-  onEdit, 
-  onDownload, 
-  onDelete, 
-  onDuplicate, 
-  isSelected, 
-  onSelect 
+const ResourceCard: React.FC<ResourceCardProps> = ({
+  resource,
+  onView,
+  onEdit,
+  onDownload,
+  onDelete,
+  onDuplicate,
+  isSelected,
+  onSelect
 }) => {
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -450,8 +450,8 @@ const ResourceCard: React.FC<ResourceCardProps> = ({
                   Share
                 </Menu.Item>
                 <Menu.Divider />
-                <Menu.Item 
-                  leftSection={<Trash2 size={14} />} 
+                <Menu.Item
+                  leftSection={<Trash2 size={14} />}
                   color="red"
                   onClick={() => onDelete(resource)}
                 >
@@ -480,15 +480,15 @@ interface ResourceTableRowProps {
   onSelect: (resourceId: string) => void;
 }
 
-const ResourceTableRow: React.FC<ResourceTableRowProps> = ({ 
-  resource, 
-  onView, 
-  onEdit, 
-  onDownload, 
-  onDelete, 
-  onDuplicate, 
-  isSelected, 
-  onSelect 
+const ResourceTableRow: React.FC<ResourceTableRowProps> = ({
+  resource,
+  onView,
+  onEdit,
+  onDownload,
+  onDelete,
+  onDuplicate,
+  isSelected,
+  onSelect
 }) => {
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -643,8 +643,8 @@ const ResourceTableRow: React.FC<ResourceTableRowProps> = ({
                 Share
               </Menu.Item>
               <Menu.Divider />
-              <Menu.Item 
-                leftSection={<Trash2 size={12} />} 
+              <Menu.Item
+                leftSection={<Trash2 size={12} />}
                 color="red"
                 onClick={() => onDelete(resource)}
               >
@@ -1043,7 +1043,7 @@ export const ResourcesPage: React.FC = () => {
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [formOpened, { open: openForm, close: closeForm }] = useDisclosure(false);
   const [deleteOpened, { open: openDelete, close: closeDelete }] = useDisclosure(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -1077,14 +1077,14 @@ export const ResourcesPage: React.FC = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Update download count
-        setResources(prev => prev.map(r => 
-          r.id === resource.id 
+        setResources(prev => prev.map(r =>
+          r.id === resource.id
             ? { ...r, downloadCount: r.downloadCount + 1 }
             : r
         ));
-        
+
         setNotification({ type: 'success', message: `${resource.title} downloaded successfully!` });
       } catch (error) {
         setNotification({ type: 'error', message: 'Failed to download resource. Please try again.' });
@@ -1099,8 +1099,8 @@ export const ResourcesPage: React.FC = () => {
     try {
       if (selectedResource) {
         // Edit existing resource
-        setResources(prev => prev.map(r => 
-          r.id === selectedResource.id 
+        setResources(prev => prev.map(r =>
+          r.id === selectedResource.id
             ? { ...r, ...resourceData, lastUpdated: new Date().toISOString().split('T')[0] }
             : r
         ));
@@ -1177,7 +1177,7 @@ export const ResourcesPage: React.FC = () => {
 
   const handleBulkDelete = async () => {
     if (selectedResources.length === 0) return;
-    
+
     setIsLoading(true);
     try {
       setResources(prev => prev.filter(r => !selectedResources.includes(r.id)));
@@ -1192,18 +1192,18 @@ export const ResourcesPage: React.FC = () => {
 
   const handleBulkStatusChange = async (isPublic: boolean) => {
     if (selectedResources.length === 0) return;
-    
+
     setIsLoading(true);
     try {
-      setResources(prev => prev.map(r => 
-        selectedResources.includes(r.id) 
+      setResources(prev => prev.map(r =>
+        selectedResources.includes(r.id)
           ? { ...r, isPublic, lastUpdated: new Date().toISOString().split('T')[0] }
           : r
       ));
       setSelectedResources([]);
-      setNotification({ 
-        type: 'success', 
-        message: `${selectedResources.length} resources ${isPublic ? 'made public' : 'made private'} successfully!` 
+      setNotification({
+        type: 'success',
+        message: `${selectedResources.length} resources ${isPublic ? 'made public' : 'made private'} successfully!`
       });
     } catch (error) {
       setNotification({ type: 'error', message: 'Failed to update resource status. Please try again.' });
@@ -1238,13 +1238,13 @@ export const ResourcesPage: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    
+
     setNotification({ type: 'success', message: 'Resources exported to CSV successfully!' });
   };
 
   const toggleResourceSelection = (resourceId: string) => {
-    setSelectedResources(prev => 
-      prev.includes(resourceId) 
+    setSelectedResources(prev =>
+      prev.includes(resourceId)
         ? prev.filter(id => id !== resourceId)
         : [...prev, resourceId]
     );

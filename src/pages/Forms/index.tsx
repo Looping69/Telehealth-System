@@ -34,12 +34,12 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
-import { 
-  Plus, 
-  FileText, 
-  Clock, 
-  Users, 
-  Play, 
+import {
+  Plus,
+  FileText,
+  Clock,
+  Users,
+  Play,
   Eye,
   Edit,
   Trash2,
@@ -73,7 +73,7 @@ export default function FormsPage() {
   const [formBuilderOpened, setFormBuilderOpened] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -103,10 +103,10 @@ export default function FormsPage() {
   // Filter forms based on search and filters
   const filteredForms = existingForms.filter(form => {
     const matchesSearch = form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (form.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+      (form.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = filterCategory === 'all' || form.category === filterCategory;
     const matchesStatus = filterStatus === 'all' || form.status === filterStatus;
-    
+
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
@@ -175,7 +175,7 @@ export default function FormsPage() {
       if (newForm) {
         const formWithStatus = { ...newForm, status: 'active' as const };
         setExistingForms(prev => [formWithStatus, ...prev]);
-        
+
         notifications.show({
           title: 'Form Created',
           message: 'New form has been created successfully.',
@@ -220,7 +220,7 @@ export default function FormsPage() {
     // For now, open form builder with the form data
     setSelectedForm(form);
     setFormBuilderOpened(true);
-    
+
     notifications.show({
       title: 'Edit Mode',
       message: 'Form builder opened for editing. Changes will be saved automatically.',
@@ -247,10 +247,10 @@ export default function FormsPage() {
         try {
           // Simulate API call
           await new Promise(resolve => setTimeout(resolve, 800));
-          
+
           setExistingForms(prev => prev.filter(f => f.id !== form.id));
           setSubmissions(prev => prev.filter(s => s.formId !== form.id));
-          
+
           notifications.show({
             title: 'Form Deleted',
             message: 'The form has been successfully deleted.',
@@ -279,7 +279,7 @@ export default function FormsPage() {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       const duplicatedForm: FormData = {
         ...form,
         id: `form-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -288,9 +288,9 @@ export default function FormsPage() {
         updatedAt: new Date().toISOString(),
         status: 'active',
       };
-      
+
       setExistingForms(prev => [duplicatedForm, ...prev]);
-      
+
       notifications.show({
         title: 'Form Duplicated',
         message: 'The form has been successfully duplicated.',
@@ -317,12 +317,12 @@ export default function FormsPage() {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       const newStatus = form.status === 'active' ? 'inactive' : 'active';
-      setExistingForms(prev => 
+      setExistingForms(prev =>
         prev.map(f => f.id === form.id ? { ...f, status: newStatus } : f)
       );
-      
+
       notifications.show({
         title: 'Status Updated',
         message: `Form is now ${newStatus}.`,
@@ -346,15 +346,15 @@ export default function FormsPage() {
   const handleExportForm = (form: FormData) => {
     try {
       const dataStr = JSON.stringify(form, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-      
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
       const exportFileDefaultName = `${form.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
-      
+
       const linkElement = document.createElement('a');
       linkElement.setAttribute('href', dataUri);
       linkElement.setAttribute('download', exportFileDefaultName);
       linkElement.click();
-      
+
       notifications.show({
         title: 'Form Exported',
         message: 'The form has been exported successfully.',
@@ -506,9 +506,9 @@ export default function FormsPage() {
               placeholder="Category"
               data={[
                 { value: 'all', label: 'All Categories' },
-                ...categories.map(cat => ({ 
-                  value: cat, 
-                  label: cat.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) 
+                ...categories.map(cat => ({
+                  value: cat,
+                  label: cat.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
                 }))
               ]}
               value={filterCategory}
@@ -550,228 +550,228 @@ export default function FormsPage() {
               </Button>
             </Button.Group>
           </Group>
-          
+
           {filteredForms.length === 0 ? (
             <Alert icon={<AlertCircle size={16} />}>
               No forms found matching your search criteria.
             </Alert>
           ) : viewMode === 'cards' ? (
-          <Grid>
-            {filteredForms.map((form) => (
-              <Grid.Col key={form.id} span={{ base: 12, md: 6, lg: 4 }}>
-                <Card padding="lg" shadow="sm" h="100%">
-                  <Stack gap="md" h="100%">
-                    <div>
-                      <Group justify="space-between" mb="xs">
+            <Grid>
+              {filteredForms.map((form) => (
+                <Grid.Col key={form.id} span={{ base: 12, md: 6, lg: 4 }}>
+                  <Card padding="lg" shadow="sm" h="100%">
+                    <Stack gap="md" h="100%">
+                      <div>
+                        <Group justify="space-between" mb="xs">
+                          <Badge color="blue" variant="light">
+                            {form.category.replace('_', ' ')}
+                          </Badge>
+                          <Group gap="xs">
+                            <Badge color={getFormStatusColor(form.status || 'inactive')} size="sm">
+                              {form.status || 'inactive'}
+                            </Badge>
+                            {form.estimatedTime && (
+                              <Group gap={4}>
+                                <Clock size={12} />
+                                <Text size="xs" c="dimmed">
+                                  {form.estimatedTime} min
+                                </Text>
+                              </Group>
+                            )}
+                          </Group>
+                        </Group>
+                        <Title order={4} mb="xs">{form.title}</Title>
+                        <Text size="sm" c="dimmed" lineClamp={2}>
+                          {form.description}
+                        </Text>
+                        <Text size="xs" c="dimmed" mt="xs">
+                          {form.questions.length} questions
+                        </Text>
+                      </div>
+
+                      <Group justify="space-between" mt="auto">
+                        <Button
+                          variant="filled"
+                          leftSection={<Play size={16} />}
+                          onClick={() => startForm(form)}
+                          size="sm"
+                          disabled={form.status === 'inactive'}
+                        >
+                          Start Form
+                        </Button>
+                        <Group gap="xs">
+                          <Tooltip label="Preview">
+                            <ActionIcon
+                              variant="subtle"
+                              size="sm"
+                              onClick={() => handlePreviewForm(form)}
+                            >
+                              <Eye size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                          <Tooltip label="Edit">
+                            <ActionIcon
+                              variant="subtle"
+                              size="sm"
+                              onClick={() => handleEditForm(form)}
+                            >
+                              <Edit size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                          <Menu shadow="md" width={200}>
+                            <Menu.Target>
+                              <ActionIcon variant="subtle" size="sm">
+                                <MoreVertical size={16} />
+                              </ActionIcon>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              <Menu.Item
+                                leftSection={<Copy size={14} />}
+                                onClick={() => handleDuplicateForm(form)}
+                              >
+                                Duplicate
+                              </Menu.Item>
+                              <Menu.Item
+                                leftSection={<Settings size={14} />}
+                                onClick={() => handleToggleStatus(form)}
+                              >
+                                {form.status === 'active' ? 'Deactivate' : 'Activate'}
+                              </Menu.Item>
+                              <Menu.Item
+                                leftSection={<Download size={14} />}
+                                onClick={() => handleExportForm(form)}
+                              >
+                                Export
+                              </Menu.Item>
+                              <Menu.Divider />
+                              <Menu.Item
+                                leftSection={<Trash2 size={14} />}
+                                color="red"
+                                onClick={() => handleDeleteForm(form)}
+                              >
+                                Delete
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
+                        </Group>
+                      </Group>
+                    </Stack>
+                  </Card>
+                </Grid.Col>
+              ))}
+            </Grid>
+          ) : (
+            <Card>
+              <Table>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Form Title</Table.Th>
+                    <Table.Th>Category</Table.Th>
+                    <Table.Th>Status</Table.Th>
+                    <Table.Th>Questions</Table.Th>
+                    <Table.Th>Est. Time</Table.Th>
+                    <Table.Th>Actions</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {filteredForms.map((form) => (
+                    <Table.Tr key={form.id}>
+                      <Table.Td>
+                        <div>
+                          <Text fw={500}>{form.title}</Text>
+                          <Text size="sm" c="dimmed" lineClamp={1}>
+                            {form.description}
+                          </Text>
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
                         <Badge color="blue" variant="light">
                           {form.category.replace('_', ' ')}
                         </Badge>
-                        <Group gap="xs">
-                          <Badge color={getFormStatusColor(form.status || 'inactive')} size="sm">
-                            {form.status || 'inactive'}
-                          </Badge>
-                          {form.estimatedTime && (
-                            <Group gap={4}>
-                              <Clock size={12} />
-                              <Text size="xs" c="dimmed">
-                                {form.estimatedTime} min
-                              </Text>
-                            </Group>
-                          )}
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge color={getFormStatusColor(form.status || 'inactive')}>
+                          {form.status || 'inactive'}
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm">{form.questions.length}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Group gap={4}>
+                          <Clock size={12} />
+                          <Text size="sm">
+                            {form.estimatedTime || 'N/A'} min
+                          </Text>
                         </Group>
-                      </Group>
-                      <Title order={4} mb="xs">{form.title}</Title>
-                      <Text size="sm" c="dimmed" lineClamp={2}>
-                        {form.description}
-                      </Text>
-                      <Text size="xs" c="dimmed" mt="xs">
-                        {form.questions.length} questions
-                      </Text>
-                    </div>
-
-                    <Group justify="space-between" mt="auto">
-                      <Button
-                        variant="filled"
-                        leftSection={<Play size={16} />}
-                        onClick={() => startForm(form)}
-                        size="sm"
-                        disabled={form.status === 'inactive'}
-                      >
-                        Start Form
-                      </Button>
-                      <Group gap="xs">
-                        <Tooltip label="Preview">
-                          <ActionIcon 
-                            variant="subtle" 
+                      </Table.Td>
+                      <Table.Td>
+                        <Group gap="xs">
+                          <Button
+                            variant="filled"
+                            leftSection={<Play size={16} />}
+                            onClick={() => startForm(form)}
+                            size="xs"
+                            disabled={form.status === 'inactive'}
+                          >
+                            Start
+                          </Button>
+                          <ActionIcon
+                            variant="subtle"
                             size="sm"
                             onClick={() => handlePreviewForm(form)}
                           >
                             <Eye size={16} />
                           </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label="Edit">
-                          <ActionIcon 
-                            variant="subtle" 
+                          <ActionIcon
+                            variant="subtle"
                             size="sm"
                             onClick={() => handleEditForm(form)}
                           >
                             <Edit size={16} />
                           </ActionIcon>
-                        </Tooltip>
-                        <Menu shadow="md" width={200}>
-                          <Menu.Target>
-                            <ActionIcon variant="subtle" size="sm">
-                              <MoreVertical size={16} />
-                            </ActionIcon>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            <Menu.Item 
-                              leftSection={<Copy size={14} />}
-                              onClick={() => handleDuplicateForm(form)}
-                            >
-                              Duplicate
-                            </Menu.Item>
-                            <Menu.Item 
-                              leftSection={<Settings size={14} />}
-                              onClick={() => handleToggleStatus(form)}
-                            >
-                              {form.status === 'active' ? 'Deactivate' : 'Activate'}
-                            </Menu.Item>
-                            <Menu.Item 
-                              leftSection={<Download size={14} />}
-                              onClick={() => handleExportForm(form)}
-                            >
-                              Export
-                            </Menu.Item>
-                            <Menu.Divider />
-                            <Menu.Item 
-                              leftSection={<Trash2 size={14} />}
-                              color="red"
-                              onClick={() => handleDeleteForm(form)}
-                            >
-                              Delete
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
-                      </Group>
-                    </Group>
-                  </Stack>
-                </Card>
-              </Grid.Col>
-            ))}
-          </Grid>
-          ) : (
-          <Card>
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Form Title</Table.Th>
-                  <Table.Th>Category</Table.Th>
-                  <Table.Th>Status</Table.Th>
-                  <Table.Th>Questions</Table.Th>
-                  <Table.Th>Est. Time</Table.Th>
-                  <Table.Th>Actions</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {filteredForms.map((form) => (
-                  <Table.Tr key={form.id}>
-                    <Table.Td>
-                      <div>
-                        <Text fw={500}>{form.title}</Text>
-                        <Text size="sm" c="dimmed" lineClamp={1}>
-                          {form.description}
-                        </Text>
-                      </div>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge color="blue" variant="light">
-                        {form.category.replace('_', ' ')}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge color={getFormStatusColor(form.status || 'inactive')}>
-                        {form.status || 'inactive'}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm">{form.questions.length}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap={4}>
-                        <Clock size={12} />
-                        <Text size="sm">
-                          {form.estimatedTime || 'N/A'} min
-                        </Text>
-                      </Group>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs">
-                        <Button
-                          variant="filled"
-                          leftSection={<Play size={16} />}
-                          onClick={() => startForm(form)}
-                          size="xs"
-                          disabled={form.status === 'inactive'}
-                        >
-                          Start
-                        </Button>
-                        <ActionIcon 
-                          variant="subtle" 
-                          size="sm"
-                          onClick={() => handlePreviewForm(form)}
-                        >
-                          <Eye size={16} />
-                        </ActionIcon>
-                        <ActionIcon 
-                          variant="subtle" 
-                          size="sm"
-                          onClick={() => handleEditForm(form)}
-                        >
-                          <Edit size={16} />
-                        </ActionIcon>
-                        <Menu shadow="md" width={200}>
-                          <Menu.Target>
-                            <ActionIcon variant="subtle" size="sm">
-                              <MoreVertical size={16} />
-                            </ActionIcon>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            <Menu.Item 
-                              leftSection={<Copy size={14} />}
-                              onClick={() => handleDuplicateForm(form)}
-                            >
-                              Duplicate
-                            </Menu.Item>
-                            <Menu.Item 
-                              leftSection={<Settings size={14} />}
-                              onClick={() => handleToggleStatus(form)}
-                            >
-                              {form.status === 'active' ? 'Deactivate' : 'Activate'}
-                            </Menu.Item>
-                            <Menu.Item 
-                              leftSection={<Download size={14} />}
-                              onClick={() => handleExportForm(form)}
-                            >
-                              Export
-                            </Menu.Item>
-                            <Menu.Divider />
-                            <Menu.Item 
-                              leftSection={<Trash2 size={14} />}
-                              color="red"
-                              onClick={() => handleDeleteForm(form)}
-                            >
-                              Delete
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Card>
+                          <Menu shadow="md" width={200}>
+                            <Menu.Target>
+                              <ActionIcon variant="subtle" size="sm">
+                                <MoreVertical size={16} />
+                              </ActionIcon>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              <Menu.Item
+                                leftSection={<Copy size={14} />}
+                                onClick={() => handleDuplicateForm(form)}
+                              >
+                                Duplicate
+                              </Menu.Item>
+                              <Menu.Item
+                                leftSection={<Settings size={14} />}
+                                onClick={() => handleToggleStatus(form)}
+                              >
+                                {form.status === 'active' ? 'Deactivate' : 'Activate'}
+                              </Menu.Item>
+                              <Menu.Item
+                                leftSection={<Download size={14} />}
+                                onClick={() => handleExportForm(form)}
+                              >
+                                Export
+                              </Menu.Item>
+                              <Menu.Divider />
+                              <Menu.Item
+                                leftSection={<Trash2 size={14} />}
+                                color="red"
+                                onClick={() => handleDeleteForm(form)}
+                              >
+                                Delete
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
+                        </Group>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Card>
           )}
         </div>
 
@@ -905,7 +905,7 @@ export default function FormsPage() {
             <Button variant="subtle" onClick={closeCreateModal}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleCreateForm}
               disabled={!selectedTemplate}
               loading={isLoading}

@@ -47,7 +47,7 @@ import {
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { useOrders } from '../../hooks/useMockData';
+import { useOrders } from '../../hooks/useMedplum';
 import { Order } from '../../types';
 import { SummaryMetricCard } from '../../components/SummaryMetricCard';
 
@@ -205,10 +205,10 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
       <Stack gap="md">
         <Group>
           <ActionIcon variant="light" color="blue" size="xl">
-            {order.type === 'prescription' ? <Pill size={24} /> : 
-             order.type === 'lab' ? <TestTube size={24} /> : 
-             order.type === 'imaging' ? <Stethoscope size={24} /> : 
-             <FileText size={24} />}
+            {order.type === 'prescription' ? <Pill size={24} /> :
+              order.type === 'lab' ? <TestTube size={24} /> :
+                order.type === 'imaging' ? <Stethoscope size={24} /> :
+                  <FileText size={24} />}
           </ActionIcon>
           <Stack gap={4}>
             <Title order={3}>{order.description}</Title>
@@ -339,7 +339,7 @@ const EditOrderModal: React.FC<EditOrderModalProps> = ({ order, opened, onClose,
     };
 
     onSave(updatedOrder);
-    
+
     showNotification({
       title: 'Success',
       message: 'Order updated successfully',
@@ -479,7 +479,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ opened, onClose, on
     };
 
     onSave(newOrder);
-    
+
     showNotification({
       title: 'Success',
       message: 'Order created successfully',
@@ -591,7 +591,7 @@ export const OrdersPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
@@ -600,7 +600,7 @@ export const OrdersPage: React.FC = () => {
 
   // Convert to stateful data for real-time updates
   const { data: fetchedOrders, isLoading, error } = useOrders();
-  
+
   const [orders, setOrders] = useState<Order[]>([]);
 
   // Update local state when fetched data changes
@@ -653,8 +653,8 @@ export const OrdersPage: React.FC = () => {
    * Outputs: None (updates state)
    */
   const handleSaveEditedOrder = (updatedOrder: Order) => {
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
+    setOrders(prevOrders =>
+      prevOrders.map(order =>
         order.id === updatedOrder.id ? updatedOrder : order
       )
     );
@@ -709,7 +709,7 @@ export const OrdersPage: React.FC = () => {
 
     // Apply search filter
     if (searchQuery) {
-      filtered = filtered.filter(order => 
+      filtered = filtered.filter(order =>
         order.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -845,9 +845,9 @@ export const OrdersPage: React.FC = () => {
                     variant="light"
                     color={
                       order.type === 'prescription' ? 'blue' :
-                      order.type === 'lab' ? 'green' :
-                      order.type === 'imaging' ? 'purple' :
-                      'gray'
+                        order.type === 'lab' ? 'green' :
+                          order.type === 'imaging' ? 'purple' :
+                            'gray'
                     }
                     size="sm"
                   >

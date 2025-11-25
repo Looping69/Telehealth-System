@@ -518,7 +518,7 @@ const FHIRPractitionerDetailsModal: React.FC<FHIRPractitionerDetailsModalProps> 
             Close
           </Button>
           {onEdit && (
-            <Button 
+            <Button
               leftSection={<Edit size={16} />}
               onClick={() => {
                 onEdit(practitioner);
@@ -543,10 +543,10 @@ interface CreateFHIRPractitionerModalProps {
   onPractitionerCreated: (practitioner: Practitioner) => void;
 }
 
-const CreateFHIRPractitionerModal: React.FC<CreateFHIRPractitionerModalProps> = ({ 
-  opened, 
-  onClose, 
-  onPractitionerCreated 
+const CreateFHIRPractitionerModal: React.FC<CreateFHIRPractitionerModalProps> = ({
+  opened,
+  onClose,
+  onPractitionerCreated
 }) => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -588,7 +588,7 @@ const CreateFHIRPractitionerModal: React.FC<CreateFHIRPractitionerModalProps> = 
 
       const createdPractitioner = await backendFHIRService.createResource('Practitioner', newPractitioner);
       onPractitionerCreated(createdPractitioner);
-      
+
       notifications.show({
         title: 'Success',
         message: 'FHIR Practitioner created successfully',
@@ -722,11 +722,11 @@ interface EditFHIRPractitionerModalProps {
   onPractitionerUpdated: (practitioner: Practitioner) => void;
 }
 
-const EditFHIRPractitionerModal: React.FC<EditFHIRPractitionerModalProps> = ({ 
-  practitioner, 
-  opened, 
-  onClose, 
-  onPractitionerUpdated 
+const EditFHIRPractitionerModal: React.FC<EditFHIRPractitionerModalProps> = ({
+  practitioner,
+  opened,
+  onClose,
+  onPractitionerUpdated
 }) => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -788,7 +788,7 @@ const EditFHIRPractitionerModal: React.FC<EditFHIRPractitionerModalProps> = ({
 
       const result = await backendFHIRService.updateResource('Practitioner', practitioner.id!, updatedPractitioner);
       onPractitionerUpdated(result);
-      
+
       notifications.show({
         title: 'Success',
         message: 'FHIR Practitioner updated successfully',
@@ -915,7 +915,7 @@ const ProvidersMedplumPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedPractitioner, setSelectedPractitioner] = useState<Practitioner | null>(null);
 
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
@@ -929,9 +929,9 @@ const ProvidersMedplumPage: React.FC = () => {
       setError(null);
 
       const response = await backendFHIRService.searchResources('Practitioner', {
-          _sort: 'name',
-          _count: '50'
-        });
+        _sort: 'name',
+        _count: '50'
+      });
 
       const practitionerData = (response?.data ?? []) as Practitioner[];
       setPractitioners(practitionerData);
@@ -969,7 +969,7 @@ const ProvidersMedplumPage: React.FC = () => {
   };
 
   const handlePractitionerUpdated = (practitioner: Practitioner) => {
-    setPractitioners(prev => 
+    setPractitioners(prev =>
       prev.map(p => p.id === practitioner.id ? practitioner : p)
     );
     notifications.show({

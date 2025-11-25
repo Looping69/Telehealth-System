@@ -341,15 +341,15 @@ interface ProductCardProps {
   onSelect: (productId: string, selected: boolean) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ 
-  product, 
-  onView, 
-  onEdit, 
-  onToggleStatus, 
-  onDelete, 
-  onDuplicate, 
-  isSelected, 
-  onSelect 
+const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  onView,
+  onEdit,
+  onToggleStatus,
+  onDelete,
+  onDuplicate,
+  isSelected,
+  onSelect
 }) => {
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -975,7 +975,7 @@ export const ProductsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1007,20 +1007,20 @@ export const ProductsPage: React.FC = () => {
    */
   const handleToggleStatus = (product: Product) => {
     setLoading(true);
-    
+
     setTimeout(() => {
-      setProducts(prev => prev.map(p => 
-        p.id === product.id 
+      setProducts(prev => prev.map(p =>
+        p.id === product.id
           ? { ...p, isActive: !p.isActive }
           : p
       ));
-      
+
       notifications.show({
         title: 'Product Updated',
         message: `Product ${product.isActive ? 'deactivated' : 'activated'} successfully`,
         color: product.isActive ? 'orange' : 'green',
       });
-      
+
       setLoading(false);
     }, 500);
   };
@@ -1031,7 +1031,7 @@ export const ProductsPage: React.FC = () => {
    */
   const handleDeleteProduct = (productId: string) => {
     const product = products.find(p => p.id === productId);
-    
+
     modals.openConfirmModal({
       title: 'Delete Product',
       children: (
@@ -1043,17 +1043,17 @@ export const ProductsPage: React.FC = () => {
       confirmProps: { color: 'red' },
       onConfirm: () => {
         setLoading(true);
-        
+
         setTimeout(() => {
           setProducts(prev => prev.filter(p => p.id !== productId));
           setSelectedProducts(prev => prev.filter(id => id !== productId));
-          
+
           notifications.show({
             title: 'Product Deleted',
             message: `"${product?.name}" has been deleted successfully`,
             color: 'red',
           });
-          
+
           setLoading(false);
         }, 500);
       },
@@ -1069,7 +1069,7 @@ export const ProductsPage: React.FC = () => {
     if (!product) return;
 
     setLoading(true);
-    
+
     setTimeout(() => {
       const duplicatedProduct: Product = {
         ...product,
@@ -1080,13 +1080,13 @@ export const ProductsPage: React.FC = () => {
       };
 
       setProducts(prev => [duplicatedProduct, ...prev]);
-      
+
       notifications.show({
         title: 'Product Duplicated',
         message: `"${product.name}" has been duplicated successfully`,
         color: 'blue',
       });
-      
+
       setLoading(false);
     }, 500);
   };
@@ -1108,17 +1108,17 @@ export const ProductsPage: React.FC = () => {
       confirmProps: { color: 'red' },
       onConfirm: () => {
         setLoading(true);
-        
+
         setTimeout(() => {
           setProducts(prev => prev.filter(p => !selectedProducts.includes(p.id)));
           setSelectedProducts([]);
-          
+
           notifications.show({
             title: 'Products Deleted',
             message: `${selectedProducts.length} product(s) deleted successfully`,
             color: 'red',
           });
-          
+
           setLoading(false);
         }, 500);
       },
@@ -1129,20 +1129,20 @@ export const ProductsPage: React.FC = () => {
     if (selectedProducts.length === 0) return;
 
     setLoading(true);
-    
+
     setTimeout(() => {
-      setProducts(prev => prev.map(product => 
+      setProducts(prev => prev.map(product =>
         selectedProducts.includes(product.id)
           ? { ...product, isActive: status }
           : product
       ));
-      
+
       notifications.show({
         title: 'Products Updated',
         message: `${selectedProducts.length} product(s) ${status ? 'activated' : 'deactivated'} successfully`,
         color: status ? 'green' : 'orange',
       });
-      
+
       setSelectedProducts([]);
       setLoading(false);
     }, 500);
@@ -1198,13 +1198,13 @@ export const ProductsPage: React.FC = () => {
     try {
       if (selectedProduct) {
         // Edit existing product
-        const updatedProducts = products.map(p => 
-          p.id === selectedProduct.id 
+        const updatedProducts = products.map(p =>
+          p.id === selectedProduct.id
             ? { ...p, ...productData, lastUpdated: new Date().toISOString().split('T')[0] }
             : p
         );
         setProducts(updatedProducts);
-        
+
         notifications.show({
           title: 'Success',
           message: 'Product updated successfully',
@@ -1230,16 +1230,16 @@ export const ProductsPage: React.FC = () => {
           createdAt: new Date().toISOString().split('T')[0],
           lastUpdated: new Date().toISOString().split('T')[0],
         };
-        
+
         setProducts([...products, newProduct]);
-        
+
         notifications.show({
           title: 'Success',
           message: 'Product created successfully',
           color: 'green',
         });
       }
-      
+
       closeForm();
     } catch (error) {
       notifications.show({
@@ -1418,17 +1418,17 @@ export const ProductsPage: React.FC = () => {
 
         {/* Loading Overlay */}
         {loading && (
-          <div style={{ 
-            position: 'fixed', 
-            top: 0, 
-            left: 0, 
-            right: 0, 
-            bottom: 0, 
-            backgroundColor: 'rgba(0,0,0,0.3)', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            zIndex: 1000 
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
           }}>
             <Card shadow="lg" padding="xl" radius="md">
               <Center>
@@ -1602,11 +1602,11 @@ export const ProductsPage: React.FC = () => {
                         variant="light"
                         color={
                           product.category === 'consultation' ? 'blue' :
-                          product.category === 'screening' ? 'green' :
-                          product.category === 'therapy' ? 'purple' :
-                          product.category === 'medication' ? 'orange' :
-                          product.category === 'equipment' ? 'gray' :
-                          'teal'
+                            product.category === 'screening' ? 'green' :
+                              product.category === 'therapy' ? 'purple' :
+                                product.category === 'medication' ? 'orange' :
+                                  product.category === 'equipment' ? 'gray' :
+                                    'teal'
                         }
                         size="sm"
                       >

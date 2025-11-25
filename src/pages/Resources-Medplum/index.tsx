@@ -93,15 +93,15 @@ interface FHIRDocumentCardProps {
   onSelect: (documentId: string) => void;
 }
 
-const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({ 
-  document, 
-  onView, 
-  onEdit, 
-  onDownload, 
-  onDelete, 
-  onDuplicate, 
-  isSelected, 
-  onSelect 
+const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({
+  document,
+  onView,
+  onEdit,
+  onDownload,
+  onDelete,
+  onDuplicate,
+  isSelected,
+  onSelect
 }) => {
   const getTypeIcon = (type?: string) => {
     const typeText = type?.toLowerCase() || '';
@@ -165,12 +165,12 @@ const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({
   };
 
   return (
-    <Paper 
-      withBorder 
-      p="lg" 
-      radius="lg" 
+    <Paper
+      withBorder
+      p="lg"
+      radius="lg"
       shadow={isSelected ? "md" : "sm"}
-      style={{ 
+      style={{
         border: isSelected ? '2px solid #228be6' : '1px solid #e9ecef',
         backgroundColor: isSelected ? '#f8f9ff' : '#ffffff',
         transition: 'all 0.2s ease',
@@ -198,18 +198,18 @@ const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({
               onChange={() => onSelect(document.id!)}
               size="md"
             />
-            <ThemeIcon 
-              variant="light" 
-              color={getCategoryColor(document.type?.text)} 
+            <ThemeIcon
+              variant="light"
+              color={getCategoryColor(document.type?.text)}
               size="lg"
               radius="md"
             >
               {getTypeIcon(document.type?.text)}
             </ThemeIcon>
             <Stack gap={4}>
-              <Badge 
-                variant="light" 
-                color="green" 
+              <Badge
+                variant="light"
+                color="green"
                 size="sm"
                 radius="md"
                 leftSection={<Database size={12} />}
@@ -217,10 +217,10 @@ const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({
                 FHIR Document
               </Badge>
               {document.status === 'current' && (
-                <Badge 
-                  variant="filled" 
-                  color="yellow" 
-                  size="xs" 
+                <Badge
+                  variant="filled"
+                  color="yellow"
+                  size="xs"
                   leftSection={<Star size={10} />}
                   radius="md"
                 >
@@ -229,7 +229,7 @@ const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({
               )}
             </Stack>
           </Group>
-          
+
           <Menu shadow="md" width={200}>
             <Menu.Target>
               <ActionIcon variant="subtle" color="gray" size="lg">
@@ -253,8 +253,8 @@ const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({
                 Share
               </Menu.Item>
               <Menu.Divider />
-              <Menu.Item 
-                leftSection={<Trash2 size={14} />} 
+              <Menu.Item
+                leftSection={<Trash2 size={14} />}
                 color="red"
                 onClick={() => onDelete(document)}
               >
@@ -269,7 +269,7 @@ const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({
           <Title order={4} size="h5" fw={600} lineClamp={2} c="dark">
             {getDocumentTitle()}
           </Title>
-          
+
           <Text size="sm" c="dimmed" lineClamp={2}>
             {document.type?.text || 'Document'} • Created by {getAuthor()}
           </Text>
@@ -299,9 +299,9 @@ const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({
           {/* Status and file info */}
           <Group justify="space-between" align="center">
             <Group gap="sm">
-              <Badge 
-                variant="dot" 
-                size="md" 
+              <Badge
+                variant="dot"
+                size="md"
                 color={getStatusColor(document.status)}
                 radius="md"
               >
@@ -311,13 +311,13 @@ const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({
                 {getFileSize()}
               </Text>
             </Group>
-            
+
             {/* Quick action buttons */}
             <Group gap="xs">
               <Tooltip label="View Document" position="top">
-                <ActionIcon 
-                  variant="light" 
-                  size="md" 
+                <ActionIcon
+                  variant="light"
+                  size="md"
                   color="blue"
                   onClick={() => onView(document)}
                   radius="md"
@@ -326,9 +326,9 @@ const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({
                 </ActionIcon>
               </Tooltip>
               <Tooltip label="Edit Document" position="top">
-                <ActionIcon 
-                  variant="light" 
-                  size="md" 
+                <ActionIcon
+                  variant="light"
+                  size="md"
                   color="green"
                   onClick={() => onEdit(document)}
                   radius="md"
@@ -337,9 +337,9 @@ const FHIRDocumentCard: React.FC<FHIRDocumentCardProps> = ({
                 </ActionIcon>
               </Tooltip>
               <Tooltip label="Download File" position="top">
-                <ActionIcon 
-                  variant="light" 
-                  size="md" 
+                <ActionIcon
+                  variant="light"
+                  size="md"
                   color="indigo"
                   onClick={() => onDownload(document)}
                   radius="md"
@@ -369,15 +369,15 @@ interface FHIRDocumentTableRowProps {
   onSelect: (documentId: string) => void;
 }
 
-const FHIRDocumentTableRow: React.FC<FHIRDocumentTableRowProps> = ({ 
-  document, 
-  onView, 
-  onEdit, 
-  onDownload, 
-  onDelete, 
-  onDuplicate, 
-  isSelected, 
-  onSelect 
+const FHIRDocumentTableRow: React.FC<FHIRDocumentTableRowProps> = ({
+  document,
+  onView,
+  onEdit,
+  onDownload,
+  onDelete,
+  onDuplicate,
+  isSelected,
+  onSelect
 }) => {
   const getTypeIcon = (type?: string) => {
     const typeText = type?.toLowerCase() || '';
@@ -427,8 +427,8 @@ const FHIRDocumentTableRow: React.FC<FHIRDocumentTableRowProps> = ({
   };
 
   return (
-    <Table.Tr 
-      style={{ 
+    <Table.Tr
+      style={{
         backgroundColor: isSelected ? '#f8f9fa' : undefined,
         cursor: 'pointer'
       }}
@@ -494,8 +494,8 @@ const FHIRDocumentTableRow: React.FC<FHIRDocumentTableRowProps> = ({
               Share
             </Menu.Item>
             <Menu.Divider />
-            <Menu.Item 
-              leftSection={<Trash2 size={14} />} 
+            <Menu.Item
+              leftSection={<Trash2 size={14} />}
               color="red"
               onClick={() => onDelete(document)}
             >
@@ -555,7 +555,7 @@ const DocumentDetailsModal: React.FC<DocumentDetailsModalProps> = ({ document, o
         <Alert icon={<Database size={16} />} color="green" variant="light">
           Live FHIR Data - Document ID: {document.id}
         </Alert>
-        
+
         <Tabs defaultValue="overview">
           <Tabs.List>
             <Tabs.Tab value="overview" leftSection={<Eye size={14} />}>
@@ -830,7 +830,7 @@ const ResourcesMedplumPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<DocumentReference | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -869,7 +869,7 @@ const ResourcesMedplumPage: React.FC = () => {
   // Filter documents
   const filteredDocuments = useMemo(() => {
     return documents.filter(document => {
-      const matchesSearch = !searchTerm || 
+      const matchesSearch = !searchTerm ||
         document.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         document.type?.text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         document.subject?.display?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -942,8 +942,8 @@ const ResourcesMedplumPage: React.FC = () => {
         // Update existing document via FHIR
         const updatedDocument = { ...selectedDocument, ...documentData };
         await backendFHIRService.updateResource('DocumentReference', selectedDocument.id!, updatedDocument);
-        
-        setDocuments(prev => prev.map(d => 
+
+        setDocuments(prev => prev.map(d =>
           d.id === selectedDocument.id ? updatedDocument : d
         ));
         setNotification({ type: 'success', message: 'Document updated successfully!' });
@@ -953,7 +953,7 @@ const ResourcesMedplumPage: React.FC = () => {
           resourceType: 'DocumentReference',
           ...documentData,
         } as DocumentReference);
-        
+
         setDocuments(prev => [...prev, newDocument]);
         setNotification({ type: 'success', message: 'Document created successfully!' });
       }
@@ -991,7 +991,7 @@ const ResourcesMedplumPage: React.FC = () => {
         description: `${document.description} (Copy)`,
         date: new Date().toISOString(),
       };
-      
+
       const newDocument = await backendFHIRService.createResource('DocumentReference', duplicatedDocument);
       setDocuments(prev => [...prev, newDocument]);
       setNotification({ type: 'success', message: 'Document duplicated successfully!' });
@@ -1005,13 +1005,13 @@ const ResourcesMedplumPage: React.FC = () => {
 
   const handleBulkDelete = async () => {
     if (selectedDocuments.length === 0) return;
-    
+
     setLoading(true);
     try {
       await Promise.all(
         selectedDocuments.map(id => backendFHIRService.deleteResource('DocumentReference', id))
       );
-      
+
       setDocuments(prev => prev.filter(d => !selectedDocuments.includes(d.id!)));
       setSelectedDocuments([]);
       setNotification({ type: 'success', message: `${selectedDocuments.length} documents deleted successfully!` });
@@ -1025,7 +1025,7 @@ const ResourcesMedplumPage: React.FC = () => {
 
   const handleBulkStatusChange = async (status: string) => {
     if (selectedDocuments.length === 0) return;
-    
+
     setLoading(true);
     try {
       const updatePromises = selectedDocuments.map(async (id) => {
@@ -1035,18 +1035,18 @@ const ResourcesMedplumPage: React.FC = () => {
           return backendFHIRService.updateResource('DocumentReference', id, updatedDocument);
         }
       });
-      
+
       await Promise.all(updatePromises);
-      
-      setDocuments(prev => prev.map(d => 
-        selectedDocuments.includes(d.id!) 
+
+      setDocuments(prev => prev.map(d =>
+        selectedDocuments.includes(d.id!)
           ? { ...d, status: status as any }
           : d
       ));
       setSelectedDocuments([]);
-      setNotification({ 
-        type: 'success', 
-        message: `${selectedDocuments.length} documents updated to ${status} successfully!` 
+      setNotification({
+        type: 'success',
+        message: `${selectedDocuments.length} documents updated to ${status} successfully!`
       });
     } catch (error) {
       console.error('Error bulk updating documents:', error);
@@ -1083,8 +1083,8 @@ const ResourcesMedplumPage: React.FC = () => {
   };
 
   const handleSelectDocument = (documentId: string) => {
-    setSelectedDocuments(prev => 
-      prev.includes(documentId) 
+    setSelectedDocuments(prev =>
+      prev.includes(documentId)
         ? prev.filter(id => id !== documentId)
         : [...prev, documentId]
     );
@@ -1149,8 +1149,8 @@ const ResourcesMedplumPage: React.FC = () => {
               >
                 Export
               </Button>
-              <Button 
-                leftSection={<Plus size={16} />} 
+              <Button
+                leftSection={<Plus size={16} />}
                 onClick={handleCreateDocument}
                 gradient={{ from: 'blue', to: 'indigo' }}
                 variant="gradient"
@@ -1163,12 +1163,12 @@ const ResourcesMedplumPage: React.FC = () => {
 
         {/* Statistics Dashboard */}
         <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="lg">
-          <Paper 
-            p="lg" 
-            withBorder 
-            radius="md" 
+          <Paper
+            p="lg"
+            withBorder
+            radius="md"
             shadow="sm"
-            style={{ 
+            style={{
               transition: 'all 0.2s ease',
               cursor: 'pointer',
               '&:hover': {
@@ -1195,10 +1195,10 @@ const ResourcesMedplumPage: React.FC = () => {
                   </Text>
                 </Group>
               </Stack>
-              <ThemeIcon 
-                size="xl" 
-                radius="md" 
-                variant="gradient" 
+              <ThemeIcon
+                size="xl"
+                radius="md"
+                variant="gradient"
                 gradient={{ from: 'blue', to: 'indigo' }}
               >
                 <FileText size={24} />
@@ -1206,12 +1206,12 @@ const ResourcesMedplumPage: React.FC = () => {
             </Group>
           </Paper>
 
-          <Paper 
-            p="lg" 
-            withBorder 
-            radius="md" 
+          <Paper
+            p="lg"
+            withBorder
+            radius="md"
             shadow="sm"
-            style={{ 
+            style={{
               transition: 'all 0.2s ease',
               cursor: 'pointer',
               '&:hover': {
@@ -1238,10 +1238,10 @@ const ResourcesMedplumPage: React.FC = () => {
                   </Text>
                 </Group>
               </Stack>
-              <ThemeIcon 
-                size="xl" 
-                radius="md" 
-                variant="gradient" 
+              <ThemeIcon
+                size="xl"
+                radius="md"
+                variant="gradient"
                 gradient={{ from: 'green', to: 'teal' }}
               >
                 <Check size={24} />
@@ -1249,12 +1249,12 @@ const ResourcesMedplumPage: React.FC = () => {
             </Group>
           </Paper>
 
-          <Paper 
-            p="lg" 
-            withBorder 
-            radius="md" 
+          <Paper
+            p="lg"
+            withBorder
+            radius="md"
             shadow="sm"
-            style={{ 
+            style={{
               transition: 'all 0.2s ease',
               cursor: 'pointer',
               '&:hover': {
@@ -1281,10 +1281,10 @@ const ResourcesMedplumPage: React.FC = () => {
                   </Text>
                 </Group>
               </Stack>
-              <ThemeIcon 
-                size="xl" 
-                radius="md" 
-                variant="gradient" 
+              <ThemeIcon
+                size="xl"
+                radius="md"
+                variant="gradient"
                 gradient={{ from: 'orange', to: 'red' }}
               >
                 <Users size={24} />
@@ -1292,12 +1292,12 @@ const ResourcesMedplumPage: React.FC = () => {
             </Group>
           </Paper>
 
-          <Paper 
-            p="lg" 
-            withBorder 
-            radius="md" 
+          <Paper
+            p="lg"
+            withBorder
+            radius="md"
             shadow="sm"
-            style={{ 
+            style={{
               transition: 'all 0.2s ease',
               cursor: 'pointer',
               '&:hover': {
@@ -1324,10 +1324,10 @@ const ResourcesMedplumPage: React.FC = () => {
                   </Text>
                 </Group>
               </Stack>
-              <ThemeIcon 
-                size="xl" 
-                radius="md" 
-                variant="gradient" 
+              <ThemeIcon
+                size="xl"
+                radius="md"
+                variant="gradient"
                 gradient={{ from: 'yellow', to: 'orange' }}
               >
                 <Star size={24} />
@@ -1368,23 +1368,23 @@ const ResourcesMedplumPage: React.FC = () => {
                 value={viewMode}
                 onChange={(value) => setViewMode(value as 'cards' | 'table')}
                 data={[
-                  { 
+                  {
                     label: (
                       <Group gap="xs">
                         <BarChart3 size={14} />
                         <span>Cards</span>
                       </Group>
-                    ), 
-                    value: 'cards' 
+                    ),
+                    value: 'cards'
                   },
-                  { 
+                  {
                     label: (
                       <Group gap="xs">
                         <FileText size={14} />
                         <span>Table</span>
                       </Group>
-                    ), 
-                    value: 'table' 
+                    ),
+                    value: 'table'
                   },
                 ]}
                 size="sm"
@@ -1458,25 +1458,25 @@ const ResourcesMedplumPage: React.FC = () => {
                           leftSection={<Check size={14} />}
                           onClick={() => handleBulkStatusChange('current')}
                         >
-                        Mark as Current
-                      </Menu.Item>
-                      <Menu.Item
-                        leftSection={<Clock size={14} />}
-                        onClick={() => handleBulkStatusChange('superseded')}
-                      >
-                        Mark as Superseded
-                      </Menu.Item>
-                      <Menu.Divider />
-                      <Menu.Item
-                        leftSection={<Trash2 size={14} />}
-                        color="red"
-                        onClick={handleBulkDelete}
-                      >
-                        Delete Selected
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
-                )}
+                          Mark as Current
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<Clock size={14} />}
+                          onClick={() => handleBulkStatusChange('superseded')}
+                        >
+                          Mark as Superseded
+                        </Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item
+                          leftSection={<Trash2 size={14} />}
+                          color="red"
+                          onClick={handleBulkDelete}
+                        >
+                          Delete Selected
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  )}
                   <Button
                     variant="light"
                     size="sm"
@@ -1512,8 +1512,8 @@ const ResourcesMedplumPage: React.FC = () => {
               </Stack>
             </Center>
           ) : (
-            <SimpleGrid 
-              cols={{ base: 1, sm: 2, md: 2, lg: 3, xl: 4 }} 
+            <SimpleGrid
+              cols={{ base: 1, sm: 2, md: 2, lg: 3, xl: 4 }}
               spacing="lg"
               verticalSpacing="lg"
             >

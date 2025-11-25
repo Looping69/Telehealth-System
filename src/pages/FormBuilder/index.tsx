@@ -28,12 +28,12 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { 
-  Plus, 
-  FileText, 
-  Clock, 
-  Users, 
-  Play, 
+import {
+  Plus,
+  FileText,
+  Clock,
+  Users,
+  Play,
   Eye,
   Edit,
   Trash2,
@@ -56,92 +56,92 @@ export default function FormBuilderPage() {
   const { user } = useAuthStore();
   const [builderOpened, { open: openBuilder, close: closeBuilder }] = useDisclosure(false);
   const [previewOpened, { open: openPreview, close: closePreview }] = useDisclosure(false);
-  
+
   // State management
   const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<Questionnaire | null>(null);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [activeTab, setActiveTab] = useState<string | null>('my-forms');
 
   /**
     * Loads questionnaires from mock data
     */
-   const loadQuestionnaires = async () => {
-      // Mock data for offline mode
-      setQuestionnaires([
-        {
-          resourceType: 'Questionnaire',
-          id: 'patient-intake-form',
-          status: 'active',
-          title: 'Patient Intake Form',
-          description: 'Comprehensive patient intake questionnaire',
-          date: '2024-01-15T10:00:00Z',
-          item: [
-            {
-              linkId: 'personal-info',
-              type: 'group',
-              text: 'Personal Information',
-              item: [
-                {
-                  linkId: 'full-name',
-                  type: 'string',
-                  text: 'What is your full name?',
-                  required: true,
-                },
-                {
-                  linkId: 'email',
-                  type: 'string',
-                  text: 'What is your email address?',
-                  required: true,
-                },
-                {
-                  linkId: 'phone',
-                  type: 'string',
-                  text: 'What is your phone number?',
-                  required: false,
-                },
-              ],
-            },
-          ],
-        },
-        {
-          resourceType: 'Questionnaire',
-          id: 'symptom-assessment',
-          status: 'active',
-          title: 'Symptom Assessment',
-          description: 'Quick symptom evaluation form',
-          date: '2024-01-14T15:30:00Z',
-          item: [
-            {
-              linkId: 'symptoms',
-              type: 'choice',
-              text: 'What symptoms are you experiencing?',
-              required: true,
-              answerOption: [
-                { valueString: 'Headache' },
-                { valueString: 'Fever' },
-                { valueString: 'Cough' },
-                { valueString: 'Fatigue' },
-              ],
-            },
-          ],
-        },
-      ]);
-       setLoading(false);
+  const loadQuestionnaires = async () => {
+    // Mock data for offline mode
+    setQuestionnaires([
+      {
+        resourceType: 'Questionnaire',
+        id: 'patient-intake-form',
+        status: 'active',
+        title: 'Patient Intake Form',
+        description: 'Comprehensive patient intake questionnaire',
+        date: '2024-01-15T10:00:00Z',
+        item: [
+          {
+            linkId: 'personal-info',
+            type: 'group',
+            text: 'Personal Information',
+            item: [
+              {
+                linkId: 'full-name',
+                type: 'string',
+                text: 'What is your full name?',
+                required: true,
+              },
+              {
+                linkId: 'email',
+                type: 'string',
+                text: 'What is your email address?',
+                required: true,
+              },
+              {
+                linkId: 'phone',
+                type: 'string',
+                text: 'What is your phone number?',
+                required: false,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        resourceType: 'Questionnaire',
+        id: 'symptom-assessment',
+        status: 'active',
+        title: 'Symptom Assessment',
+        description: 'Quick symptom evaluation form',
+        date: '2024-01-14T15:30:00Z',
+        item: [
+          {
+            linkId: 'symptoms',
+            type: 'choice',
+            text: 'What symptoms are you experiencing?',
+            required: true,
+            answerOption: [
+              { valueString: 'Headache' },
+              { valueString: 'Fever' },
+              { valueString: 'Cough' },
+              { valueString: 'Fatigue' },
+            ],
+          },
+        ],
+      },
+    ]);
+    setLoading(false);
   };
 
   /**
    * Handles saving a new or updated questionnaire
    */
   const handleSaveQuestionnaire = async (questionnaire: Questionnaire) => {
-     try {
-       // Simulate save with mock data
-       const savedQuestionnaire: Questionnaire = {
-         ...questionnaire,
-         id: questionnaire.id || `questionnaire-${Date.now()}`,
-         date: new Date().toISOString(),
-       };
+    try {
+      // Simulate save with mock data
+      const savedQuestionnaire: Questionnaire = {
+        ...questionnaire,
+        id: questionnaire.id || `questionnaire-${Date.now()}`,
+        date: new Date().toISOString(),
+      };
 
       // Update local state
       setQuestionnaires(prev => {
@@ -176,10 +176,10 @@ export default function FormBuilderPage() {
    * Handles deleting a questionnaire
    */
   const handleDeleteQuestionnaire = async (id: string) => {
-     try {
-       // Simulate delete with mock data
-       setQuestionnaires(prev => prev.filter(q => q.id !== id));
-      
+    try {
+      // Simulate delete with mock data
+      setQuestionnaires(prev => prev.filter(q => q.id !== id));
+
       notifications.show({
         title: 'Form Deleted',
         message: 'The form has been deleted successfully',
@@ -208,7 +208,7 @@ export default function FormBuilderPage() {
    */
   const convertQuestionnaireToQuestions = (questionnaire: Questionnaire) => {
     if (!questionnaire.item) return [];
-    
+
     const convertItem = (item: any): any => ({
       id: item.linkId,
       type: mapFhirTypeToQuestionType(item.type),
@@ -236,9 +236,9 @@ export default function FormBuilderPage() {
   }
 
   // Load questionnaires on component mount
-   useEffect(() => {
-     loadQuestionnaires();
-   }, []);
+  useEffect(() => {
+    loadQuestionnaires();
+  }, []);
 
   if (loading) {
     return (

@@ -160,8 +160,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onView, onEdit, onComplete })
               {task.id} • {task.category}
             </Text>
           </Stack>
-          <Badge 
-            color={getStatusColor(task.status)} 
+          <Badge
+            color={getStatusColor(task.status)}
             leftSection={getStatusIcon(task.status)}
           >
             {task.status}
@@ -388,7 +388,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose, onTa
     };
 
     onTaskCreated(newTask);
-    
+
     // Reset form
     setFormData({
       title: '',
@@ -400,13 +400,13 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ opened, onClose, onTa
       patientName: '',
     });
     setErrors({});
-    
+
     notifications.show({
       title: 'Task Created',
       message: `Task "${newTask.title}" has been created successfully.`,
       color: 'green',
     });
-    
+
     onClose();
   };
 
@@ -594,13 +594,13 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, opened, onClose, on
     };
 
     onTaskUpdated(updatedTask);
-    
+
     notifications.show({
       title: 'Task Updated',
       message: `Task "${updatedTask.title}" has been updated successfully.`,
       color: 'green',
     });
-    
+
     onClose();
   };
 
@@ -724,9 +724,9 @@ export const TasksPage: React.FC = () => {
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
   const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
-  
+
   // New state for card/table view
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
 
   // Convert mock data to stateful data for real-time updates
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
@@ -742,7 +742,7 @@ export const TasksPage: React.FC = () => {
   };
 
   const handleTaskUpdated = (updatedTask: Task) => {
-    setTasks(prevTasks => 
+    setTasks(prevTasks =>
       prevTasks.map(task => task.id === updatedTask.id ? updatedTask : task)
     );
   };
@@ -768,7 +768,7 @@ export const TasksPage: React.FC = () => {
       completedDate: new Date().toISOString().split('T')[0],
     };
 
-    setTasks(prevTasks => 
+    setTasks(prevTasks =>
       prevTasks.map(t => t.id === task.id ? updatedTask : t)
     );
 
@@ -788,7 +788,7 @@ export const TasksPage: React.FC = () => {
       case 'completed':
         return tasks.filter(task => task.status === 'completed');
       case 'overdue':
-        return tasks.filter(task => 
+        return tasks.filter(task =>
           task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed'
         );
       default:
@@ -797,7 +797,7 @@ export const TasksPage: React.FC = () => {
   };
 
   const filteredTasks = filterTasksByTab(tasks, activeTab || 'all')
-    .filter(task => 
+    .filter(task =>
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.patientName?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -808,7 +808,7 @@ export const TasksPage: React.FC = () => {
   const pendingTasks = tasks.filter(task => task.status === 'todo').length;
   const inProgressTasks = tasks.filter(task => task.status === 'in_progress').length;
   const completedTasks = tasks.filter(task => task.status === 'completed').length;
-  const overdueTasks = tasks.filter(task => 
+  const overdueTasks = tasks.filter(task =>
     task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed'
   ).length;
 

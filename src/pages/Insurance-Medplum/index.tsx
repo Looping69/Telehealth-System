@@ -787,11 +787,11 @@ interface ProviderDetailsModalProps {
   onEdit: () => void;
 }
 
-const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({ 
-  provider, 
-  opened, 
-  onClose, 
-  onEdit 
+const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
+  provider,
+  opened,
+  onClose,
+  onEdit
 }) => {
   if (!provider) return null;
 
@@ -878,10 +878,10 @@ const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
                       </Stack>
                     </Card>
                   )) || (
-                    <Text size="sm" c="dimmed">
-                      No plans available
-                    </Text>
-                  )}
+                      <Text size="sm" c="dimmed">
+                        No plans available
+                      </Text>
+                    )}
                 </Stack>
               </Card>
             </Stack>
@@ -992,29 +992,29 @@ const NewCoverageForm: React.FC<NewCoverageFormProps> = ({ onSubmit, onCancel, l
       status: coverage?.status || 'active',
       type: coverage?.type?.coding?.[0]?.code || '',
       subscriberId: coverage?.subscriberId || '',
-      
+
       // Beneficiary Information
       beneficiaryReference: coverage?.beneficiary?.reference || '',
       beneficiaryDisplay: coverage?.beneficiary?.display || '',
-      
+
       // Payor Information
       payorReference: coverage?.payor?.[0]?.reference || '',
       payorDisplay: coverage?.payor?.[0]?.display || '',
-      
+
       // Policy Information
       policyHolder: coverage?.policyHolder?.reference || '',
       dependent: coverage?.dependent || '',
       relationship: coverage?.relationship?.coding?.[0]?.code || '',
-      
+
       // Coverage Period
       periodStart: coverage?.period?.start ? new Date(coverage.period.start) : null as Date | null,
       periodEnd: coverage?.period?.end ? new Date(coverage.period.end) : null as Date | null,
-      
+
       // Network and Group
       network: coverage?.network || '',
       groupId: coverage?.class?.[0]?.value || '',
       groupDisplay: coverage?.class?.[0]?.name || '',
-      
+
       // Cost Information
       copay: coverage?.costToBeneficiary?.[0]?.valueMoney?.value?.toString() || '',
       deductible: '',
@@ -1036,7 +1036,7 @@ const NewCoverageForm: React.FC<NewCoverageFormProps> = ({ onSubmit, onCancel, l
       const coverage: Partial<Coverage> = {
         resourceType: 'Coverage',
         status: values.status as Coverage['status'],
-        
+
         // Coverage type
         type: values.type ? {
           coding: [{
@@ -1046,25 +1046,25 @@ const NewCoverageForm: React.FC<NewCoverageFormProps> = ({ onSubmit, onCancel, l
           }],
           text: getCoverageTypeDisplay(values.type),
         } : undefined,
-        
+
         // Beneficiary (Patient reference)
         beneficiary: {
           reference: values.beneficiaryReference || `Patient/${values.beneficiaryDisplay}`,
           display: values.beneficiaryDisplay,
         },
-        
+
         // Payor (Organization/Patient reference)
         payor: [{
           reference: values.payorReference || `Organization/${values.payorDisplay}`,
           display: values.payorDisplay,
         }],
-        
+
         // Coverage period
         period: values.periodStart ? {
           start: values.periodStart.toISOString().split('T')[0],
           end: values.periodEnd?.toISOString().split('T')[0],
         } : undefined,
-        
+
         // Subscriber ID
         identifier: values.subscriberId ? [{
           type: {
@@ -1076,15 +1076,15 @@ const NewCoverageForm: React.FC<NewCoverageFormProps> = ({ onSubmit, onCancel, l
           },
           value: values.subscriberId,
         }] : undefined,
-        
+
         // Policy holder
         policyHolder: values.policyHolder ? {
           reference: `Patient/${values.policyHolder}`,
         } : undefined,
-        
+
         // Dependent
         dependent: values.dependent || undefined,
-        
+
         // Relationship
         relationship: values.relationship ? {
           coding: [{
@@ -1093,10 +1093,10 @@ const NewCoverageForm: React.FC<NewCoverageFormProps> = ({ onSubmit, onCancel, l
             display: getRelationshipDisplay(values.relationship),
           }],
         } : undefined,
-        
+
         // Network
         network: values.network ? `Organization/${values.network}` : undefined,
-        
+
         // Class (Group information)
         class: values.groupId ? [{
           type: {
@@ -1109,7 +1109,7 @@ const NewCoverageForm: React.FC<NewCoverageFormProps> = ({ onSubmit, onCancel, l
           value: values.groupId,
           name: values.groupDisplay,
         }] : undefined,
-        
+
         // Cost to beneficiary
         costToBeneficiary: buildCostToBeneficiary(values),
       };
@@ -1339,8 +1339,8 @@ const NewCoverageForm: React.FC<NewCoverageFormProps> = ({ onSubmit, onCancel, l
           <Button variant="outline" onClick={onCancel} disabled={loading}>
             Cancel
           </Button>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             leftSection={<Save size={16} />}
             loading={loading}
           >
@@ -1378,7 +1378,7 @@ const getRelationshipDisplay = (code: string): string => {
 
 const buildCostToBeneficiary = (values: any) => {
   const costs = [];
-  
+
   if (values.copay) {
     costs.push({
       type: {
@@ -1394,7 +1394,7 @@ const buildCostToBeneficiary = (values: any) => {
       },
     });
   }
-  
+
   if (values.deductible) {
     costs.push({
       type: {
@@ -1410,7 +1410,7 @@ const buildCostToBeneficiary = (values: any) => {
       },
     });
   }
-  
+
   if (values.outOfPocketMax) {
     costs.push({
       type: {
@@ -1426,7 +1426,7 @@ const buildCostToBeneficiary = (values: any) => {
       },
     });
   }
-  
+
   return costs.length > 0 ? costs : undefined;
 };
 
@@ -1439,7 +1439,7 @@ const InsuranceMedplumPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedCoverage, setSelectedCoverage] = useState<Coverage | null>(null);
   const [createLoading, setCreateLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
 
   // Modal states
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
@@ -1507,12 +1507,12 @@ const InsuranceMedplumPage: React.FC = () => {
     setCreateLoading(true);
     try {
       console.log('Creating new FHIR Coverage resource:', coverage);
-      
+
       // Create the Coverage resource using backend FHIR service
       const createdCoverage = await backendFHIRService.createResource('Coverage', coverage as Coverage);
-      
+
       console.log('Successfully created Coverage resource:', createdCoverage);
-      
+
       // Show success notification
       showNotification({
         title: 'Success',
@@ -1520,14 +1520,14 @@ const InsuranceMedplumPage: React.FC = () => {
         color: 'green',
         icon: <CheckCircle size={16} />,
       });
-      
+
       // Close the modal and refresh the data
       closeCreate();
       await refetch();
-      
+
     } catch (error: any) {
       console.error('Error creating Coverage resource:', error);
-      
+
       // Show error notification with specific error message
       showNotification({
         title: 'Error Creating Coverage',
@@ -1730,16 +1730,16 @@ const InsuranceMedplumPage: React.FC = () => {
               </Paper>
             ) : viewMode === 'cards' ? (
               <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
-                 {filteredCoverages.map((coverage) => (
-                   <PatientInsuranceCard
-                     key={coverage.id}
-                     coverage={coverage}
-                     onView={() => handleViewCoverage(coverage)}
-                     onVerify={() => handleVerifyInsurance(coverage)}
-                     onEdit={() => handleEditCoverage(coverage)}
-                   />
-                 ))}
-               </SimpleGrid>
+                {filteredCoverages.map((coverage) => (
+                  <PatientInsuranceCard
+                    key={coverage.id}
+                    coverage={coverage}
+                    onView={() => handleViewCoverage(coverage)}
+                    onVerify={() => handleVerifyInsurance(coverage)}
+                    onEdit={() => handleEditCoverage(coverage)}
+                  />
+                ))}
+              </SimpleGrid>
             ) : (
               <Table.ScrollContainer minWidth={800}>
                 <Table verticalSpacing="sm" highlightOnHover>
@@ -1755,14 +1755,14 @@ const InsuranceMedplumPage: React.FC = () => {
                   </Table.Thead>
                   <Table.Tbody>
                     {filteredCoverages.map((coverage) => (
-                       <PatientInsuranceTableRow
-                         key={coverage.id}
-                         coverage={coverage}
-                         onView={() => handleViewCoverage(coverage)}
-                         onVerify={() => handleVerifyInsurance(coverage)}
-                         onEdit={() => handleEditCoverage(coverage)}
-                       />
-                     ))}
+                      <PatientInsuranceTableRow
+                        key={coverage.id}
+                        coverage={coverage}
+                        onView={() => handleViewCoverage(coverage)}
+                        onVerify={() => handleVerifyInsurance(coverage)}
+                        onEdit={() => handleEditCoverage(coverage)}
+                      />
+                    ))}
                   </Table.Tbody>
                 </Table>
               </Table.ScrollContainer>
@@ -1836,7 +1836,7 @@ const InsuranceMedplumPage: React.FC = () => {
           opened={providerDetailsOpened}
           onClose={closeProviderDetails}
           provider={selectedProvider}
-          onEdit={() => {}}
+          onEdit={() => { }}
         />
 
         {/* Create Coverage Modal */}

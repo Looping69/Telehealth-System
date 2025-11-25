@@ -78,15 +78,15 @@ interface FHIRProductCardProps {
   onSelect: (medicationId: string, selected: boolean) => void;
 }
 
-const FHIRProductCard: React.FC<FHIRProductCardProps> = ({ 
-  medication, 
-  onView, 
-  onEdit, 
-  onToggleStatus, 
-  onDelete, 
-  onDuplicate, 
-  isSelected, 
-  onSelect 
+const FHIRProductCard: React.FC<FHIRProductCardProps> = ({
+  medication,
+  onView,
+  onEdit,
+  onToggleStatus,
+  onDelete,
+  onDuplicate,
+  isSelected,
+  onSelect
 }) => {
   const getStatusColor = (status?: string) => {
     switch (status) {
@@ -102,9 +102,9 @@ const FHIRProductCard: React.FC<FHIRProductCardProps> = ({
   };
 
   const getProductName = () => {
-    return medication.code?.text || 
-           medication.code?.coding?.[0]?.display || 
-           'Unnamed Product';
+    return medication.code?.text ||
+      medication.code?.coding?.[0]?.display ||
+      'Unnamed Product';
   };
 
   const getManufacturer = () => {
@@ -112,16 +112,16 @@ const FHIRProductCard: React.FC<FHIRProductCardProps> = ({
   };
 
   const getDosageForm = () => {
-    return medication.form?.text || 
-           medication.form?.coding?.[0]?.display || 
-           'Unknown Form';
+    return medication.form?.text ||
+      medication.form?.coding?.[0]?.display ||
+      'Unknown Form';
   };
 
   const getIngredients = () => {
     if (medication.ingredient && medication.ingredient.length > 0) {
-      return medication.ingredient.map(ing => 
-        ing.itemCodeableConcept?.text || 
-        ing.itemCodeableConcept?.coding?.[0]?.display || 
+      return medication.ingredient.map(ing =>
+        ing.itemCodeableConcept?.text ||
+        ing.itemCodeableConcept?.coding?.[0]?.display ||
         'Unknown Ingredient'
       ).join(', ');
     }
@@ -179,8 +179,8 @@ const FHIRProductCard: React.FC<FHIRProductCardProps> = ({
                   Duplicate
                 </Menu.Item>
                 <Menu.Divider />
-                <Menu.Item 
-                  leftSection={<Trash2 size={14} />} 
+                <Menu.Item
+                  leftSection={<Trash2 size={14} />}
                   color="red"
                   onClick={() => onDelete(medication.id!)}
                 >
@@ -192,10 +192,10 @@ const FHIRProductCard: React.FC<FHIRProductCardProps> = ({
         </Group>
 
         <Group>
-          <div style={{ 
-            width: 40, 
-            height: 40, 
-            borderRadius: '8px', 
+          <div style={{
+            width: 40,
+            height: 40,
+            borderRadius: '8px',
             backgroundColor: '#4ECDC4',
             display: 'flex',
             alignItems: 'center',
@@ -274,9 +274,9 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ medication, o
   if (!medication) return null;
 
   const getProductName = () => {
-    return medication.code?.text || 
-           medication.code?.coding?.[0]?.display || 
-           'Unnamed Product';
+    return medication.code?.text ||
+      medication.code?.coding?.[0]?.display ||
+      'Unnamed Product';
   };
 
   const getManufacturer = () => {
@@ -284,16 +284,16 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ medication, o
   };
 
   const getDosageForm = () => {
-    return medication.form?.text || 
-           medication.form?.coding?.[0]?.display || 
-           'Unknown Form';
+    return medication.form?.text ||
+      medication.form?.coding?.[0]?.display ||
+      'Unknown Form';
   };
 
   const getIngredients = () => {
     if (medication.ingredient && medication.ingredient.length > 0) {
-      return medication.ingredient.map(ing => 
-        ing.itemCodeableConcept?.text || 
-        ing.itemCodeableConcept?.coding?.[0]?.display || 
+      return medication.ingredient.map(ing =>
+        ing.itemCodeableConcept?.text ||
+        ing.itemCodeableConcept?.coding?.[0]?.display ||
         'Unknown Ingredient'
       );
     }
@@ -306,7 +306,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ medication, o
         <Alert icon={<Database size={16} />} color="green" variant="light">
           Live FHIR Data - Medication ID: {medication.id}
         </Alert>
-        
+
         <Tabs defaultValue="overview">
           <Tabs.List>
             <Tabs.Tab value="overview">Overview</Tabs.Tab>
@@ -363,7 +363,7 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ medication, o
                       Lot Number: {medication.batch?.lotNumber || 'N/A'}
                     </Text>
                     <Text size="sm" c="dimmed">
-                      Expiration: {medication.batch?.expirationDate ? 
+                      Expiration: {medication.batch?.expirationDate ?
                         new Date(medication.batch.expirationDate).toLocaleDateString() : 'N/A'}
                     </Text>
                   </Stack>
@@ -400,7 +400,7 @@ const ProductsMedplumPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [selectedMedications, setSelectedMedications] = useState<string[]>([]);
 
@@ -440,7 +440,7 @@ const ProductsMedplumPage: React.FC = () => {
   // Filter medications
   const filteredMedications = useMemo(() => {
     return medications.filter(medication => {
-      const matchesSearch = !searchTerm || 
+      const matchesSearch = !searchTerm ||
         medication.code?.text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         medication.code?.coding?.[0]?.display?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         medication.manufacturer?.display?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -477,20 +477,20 @@ const ProductsMedplumPage: React.FC = () => {
    */
   const handleToggleStatus = (medication: Medication) => {
     setLoading(true);
-    
+
     setTimeout(() => {
-      setMedications(prev => prev.map(m => 
-        m.id === medication.id 
+      setMedications(prev => prev.map(m =>
+        m.id === medication.id
           ? { ...m, status: m.status === 'active' ? 'inactive' : 'active' }
           : m
       ));
-      
+
       notifications.show({
         title: 'Product Updated',
         message: `Product ${medication.status === 'active' ? 'deactivated' : 'activated'} successfully`,
         color: medication.status === 'active' ? 'orange' : 'green',
       });
-      
+
       setLoading(false);
     }, 500);
   };
@@ -500,7 +500,7 @@ const ProductsMedplumPage: React.FC = () => {
    */
   const handleDeleteMedication = (medicationId: string) => {
     const medication = medications.find(m => m.id === medicationId);
-    
+
     modals.openConfirmModal({
       title: 'Delete Product',
       children: (
@@ -515,7 +515,7 @@ const ProductsMedplumPage: React.FC = () => {
           await backendFHIRService.deleteResource('Medication', medicationId);
           setMedications(prev => prev.filter(m => m.id !== medicationId));
           setSelectedMedications(prev => prev.filter(id => id !== medicationId));
-          
+
           notifications.show({
             title: 'Product Deleted',
             message: 'Medication has been deleted successfully',
@@ -574,7 +574,7 @@ const ProductsMedplumPage: React.FC = () => {
       onConfirm: () => {
         setMedications(prev => prev.filter(m => !selectedMedications.includes(m.id!)));
         setSelectedMedications([]);
-        
+
         notifications.show({
           title: 'Products Deleted',
           message: `${selectedMedications.length} medications have been deleted`,
@@ -587,18 +587,18 @@ const ProductsMedplumPage: React.FC = () => {
   const handleBulkStatusChange = (status: 'active' | 'inactive') => {
     if (selectedMedications.length === 0) return;
 
-    setMedications(prev => prev.map(m => 
-      selectedMedications.includes(m.id!) 
+    setMedications(prev => prev.map(m =>
+      selectedMedications.includes(m.id!)
         ? { ...m, status }
         : m
     ));
-    
+
     notifications.show({
       title: 'Products Updated',
       message: `${selectedMedications.length} medications have been ${status === 'active' ? 'activated' : 'deactivated'}`,
       color: status === 'active' ? 'green' : 'orange',
     });
-    
+
     setSelectedMedications([]);
   };
 
@@ -875,10 +875,10 @@ const ProductsMedplumPage: React.FC = () => {
                     </Table.Td>
                     <Table.Td>
                       <Group gap="sm">
-                        <div style={{ 
-                          width: 32, 
-                          height: 32, 
-                          borderRadius: '6px', 
+                        <div style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '6px',
                           backgroundColor: '#4ECDC4',
                           display: 'flex',
                           alignItems: 'center',

@@ -186,13 +186,13 @@ interface TagCardProps {
   onViewUsage: (tag: TagItem) => void;
 }
 
-const TagCard: React.FC<TagCardProps> = ({ 
-  tag, 
-  onEdit, 
-  onDelete, 
-  onToggleStatus, 
-  onDuplicate, 
-  onViewUsage 
+const TagCard: React.FC<TagCardProps> = ({
+  tag,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+  onDuplicate,
+  onViewUsage
 }) => {
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -207,10 +207,10 @@ const TagCard: React.FC<TagCardProps> = ({
               </Text>
               <Badge
                 size="xs"
-                color={tag.category === 'patient' ? 'blue' : 
-                       tag.category === 'appointment' ? 'green' :
-                       tag.category === 'resource' ? 'orange' :
-                       tag.category === 'billing' ? 'purple' : 'gray'}
+                color={tag.category === 'patient' ? 'blue' :
+                  tag.category === 'appointment' ? 'green' :
+                    tag.category === 'resource' ? 'orange' :
+                      tag.category === 'billing' ? 'purple' : 'gray'}
               >
                 {tag.category}
               </Badge>
@@ -233,15 +233,15 @@ const TagCard: React.FC<TagCardProps> = ({
                 View Usage
               </Menu.Item>
               <Menu.Divider />
-              <Menu.Item 
-                leftSection={<Settings style={{ width: rem(14), height: rem(14) }} />} 
+              <Menu.Item
+                leftSection={<Settings style={{ width: rem(14), height: rem(14) }} />}
                 onClick={() => onToggleStatus(tag)}
                 color={tag.isActive ? 'red' : 'green'}
               >
                 {tag.isActive ? 'Deactivate' : 'Activate'}
               </Menu.Item>
-              <Menu.Item 
-                leftSection={<Trash2 style={{ width: rem(14), height: rem(14) }} />} 
+              <Menu.Item
+                leftSection={<Trash2 style={{ width: rem(14), height: rem(14) }} />}
                 onClick={() => onDelete(tag)}
                 color="red"
               >
@@ -460,7 +460,7 @@ const TagUsageModal: React.FC<TagUsageModalProps> = ({ tag, opened, onClose }) =
         </Group>
 
         <Text size="sm" fw={500} mb="xs">Usage Breakdown</Text>
-        
+
         {usageData.map((item) => {
           const Icon = item.icon;
           return (
@@ -518,7 +518,7 @@ export const TagsPage: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState<TagItem | null>(null);
   const [formOpened, { open: openForm, close: closeForm }] = useDisclosure(false);
   const [usageOpened, { open: openUsage, close: closeUsage }] = useDisclosure(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
@@ -562,9 +562,9 @@ export const TagsPage: React.FC = () => {
           setIsLoading(true);
           // Simulate API call
           await new Promise(resolve => setTimeout(resolve, 1000));
-          
+
           setTags(prev => prev.filter(t => t.id !== tag.id));
-          
+
           notifications.show({
             title: 'Tag Deleted',
             message: `"${tag.name}" has been successfully deleted.`,
@@ -593,13 +593,13 @@ export const TagsPage: React.FC = () => {
       setIsLoading(true);
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setTags(prev => prev.map(t => 
-        t.id === tag.id 
+
+      setTags(prev => prev.map(t =>
+        t.id === tag.id
           ? { ...t, isActive: !t.isActive, lastUsed: new Date().toISOString().split('T')[0] }
           : t
       ));
-      
+
       notifications.show({
         title: 'Status Updated',
         message: `"${tag.name}" has been ${!tag.isActive ? 'activated' : 'deactivated'}.`,
@@ -626,19 +626,19 @@ export const TagsPage: React.FC = () => {
       setIsLoading(true);
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       if (selectedTag) {
         // Update existing tag
-        setTags(prev => prev.map(t => 
-          t.id === selectedTag.id 
-            ? { 
-                ...t, 
-                ...tagData, 
-                lastUsed: new Date().toISOString().split('T')[0] 
-              }
+        setTags(prev => prev.map(t =>
+          t.id === selectedTag.id
+            ? {
+              ...t,
+              ...tagData,
+              lastUsed: new Date().toISOString().split('T')[0]
+            }
             : t
         ));
-        
+
         notifications.show({
           title: 'Tag Updated',
           message: `"${tagData.name}" has been successfully updated.`,
@@ -659,9 +659,9 @@ export const TagsPage: React.FC = () => {
           createdAt: new Date().toISOString().split('T')[0],
           lastUsed: new Date().toISOString().split('T')[0],
         };
-        
+
         setTags(prev => [...prev, newTag]);
-        
+
         notifications.show({
           title: 'Tag Created',
           message: `"${tagData.name}" has been successfully created.`,
@@ -669,7 +669,7 @@ export const TagsPage: React.FC = () => {
           icon: <Check size={16} />,
         });
       }
-      
+
       closeForm();
     } catch (error) {
       notifications.show({
@@ -691,7 +691,7 @@ export const TagsPage: React.FC = () => {
       setIsLoading(true);
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       const duplicatedTag: TagItem = {
         ...tag,
         id: `TAG-${String(tags.length + 1).padStart(3, '0')}`,
@@ -701,9 +701,9 @@ export const TagsPage: React.FC = () => {
         createdAt: new Date().toISOString().split('T')[0],
         lastUsed: new Date().toISOString().split('T')[0],
       };
-      
+
       setTags(prev => [...prev, duplicatedTag]);
-      
+
       notifications.show({
         title: 'Tag Duplicated',
         message: `"${duplicatedTag.name}" has been created.`,
@@ -753,10 +753,10 @@ export const TagsPage: React.FC = () => {
           setIsLoading(true);
           // Simulate API call
           await new Promise(resolve => setTimeout(resolve, 1000));
-          
+
           setTags(prev => prev.filter(t => !selectedTags.includes(t.id)));
           setSelectedTags([]);
-          
+
           notifications.show({
             title: 'Tags Deleted',
             message: `${selectedTags.length} tags have been successfully deleted.`,
@@ -878,8 +878,8 @@ export const TagsPage: React.FC = () => {
             >
               Export
             </Button>
-            <Button 
-              leftSection={<Plus size={16} />} 
+            <Button
+              leftSection={<Plus size={16} />}
               onClick={handleCreateTag}
               loading={isLoading}
             >
@@ -1105,10 +1105,10 @@ export const TagsPage: React.FC = () => {
                     <Table.Td>
                       <Badge
                         size="sm"
-                        color={tag.category === 'patient' ? 'blue' : 
-                               tag.category === 'appointment' ? 'green' :
-                               tag.category === 'resource' ? 'orange' :
-                               tag.category === 'billing' ? 'purple' : 'gray'}
+                        color={tag.category === 'patient' ? 'blue' :
+                          tag.category === 'appointment' ? 'green' :
+                            tag.category === 'resource' ? 'orange' :
+                              tag.category === 'billing' ? 'purple' : 'gray'}
                       >
                         {tag.category}
                       </Badge>

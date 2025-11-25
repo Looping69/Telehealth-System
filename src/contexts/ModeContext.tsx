@@ -19,7 +19,7 @@ interface ModeProviderProps {
 }
 
 export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
-  const [mode, setMode] = useState<AppMode>('mock');
+  const [mode, setMode] = useState<AppMode>('fhir');
 
   const toggleMode = () => {
     setMode(prevMode => prevMode === 'mock' ? 'fhir' : 'mock');

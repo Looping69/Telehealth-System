@@ -274,11 +274,11 @@ interface ProviderDetailsModalProps {
   onEdit: () => void;
 }
 
-const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({ 
-  provider, 
-  opened, 
-  onClose, 
-  onEdit 
+const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
+  provider,
+  opened,
+  onClose,
+  onEdit
 }) => {
   if (!provider) return null;
 
@@ -385,11 +385,11 @@ interface EditProviderModalProps {
   onSubmit: (providerData: any) => void;
 }
 
-const EditProviderModal: React.FC<EditProviderModalProps> = ({ 
-  provider, 
-  opened, 
-  onClose, 
-  onSubmit 
+const EditProviderModal: React.FC<EditProviderModalProps> = ({
+  provider,
+  opened,
+  onClose,
+  onSubmit
 }) => {
   const [formData, setFormData] = useState({
     id: '',
@@ -450,7 +450,7 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -460,10 +460,10 @@ const EditProviderModal: React.FC<EditProviderModalProps> = ({
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       onSubmit(formData);
       onClose();
-      
+
       // Reset form
       setFormData({
         id: '',
@@ -609,10 +609,10 @@ interface AddProviderModalProps {
   onSubmit: (providerData: any) => void;
 }
 
-const AddProviderModal: React.FC<AddProviderModalProps> = ({ 
-  opened, 
-  onClose, 
-  onSubmit 
+const AddProviderModal: React.FC<AddProviderModalProps> = ({
+  opened,
+  onClose,
+  onSubmit
 }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -656,7 +656,7 @@ const AddProviderModal: React.FC<AddProviderModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -666,10 +666,10 @@ const AddProviderModal: React.FC<AddProviderModalProps> = ({
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       onSubmit(formData);
       onClose();
-      
+
       // Reset form
       setFormData({
         name: '',
@@ -1074,13 +1074,13 @@ export const InsurancePage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [selectedInsurance, setSelectedInsurance] = useState<ExtendedInsurance | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-  
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
+
   // State management for data
   const [patientInsurance, setPatientInsurance] = useState<ExtendedInsurance[]>(mockPatientInsurance);
   const [providers, setProviders] = useState(mockInsuranceProviders);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Modal states
   const [addInsuranceOpened, { open: openAddInsurance, close: closeAddInsurance }] = useDisclosure(false);
   const [addProviderOpened, { open: openAddProvider, close: closeAddProvider }] = useDisclosure(false);
@@ -1095,27 +1095,27 @@ export const InsurancePage: React.FC = () => {
 
   const handleVerifyInsurance = (insurance: ExtendedInsurance) => {
     setIsLoading(true);
-    
+
     // Simulate API call
     setTimeout(() => {
-      setPatientInsurance(prev => 
-        prev.map(ins => 
-          ins.id === insurance.id 
-            ? { 
-                ...ins, 
-                verificationStatus: 'verified', 
-                lastVerified: new Date() 
-              }
+      setPatientInsurance(prev =>
+        prev.map(ins =>
+          ins.id === insurance.id
+            ? {
+              ...ins,
+              verificationStatus: 'verified',
+              lastVerified: new Date()
+            }
             : ins
         )
       );
-      
+
       showNotification({
         title: 'Insurance Verified',
         message: `Insurance for ${insurance.patientName} has been successfully verified.`,
         color: 'green',
       });
-      
+
       setIsLoading(false);
     }, 1500);
   };
@@ -1165,8 +1165,8 @@ export const InsurancePage: React.FC = () => {
   };
 
   const handleEditProviderSubmit = (providerData: any) => {
-    setProviders(prev => 
-      prev.map(provider => 
+    setProviders(prev =>
+      prev.map(provider =>
         provider.id === providerData.id ? { ...provider, ...providerData } : provider
       )
     );
@@ -1439,70 +1439,70 @@ export const InsurancePage: React.FC = () => {
         </Tabs>
 
         {/* Empty State */}
-        {!isLoading && 
-         ((activeTab === 'patient_insurance' && filteredPatientInsurance.length === 0) ||
-          (activeTab === 'providers' && filteredProviders.length === 0)) && (
-          <Center py="xl">
-            <Stack align="center" gap="md">
-              <Shield size={48} color="gray" />
-              <Text size="lg" c="dimmed">
-                No {activeTab === 'patient_insurance' ? 'patient insurance' : 'providers'} found
-              </Text>
-              <Text size="sm" c="dimmed" ta="center">
-                {searchQuery || statusFilter
-                  ? 'Try adjusting your search criteria'
-                  : `Get started by adding ${activeTab === 'patient_insurance' ? 'patient insurance' : 'insurance providers'}`}
-              </Text>
-              <Button leftSection={<Plus size={16} />} onClick={activeTab === 'patient_insurance' ? handleAddInsurance : handleAddProvider}>
-                 Add {activeTab === 'patient_insurance' ? 'Insurance' : 'Provider'}
-              </Button>
-            </Stack>
-          </Center>
-        )}
+        {!isLoading &&
+          ((activeTab === 'patient_insurance' && filteredPatientInsurance.length === 0) ||
+            (activeTab === 'providers' && filteredProviders.length === 0)) && (
+            <Center py="xl">
+              <Stack align="center" gap="md">
+                <Shield size={48} color="gray" />
+                <Text size="lg" c="dimmed">
+                  No {activeTab === 'patient_insurance' ? 'patient insurance' : 'providers'} found
+                </Text>
+                <Text size="sm" c="dimmed" ta="center">
+                  {searchQuery || statusFilter
+                    ? 'Try adjusting your search criteria'
+                    : `Get started by adding ${activeTab === 'patient_insurance' ? 'patient insurance' : 'insurance providers'}`}
+                </Text>
+                <Button leftSection={<Plus size={16} />} onClick={activeTab === 'patient_insurance' ? handleAddInsurance : handleAddProvider}>
+                  Add {activeTab === 'patient_insurance' ? 'Insurance' : 'Provider'}
+                </Button>
+              </Stack>
+            </Center>
+          )}
       </Stack>
 
-       {/* Insurance Details Modal */}
-       <InsuranceDetailsModal
-         insurance={selectedInsurance}
-         opened={detailsOpened}
-         onClose={closeDetails}
-       />
+      {/* Insurance Details Modal */}
+      <InsuranceDetailsModal
+        insurance={selectedInsurance}
+        opened={detailsOpened}
+        onClose={closeDetails}
+      />
 
-       {/* Add Insurance Modal */}
-        <AddInsuranceModal
-          opened={addInsuranceOpened}
-          onClose={closeAddInsurance}
-          onSubmit={handleAddInsuranceSubmit}
-        />
+      {/* Add Insurance Modal */}
+      <AddInsuranceModal
+        opened={addInsuranceOpened}
+        onClose={closeAddInsurance}
+        onSubmit={handleAddInsuranceSubmit}
+      />
 
-        {/* Provider Details Modal */}
-        <ProviderDetailsModal
-          provider={selectedProvider}
-          opened={providerDetailsOpened}
-          onClose={closeProviderDetails}
-          onEdit={() => {
-            closeProviderDetails();
-            openEditProvider();
-          }}
-        />
+      {/* Provider Details Modal */}
+      <ProviderDetailsModal
+        provider={selectedProvider}
+        opened={providerDetailsOpened}
+        onClose={closeProviderDetails}
+        onEdit={() => {
+          closeProviderDetails();
+          openEditProvider();
+        }}
+      />
 
-        {/* Edit Provider Modal */}
-        <EditProviderModal
-          provider={selectedProvider}
-          opened={editProviderOpened}
-          onClose={closeEditProvider}
-          onSubmit={handleEditProviderSubmit}
-        />
+      {/* Edit Provider Modal */}
+      <EditProviderModal
+        provider={selectedProvider}
+        opened={editProviderOpened}
+        onClose={closeEditProvider}
+        onSubmit={handleEditProviderSubmit}
+      />
 
-        {/* Add Provider Modal */}
-        <AddProviderModal
-          opened={addProviderOpened}
-          onClose={closeAddProvider}
-          onSubmit={handleAddProviderSubmit}
-        />
-      </Container>
-    );
-  };
+      {/* Add Provider Modal */}
+      <AddProviderModal
+        opened={addProviderOpened}
+        onClose={closeAddProvider}
+        onSubmit={handleAddProviderSubmit}
+      />
+    </Container>
+  );
+};
 
 /**
  * Patient Insurance Table Row Component
@@ -1720,14 +1720,14 @@ const AddInsuranceModal: React.FC<AddInsuranceModalProps> = ({ opened, onClose, 
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    
+
     try {
       const newInsurance = {
         ...formData,
       };
 
       onSubmit(newInsurance);
-      
+
       showNotification({
         title: 'Insurance Added',
         message: `Insurance for ${formData.patientName} has been successfully added.`,
@@ -1752,7 +1752,7 @@ const AddInsuranceModal: React.FC<AddInsuranceModalProps> = ({ opened, onClose, 
         coinsurance: 0,
         outOfPocketMax: 0,
       });
-      
+
       onClose();
     } catch (error) {
       showNotification({

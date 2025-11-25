@@ -474,7 +474,7 @@ const ProviderDetailsModal: React.FC<ProviderDetailsModalProps> = ({
             Close
           </Button>
           {onEdit && (
-            <Button 
+            <Button
               leftSection={<Edit size={16} />}
               onClick={() => {
                 onEdit(provider);
@@ -574,7 +574,7 @@ const CreateProviderModal: React.FC<CreateProviderModalProps> = ({ opened, onClo
     };
 
     onProviderCreated(newProvider);
-    
+
     // Reset form
     setFormData({
       firstName: '',
@@ -783,11 +783,11 @@ interface EditProviderModalProps {
   onProviderUpdated: (provider: Provider) => void;
 }
 
-const EditProviderModal: React.FC<EditProviderModalProps> = ({ 
-  provider, 
-  opened, 
-  onClose, 
-  onProviderUpdated 
+const EditProviderModal: React.FC<EditProviderModalProps> = ({
+  provider,
+  opened,
+  onClose,
+  onProviderUpdated
 }) => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -1092,7 +1092,7 @@ export const ProvidersPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
@@ -1122,8 +1122,8 @@ export const ProvidersPage: React.FC = () => {
   };
 
   const handleProviderUpdated = (updatedProvider: Provider) => {
-    setProviders(prev => 
-      prev.map(provider => 
+    setProviders(prev =>
+      prev.map(provider =>
         provider.id === updatedProvider.id ? updatedProvider : provider
       )
     );
@@ -1344,19 +1344,19 @@ export const ProvidersPage: React.FC = () => {
                         </Table.Td>
                         <Table.Td>
                           <Text size="sm">
-                            {provider.specialties.length > 2 
+                            {provider.specialties.length > 2
                               ? `${provider.specialties.slice(0, 2).join(', ')}...`
                               : provider.specialties.join(', ')
                             }
                           </Text>
                         </Table.Td>
                         <Table.Td>
-                          <Badge 
+                          <Badge
                             color={
-                              provider.status === 'active' ? 'green' : 
-                              provider.status === 'inactive' ? 'red' : 
-                              'yellow'
-                            } 
+                              provider.status === 'active' ? 'green' :
+                                provider.status === 'inactive' ? 'red' :
+                                  'yellow'
+                            }
                             size="sm"
                           >
                             {provider.status}

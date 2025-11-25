@@ -3,7 +3,7 @@
  * Modal for creating new FHIR orders (ServiceRequest or MedicationRequest)
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Modal,
   Stack,
@@ -20,12 +20,13 @@ import {
 } from '@mantine/core';
 import { AlertCircle, FileText, Pill, User, Search } from 'lucide-react';
 import { showNotification } from '@mantine/notifications';
-import { useCreateOrder, usePatients, useProducts } from '../hooks/useQuery';
+import { useCreateOrder, usePatients, useProducts, usePharmacies } from '../hooks/useQuery';
 
 interface CreateOrderModalProps {
   opened: boolean;
   onClose: () => void;
   onOrderCreated?: () => void;
+  preselectedPharmacy?: { id: string; name: string };
 }
 
 /**
@@ -33,17 +34,21 @@ interface CreateOrderModalProps {
  * @param opened - Whether the modal is open
  * @param onClose - Function to close the modal
  * @param onOrderCreated - Optional callback when order is created
+ * @param preselectedPharmacy - Optional pharmacy to pre-select for medication orders
  */
 const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   opened,
   onClose,
   onOrderCreated,
+  preselectedPharmacy,
 }) => {
   const [orderType, setOrderType] = useState<'ServiceRequest' | 'MedicationRequest'>('ServiceRequest');
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [selectedPharmacyId, setSelectedPharmacyId] = useState<string>('');
   const [patientSearchQuery, setPatientSearchQuery] = useState('');
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [pharmacySearchQuery, setPharmacySearchQuery] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'routine' | 'urgent' | 'asap' | 'stat'>('routine');
   const [category, setCategory] = useState('');
@@ -51,20 +56,31 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Initialize state based on preselectedPharmacy
+  useEffect(() => {
+    if (preselectedPharmacy && opened) {
+      setOrderType('MedicationRequest');
+      setSelectedPharmacyId(preselectedPharmacy.id);
+    }
+  }, [preselectedPharmacy, opened]);
+
   const createOrderMutation = useCreateOrder();
-  
+
   // Fetch patients for searchable dropdown
   const { data: patients = [], isLoading: patientsLoading } = usePatients({
     search: patientSearchQuery,
     status: 'active'
   });
-  
+
   // Fetch products for medication orders
   const { data: products = [], isLoading: productsLoading } = useProducts({
     search: productSearchQuery,
     status: 'active'
   });
-  
+
+  // Fetch pharmacies
+  const { data: pharmacies = [], isLoading: pharmaciesLoading } = usePharmacies(pharmacySearchQuery);
+
   // Prepare patient options for Select component
   const patientOptions = useMemo(() => {
     if (!patients || !Array.isArray(patients)) return [];
@@ -76,7 +92,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         searchValue: `${patient.name || ''} ${patient.dateOfBirth || ''} ${patient.email || ''} ${patient.phone || ''}`.toLowerCase()
       }));
   }, [patients]);
-  
+
   // Prepare product options for Select component
   const productOptions = useMemo(() => {
     if (!products || !Array.isArray(products)) return [];
@@ -88,10 +104,22 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         searchValue: `${product.name || ''} ${product.description || ''} ${product.manufacturer || ''}`.toLowerCase()
       }));
   }, [products]);
-  
+
+  // Prepare pharmacy options
+  const pharmacyOptions = useMemo(() => {
+    if (!pharmacies || !Array.isArray(pharmacies)) return [];
+    return pharmacies.map((pharmacy: any) => ({
+      value: pharmacy.id,
+      label: pharmacy.name,
+      searchValue: pharmacy.name.toLowerCase()
+    }));
+  }, [pharmacies]);
+
   // Get selected patient name for form submission
   const selectedPatient = patients?.find((p: any) => p.id === selectedPatientId);
   const selectedProduct = products?.find((p: any) => p.id === selectedProductId);
+  const selectedPharmacy = pharmacies?.find((p: any) => p.id === selectedPharmacyId) ||
+    (preselectedPharmacy?.id === selectedPharmacyId ? preselectedPharmacy : undefined);
 
   /**
    * Handles form submission to create a new order
@@ -132,13 +160,15 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         orderType,
         patientId: selectedPatientId,
         patientName: selectedPatient?.name || '',
-        description: orderType === 'MedicationRequest' 
-          ? selectedProduct?.name || '' 
+        description: orderType === 'MedicationRequest'
+          ? selectedProduct?.name || ''
           : description.trim(),
         priority,
         category: category || undefined,
         requesterName: requesterName.trim() || undefined,
         notes: notes.trim() || undefined,
+        pharmacyId: selectedPharmacyId || undefined,
+        pharmacyName: selectedPharmacy?.name || undefined,
       };
 
       await createOrderMutation.mutateAsync(orderData);
@@ -152,14 +182,16 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
       // Reset form
       setSelectedPatientId('');
       setSelectedProductId('');
+      setSelectedPharmacyId('');
       setPatientSearchQuery('');
       setProductSearchQuery('');
+      setPharmacySearchQuery('');
       setDescription('');
       setPriority('routine');
       setCategory('');
       setRequesterName('');
       setNotes('');
-      
+
       onOrderCreated?.();
       onClose();
     } catch (error) {
@@ -181,8 +213,10 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
     if (!isSubmitting) {
       setSelectedPatientId('');
       setSelectedProductId('');
+      setSelectedPharmacyId('');
       setPatientSearchQuery('');
       setProductSearchQuery('');
+      setPharmacySearchQuery('');
       setDescription('');
       setPriority('routine');
       setCategory('');
@@ -196,7 +230,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
     <Modal
       opened={opened}
       onClose={handleClose}
-      title="Create New Order"
+      title={preselectedPharmacy ? `Create Order for ${preselectedPharmacy.name}` : "Create New Order"}
       size="lg"
       closeOnClickOutside={!isSubmitting}
       closeOnEscape={!isSubmitting}
@@ -210,17 +244,17 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
               value={orderType}
               onChange={(value) => setOrderType(value as 'ServiceRequest' | 'MedicationRequest')}
               data={[
-                { 
-                  value: 'ServiceRequest', 
-                  label: 'Service Request (Lab tests, Imaging, Procedures)' 
+                {
+                  value: 'ServiceRequest',
+                  label: 'Service Request (Lab tests, Imaging, Procedures)'
                 },
-                { 
-                  value: 'MedicationRequest', 
-                  label: 'Medication Request (Prescriptions)' 
+                {
+                  value: 'MedicationRequest',
+                  label: 'Medication Request (Prescriptions)'
                 },
               ]}
               leftSection={orderType === 'ServiceRequest' ? <FileText size={16} /> : <Pill size={16} />}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !!preselectedPharmacy}
             />
           </Stack>
         </Card>
@@ -248,23 +282,40 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
         {/* Order Details */}
         {orderType === 'MedicationRequest' ? (
-          <Select
-            label="Medication"
-            placeholder="Search and select a medication"
-            value={selectedProductId}
-            onChange={(value) => setSelectedProductId(value || '')}
-            data={productOptions}
-            searchable
-            searchValue={productSearchQuery}
-            onSearchChange={setProductSearchQuery}
-            nothingFoundMessage={productsLoading ? <Loader size="sm" /> : "No medications found"}
-            leftSection={<Pill size={16} />}
-            rightSection={productsLoading ? <Loader size="sm" /> : <Search size={16} />}
-            required
-            disabled={isSubmitting}
-            clearable
-            maxDropdownHeight={200}
-          />
+          <>
+            <Select
+              label="Medication"
+              placeholder="Search and select a medication"
+              value={selectedProductId}
+              onChange={(value) => setSelectedProductId(value || '')}
+              data={productOptions}
+              searchable
+              searchValue={productSearchQuery}
+              onSearchChange={setProductSearchQuery}
+              nothingFoundMessage={productsLoading ? <Loader size="sm" /> : "No medications found"}
+              leftSection={<Pill size={16} />}
+              rightSection={productsLoading ? <Loader size="sm" /> : <Search size={16} />}
+              required
+              disabled={isSubmitting}
+              clearable
+              maxDropdownHeight={200}
+            />
+
+            <Select
+              label="Pharmacy (Optional)"
+              placeholder="Select pharmacy"
+              value={selectedPharmacyId}
+              onChange={(value) => setSelectedPharmacyId(value || '')}
+              data={pharmacyOptions}
+              searchable
+              searchValue={pharmacySearchQuery}
+              onSearchChange={setPharmacySearchQuery}
+              nothingFoundMessage={pharmaciesLoading ? <Loader size="sm" /> : "No pharmacies found"}
+              disabled={isSubmitting || !!preselectedPharmacy}
+              clearable
+              maxDropdownHeight={200}
+            />
+          </>
         ) : (
           <TextInput
             label="Service/Test Description"
@@ -335,18 +386,18 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
         {/* Action Buttons */}
         <Group justify="flex-end" gap="sm">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleClose}
             disabled={isSubmitting}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleSubmit}
             loading={isSubmitting}
             disabled={
-              !selectedPatientId || 
+              !selectedPatientId ||
               (orderType === 'MedicationRequest' && !selectedProductId) ||
               (orderType === 'ServiceRequest' && !description.trim())
             }

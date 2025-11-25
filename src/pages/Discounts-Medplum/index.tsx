@@ -95,9 +95,9 @@ interface FHIRDiscount {
  */
 const mapChargeItemToDiscount = (chargeItem: ChargeItem): FHIRDiscount => {
   const getDiscountName = () => {
-    return chargeItem.code?.text || 
-           chargeItem.code?.coding?.[0]?.display || 
-           'Unnamed Discount';
+    return chargeItem.code?.text ||
+      chargeItem.code?.coding?.[0]?.display ||
+      'Unnamed Discount';
   };
 
   const getDiscountAmount = () => {
@@ -434,7 +434,7 @@ const FHIRDiscountCard: React.FC<FHIRDiscountCardProps> = ({
               <Menu.Item leftSection={<Shuffle size={14} />} onClick={() => onDuplicate(discount)}>
                 Duplicate
               </Menu.Item>
-              <Menu.Item 
+              <Menu.Item
                 leftSection={discount.isActive ? <X size={14} /> : <Check size={14} />}
                 onClick={() => onToggleStatus(discount)}
               >
@@ -449,12 +449,12 @@ const FHIRDiscountCard: React.FC<FHIRDiscountCardProps> = ({
         </Group>
 
         <Group>
-          <div style={{ 
-            width: 48, 
-            height: 48, 
-            borderRadius: '50%', 
-            backgroundColor: getTypeColor(discount.type) === 'blue' ? '#339AF0' : 
-                           getTypeColor(discount.type) === 'green' ? '#51CF66' : '#9775FA',
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            backgroundColor: getTypeColor(discount.type) === 'blue' ? '#339AF0' :
+              getTypeColor(discount.type) === 'green' ? '#51CF66' : '#9775FA',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -773,7 +773,7 @@ export const DiscountsMedplumPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedDiscount, setSelectedDiscount] = useState<FHIRDiscount | null>(null);
   const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -842,7 +842,7 @@ export const DiscountsMedplumPage: React.FC = () => {
         setIsLoading(true);
         try {
           await backendFHIRService.deleteResource('ChargeItem', discount.id);
-          
+
           setDiscounts(prev => prev.filter(d => d.id !== discount.id));
           setChargeItems(prev => prev.filter(c => c.id !== discount.id));
           notifications.show({
@@ -870,15 +870,15 @@ export const DiscountsMedplumPage: React.FC = () => {
         ...discount.chargeItem,
         status: discount.isActive ? 'not-billable' : 'billable',
       };
-      
+
       await backendFHIRService.updateResource('ChargeItem', discount.id, updatedChargeItem);
-      
-      setDiscounts(prev => prev.map(d => 
-        d.id === discount.id 
+
+      setDiscounts(prev => prev.map(d =>
+        d.id === discount.id
           ? { ...d, isActive: !d.isActive, chargeItem: updatedChargeItem }
           : d
       ));
-      
+
       notifications.show({
         title: 'Success',
         message: `FHIR discount ${discount.isActive ? 'deactivated' : 'activated'} successfully`,
@@ -933,11 +933,11 @@ export const DiscountsMedplumPage: React.FC = () => {
 
         const updated = await backendFHIRService.updateResource('ChargeItem', selectedDiscount.id!, updatedChargeItem);
         const updatedDiscount = mapChargeItemToDiscount(updated);
-        
-        setDiscounts(prev => prev.map(d => 
+
+        setDiscounts(prev => prev.map(d =>
           d.id === selectedDiscount.id ? updatedDiscount : d
         ));
-        
+
         notifications.show({
           title: 'Success',
           message: 'FHIR discount updated successfully',
@@ -979,10 +979,10 @@ export const DiscountsMedplumPage: React.FC = () => {
 
         const created = await backendFHIRService.createResource('ChargeItem', newChargeItem);
         const newDiscount = mapChargeItemToDiscount(created);
-        
+
         setDiscounts(prev => [...prev, newDiscount]);
         setChargeItems(prev => [...prev, created]);
-        
+
         notifications.show({
           title: 'Success',
           message: 'FHIR discount created successfully',
@@ -1037,10 +1037,10 @@ export const DiscountsMedplumPage: React.FC = () => {
 
       const created = await backendFHIRService.createResource('ChargeItem', duplicatedChargeItem);
       const duplicatedDiscount = mapChargeItemToDiscount(created);
-      
+
       setDiscounts(prev => [...prev, duplicatedDiscount]);
       setChargeItems(prev => [...prev, created]);
-      
+
       notifications.show({
         title: 'Success',
         message: 'FHIR discount duplicated successfully',
@@ -1080,11 +1080,11 @@ export const DiscountsMedplumPage: React.FC = () => {
           await Promise.all(
             selectedDiscounts.map(id => backendFHIRService.deleteResource('ChargeItem', id))
           );
-          
+
           setDiscounts(prev => prev.filter(d => !selectedDiscounts.includes(d.id)));
           setChargeItems(prev => prev.filter(c => !selectedDiscounts.includes(c.id || '')));
           setSelectedDiscounts([]);
-          
+
           notifications.show({
             title: 'Success',
             message: `${selectedDiscounts.length} FHIR discount(s) deleted successfully`,
@@ -1121,7 +1121,7 @@ export const DiscountsMedplumPage: React.FC = () => {
           (discount.chargeItem.status as string) || 'unknown',
         ].join(','))
       ].join('\n');
-      
+
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1129,7 +1129,7 @@ export const DiscountsMedplumPage: React.FC = () => {
       a.download = 'fhir-discounts.csv';
       a.click();
       window.URL.revokeObjectURL(url);
-      
+
       notifications.show({
         title: 'Success',
         message: 'FHIR discounts exported successfully',
@@ -1147,8 +1147,8 @@ export const DiscountsMedplumPage: React.FC = () => {
   };
 
   const handleSelectDiscount = (id: string, selected: boolean) => {
-    setSelectedDiscounts(prev => 
-      selected 
+    setSelectedDiscounts(prev =>
+      selected
         ? [...prev, id]
         : prev.filter(discountId => discountId !== id)
     );
@@ -1469,7 +1469,7 @@ export const DiscountsMedplumPage: React.FC = () => {
               <Text size="sm" c="dimmed" ta="center">
                 {searchQuery || typeFilter || statusFilter
                   ? 'Try adjusting your search criteria'
-                  : error 
+                  : error
                     ? 'Check your FHIR server connection'
                     : 'Get started by creating your first FHIR discount'}
               </Text>

@@ -1,42 +1,20 @@
 /**
  * Custom hooks for Medplum FHIR operations
- * Provides mock data for development and testing
+ * Provides data for development and testing, now integrating real Medplum data
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Patient, 
-  Appointment, 
-  Task, 
-  DiagnosticReport, 
-  Observation,
-  Practitioner,
-  Organization,
-  Encounter,
-  Medication,
+import { useQuery } from '@tanstack/react-query';
+import {
+  Task,
   MedicationRequest,
-  AllergyIntolerance,
-  Condition,
-  Procedure,
-  DocumentReference,
-  Bundle,
-  Resource
+  ServiceRequest
 } from '@medplum/fhirtypes';
-import { notifications } from '@mantine/notifications';
-import { useAuthStore } from '../store/authStore';
-
-
-
-
-
-
 
 /**
  * Dashboard metrics hook
+ * Currently returns mock data
  */
 export function useDashboardMetrics() {
-  // Remove medplum dependency since we're using mock data
-  
   return useQuery({
     queryKey: ['dashboard-metrics'],
     queryFn: async () => {
@@ -84,7 +62,6 @@ export function useDashboardMetrics() {
     }
   });
 }
-
 
 /**
  * Tasks hook - returns mock task data for development
@@ -194,6 +171,101 @@ export function useTasks(params?: { _sort?: string; _count?: string }) {
       // Apply count limit if specified
       const count = params?._count ? parseInt(params._count) : mockTasks.length;
       return mockTasks.slice(0, count);
+    }
+  });
+}
+
+/**
+ * Orders hook - returns order data from Medplum
+ */
+export function useOrders(params?: { _sort?: string; _count?: string }) {
+  return useQuery({
+    queryKey: ['orders', params],
+    queryFn: async () => {
+      const { backendFHIRService } = await import('../services/backendFHIRService');
+
+      // Build base params
+      const baseParams = {
+        _sort: '-_lastUpdated',
+        ...params
+      };
+
+      // Fetch MedicationRequests with patient included
+      const medRequestsResult = await backendFHIRService.searchResources('MedicationRequest', {
+        ...baseParams,
+        _include: 'MedicationRequest:patient'
+      });
+
+      // Fetch ServiceRequests with patient included
+      const serviceRequestsResult = await backendFHIRService.searchResources('ServiceRequest', {
+        ...baseParams,
+        _include: 'ServiceRequest:patient'
+      });
+
+      const medRequests = medRequestsResult.data || [];
+      const serviceRequests = serviceRequestsResult.data || [];
+
+      const mapStatus = (status: string): 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'approved' => {
+        switch (status) {
+          case 'active': return 'in_progress';
+          case 'completed': return 'completed';
+          case 'cancelled':
+          case 'revoked':
+          case 'stopped': return 'cancelled';
+          case 'draft':
+          case 'on-hold': return 'pending';
+          default: return 'pending';
+        }
+      };
+
+      const mapPriority = (priority: string): 'low' | 'medium' | 'high' | 'urgent' => {
+        switch (priority) {
+          case 'routine': return 'medium';
+          case 'urgent': return 'urgent';
+          case 'asap': return 'high';
+          case 'stat': return 'urgent';
+          default: return 'medium';
+        }
+      };
+
+      // Normalize and combine
+      const orders = [
+        ...medRequests.map((req: MedicationRequest) => ({
+          id: req.id || '',
+          patientId: req.subject?.reference?.split('/')[1] || '',
+          patientName: req.subject?.display || 'Unknown Patient',
+          providerId: req.requester?.reference?.split('/')[1] || '',
+          provider: req.requester?.display || 'Unknown Provider',
+          type: 'prescription' as const,
+          title: req.medicationCodeableConcept?.text || 'Medication Request',
+          description: req.note?.[0]?.text || req.medicationCodeableConcept?.text || '',
+          status: mapStatus(req.status || ''),
+          priority: mapPriority(req.priority || ''),
+          createdAt: new Date(req.meta?.lastUpdated || ''),
+          orderDate: new Date(req.authoredOn || req.meta?.lastUpdated || '').toISOString().split('T')[0],
+          dueDate: '', // Not always available in standard FHIR
+          notes: req.note?.[0]?.text
+        })),
+        ...serviceRequests.map((req: ServiceRequest) => ({
+          id: req.id || '',
+          patientId: req.subject?.reference?.split('/')[1] || '',
+          patientName: req.subject?.display || 'Unknown Patient',
+          providerId: req.requester?.reference?.split('/')[1] || '',
+          provider: req.requester?.display || 'Unknown Provider',
+          type: 'lab' as const, // Defaulting to lab, could be imaging based on code
+          title: req.code?.text || 'Service Request',
+          description: req.code?.text || '',
+          status: mapStatus(req.status || ''),
+          priority: mapPriority(req.priority || ''),
+          createdAt: new Date(req.meta?.lastUpdated || ''),
+          orderDate: new Date(req.authoredOn || req.meta?.lastUpdated || '').toISOString().split('T')[0],
+          dueDate: '',
+          notes: req.note?.[0]?.text
+        }))
+      ];
+
+      // Sort combined list
+      return orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     }
   });
 }

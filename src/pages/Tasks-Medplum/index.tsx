@@ -122,10 +122,10 @@ const FHIRTaskCard: React.FC<FHIRTaskCardProps> = ({ task, onView, onEdit, onCom
   };
 
   const getTaskDescription = () => {
-    return task.description || 
-           task.code?.text || 
-           task.code?.coding?.[0]?.display || 
-           'Task';
+    return task.description ||
+      task.code?.text ||
+      task.code?.coding?.[0]?.display ||
+      'Task';
   };
 
   const getPatientName = () => {
@@ -272,10 +272,10 @@ const FHIRTaskDetailsModal: React.FC<FHIRTaskDetailsModalProps> = ({
           </Stack>
         </Group>
 
-        <Progress 
-          value={task.status === 'completed' ? 100 : task.status === 'in-progress' ? 60 : 30} 
-          color={task.status === 'completed' ? 'green' : 'blue'} 
-          size="md" 
+        <Progress
+          value={task.status === 'completed' ? 100 : task.status === 'in-progress' ? 60 : 30}
+          color={task.status === 'completed' ? 'green' : 'blue'}
+          size="md"
         />
 
         <Grid>
@@ -374,7 +374,7 @@ const TasksMedplumPage: React.FC = () => {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [activeTab, setActiveTab] = useState<string | null>('all');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
 
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
@@ -417,9 +417,9 @@ const TasksMedplumPage: React.FC = () => {
       case 'completed':
         return tasks.filter(task => task.status === 'completed');
       case 'overdue':
-        return tasks.filter(task => 
-          task.executionPeriod?.end && 
-          new Date(task.executionPeriod.end) < new Date() && 
+        return tasks.filter(task =>
+          task.executionPeriod?.end &&
+          new Date(task.executionPeriod.end) < new Date() &&
           task.status !== 'completed'
         );
       default:
@@ -430,9 +430,9 @@ const TasksMedplumPage: React.FC = () => {
   // Filter tasks
   const filteredTasks = useMemo(() => {
     const tabFiltered = filterTasksByTab(tasks, activeTab || 'all');
-    
+
     return tabFiltered.filter(task => {
-      const matchesSearch = !searchQuery || 
+      const matchesSearch = !searchQuery ||
         task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.for?.display?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.owner?.display?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -460,7 +460,7 @@ const TasksMedplumPage: React.FC = () => {
   };
 
   const handleTaskUpdated = (updatedTask: Task) => {
-    setTasks(prevTasks => 
+    setTasks(prevTasks =>
       prevTasks.map(task => task.id === updatedTask.id ? updatedTask : task)
     );
   };
@@ -479,10 +479,10 @@ const TasksMedplumPage: React.FC = () => {
       const updatedTask = { ...task, status: 'completed' as const };
       // Update FHIR Task via backend service (resourceType, id, payload)
       await backendFHIRService.updateResource('Task', task.id as string, updatedTask);
-      
+
       // Refresh tasks
       setTasks(prev => prev.map(t => t.id === task.id ? updatedTask : t));
-      
+
       notifications.show({
         title: 'Task Completed',
         message: `Task "${task.description || task.id}" has been marked as completed.`,
@@ -503,9 +503,9 @@ const TasksMedplumPage: React.FC = () => {
   const pendingTasks = tasks.filter(task => task.status === 'requested' || task.status === 'received').length;
   const inProgressTasks = tasks.filter(task => task.status === 'accepted' || task.status === 'in-progress').length;
   const completedTasks = tasks.filter(task => task.status === 'completed').length;
-  const overdueTasks = tasks.filter(task => 
-    task.executionPeriod?.end && 
-    new Date(task.executionPeriod.end) < new Date() && 
+  const overdueTasks = tasks.filter(task =>
+    task.executionPeriod?.end &&
+    new Date(task.executionPeriod.end) < new Date() &&
     task.status !== 'completed'
   ).length;
 
@@ -1005,10 +1005,10 @@ const FHIRTaskTableRow: React.FC<FHIRTaskTableRowProps> = ({ task, onView, onEdi
   };
 
   const getTaskDescription = () => {
-    return task.description || 
-           task.code?.text || 
-           task.code?.coding?.[0]?.display || 
-           'Task';
+    return task.description ||
+      task.code?.text ||
+      task.code?.coding?.[0]?.display ||
+      'Task';
   };
 
   const getPatientName = () => {
@@ -1021,7 +1021,7 @@ const FHIRTaskTableRow: React.FC<FHIRTaskTableRowProps> = ({ task, onView, onEdi
 
   const statusColor = getStatusColor(task.status);
   const priorityColor = getPriorityColor(task.priority);
-  
+
   const patientName = getPatientName();
   const ownerName = getOwnerName();
   const dueDate = task.executionPeriod?.end ? new Date(task.executionPeriod.end).toLocaleDateString() : 'No due date';
@@ -1143,10 +1143,10 @@ const EditFHIRTaskModal: React.FC<EditFHIRTaskModalProps> = ({ task, opened, onC
         This is a placeholder for the full implementation.
       </Alert>
       {task && (
-         <Text size="sm" c="dimmed" mb="md">
-           Editing task: {task.description || task.code?.text || task.code?.coding?.[0]?.display || 'Task'}
-         </Text>
-       )}
+        <Text size="sm" c="dimmed" mb="md">
+          Editing task: {task.description || task.code?.text || task.code?.coding?.[0]?.display || 'Task'}
+        </Text>
+      )}
       <Group justify="flex-end">
         <Button variant="light" onClick={onClose}>
           Cancel

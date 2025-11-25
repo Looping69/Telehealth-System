@@ -113,7 +113,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onView, onEdit }) =>
           <Group gap="xs">
             <MapPin size={14} />
             <Text size="sm">
-              {typeof patient.address === 'object' 
+              {typeof patient.address === 'object'
                 ? `${patient.address.city}, ${patient.address.state}`
                 : patient.address
               }
@@ -302,7 +302,7 @@ const PatientDetailsModal: React.FC<PatientDetailsModalProps> = ({
 export const PatientsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [editPatient, setEditPatient] = useState<Patient | null>(null);
   const [currentPage, setCurrentPage] = useState(1);

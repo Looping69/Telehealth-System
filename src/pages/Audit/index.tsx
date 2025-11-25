@@ -606,7 +606,7 @@ export const AuditPage: React.FC = () => {
   const [itemsPerPage] = useState(10);
   const [isLoading] = useState(false);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
 
   const auditLogs = mockAuditLogs;
@@ -726,15 +726,15 @@ export const AuditPage: React.FC = () => {
                     />
                   </Grid.Col>
                   <Grid.Col span={{ base: 12, sm: 6, md: 2.4 }}>
-                  <SegmentedControl
-                    value={viewMode}
-                    onChange={(value) => setViewMode(value as 'cards' | 'table')}
-                    data={[
-                      { label: 'Cards', value: 'cards' },
-                      { label: 'Table', value: 'table' },
-                    ]}
-                    fullWidth
-                  />
+                    <SegmentedControl
+                      value={viewMode}
+                      onChange={(value) => setViewMode(value as 'cards' | 'table')}
+                      data={[
+                        { label: 'Cards', value: 'cards' },
+                        { label: 'Table', value: 'table' },
+                      ]}
+                      fullWidth
+                    />
                   </Grid.Col>
                 </Grid>
               </Card>

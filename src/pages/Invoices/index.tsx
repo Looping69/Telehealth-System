@@ -249,8 +249,8 @@ const InvoiceCard: React.FC<InvoiceCardProps> = ({ invoice, onView, onEdit, onSe
               Patient ID: {invoice.patientId}
             </Text>
           </Stack>
-          <Badge 
-            color={getStatusColor(invoice.status)} 
+          <Badge
+            color={getStatusColor(invoice.status)}
             leftSection={getStatusIcon(invoice.status)}
           >
             {invoice.status}
@@ -410,7 +410,7 @@ const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({
               ))}
             </Table.Tbody>
           </Table>
-          
+
           <Stack gap="xs" mt="md">
             <Group justify="space-between">
               <Text>Subtotal:</Text>
@@ -499,11 +499,11 @@ const EditInvoiceModal: React.FC<EditInvoiceModalProps> = ({ invoice, opened, on
   const updateItem = (index: number, field: string, value: any) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
-    
+
     if (field === 'quantity' || field === 'unitPrice') {
       newItems[index].total = newItems[index].quantity * newItems[index].unitPrice;
     }
-    
+
     setItems(newItems);
   };
 
@@ -571,7 +571,7 @@ const EditInvoiceModal: React.FC<EditInvoiceModalProps> = ({ invoice, opened, on
               Add Item
             </Button>
           </Group>
-          
+
           {items.map((item, index) => (
             <Card key={index} padding="sm" withBorder>
               <Grid align="end">
@@ -671,11 +671,11 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ opened, onClose
   const updateItem = (index: number, field: string, value: any) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
-    
+
     if (field === 'quantity' || field === 'unitPrice') {
       newItems[index].total = newItems[index].quantity * newItems[index].unitPrice;
     }
-    
+
     setItems(newItems);
   };
 
@@ -725,7 +725,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({ opened, onClose
               Add Item
             </Button>
           </Group>
-          
+
           {items.map((item, index) => (
             <Card key={index} padding="sm" withBorder>
               <Grid align="end">
@@ -807,7 +807,7 @@ export const InvoicesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
@@ -840,14 +840,14 @@ export const InvoicesPage: React.FC = () => {
     }
 
     // Update invoice status to pending
-    const updatedInvoices = invoices.map(inv => 
-      inv.id === invoice.id 
+    const updatedInvoices = invoices.map(inv =>
+      inv.id === invoice.id
         ? { ...inv, status: 'sent' as const }
         : inv
     );
-    
+
     setInvoices(updatedInvoices);
-    
+
     showNotification({
       title: 'Success',
       message: 'Invoice sent successfully',
@@ -856,7 +856,7 @@ export const InvoicesPage: React.FC = () => {
   };
 
   const handleSaveEditedInvoice = (updatedInvoice: Invoice) => {
-    const updatedInvoices = invoices.map(inv => 
+    const updatedInvoices = invoices.map(inv =>
       inv.id === updatedInvoice.id ? updatedInvoice : inv
     );
     setInvoices(updatedInvoices);
@@ -878,7 +878,7 @@ export const InvoicesPage: React.FC = () => {
   };
 
   const filteredInvoices = filterInvoicesByTab(invoices, activeTab || 'all')
-    .filter(invoice => 
+    .filter(invoice =>
       invoice.patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       invoice.id.toLowerCase().includes(searchQuery.toLowerCase())
     )

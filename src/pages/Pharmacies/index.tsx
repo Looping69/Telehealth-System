@@ -648,7 +648,7 @@ const CreatePharmacyModal: React.FC<CreatePharmacyModalProps> = ({ opened, onClo
       };
 
       onSave(newPharmacy);
-      
+
       notifications.show({
         title: 'Success',
         message: 'Pharmacy created successfully',
@@ -850,284 +850,284 @@ const CreatePharmacyModal: React.FC<CreatePharmacyModalProps> = ({ opened, onClo
 /**
   * Edit Pharmacy Modal
   */
- interface EditPharmacyModalProps {
-   pharmacy: Pharmacy | null;
-   opened: boolean;
-   onClose: () => void;
-   onSave: (pharmacy: Pharmacy) => void;
- }
+interface EditPharmacyModalProps {
+  pharmacy: Pharmacy | null;
+  opened: boolean;
+  onClose: () => void;
+  onSave: (pharmacy: Pharmacy) => void;
+}
 
- const EditPharmacyModal: React.FC<EditPharmacyModalProps> = ({ pharmacy, opened, onClose, onSave }) => {
-   const [formData, setFormData] = useState({
-     name: '',
-     address: '',
-     city: '',
-     state: '',
-     zipCode: '',
-     phone: '',
-     email: '',
-     website: '',
-     type: 'retail',
-     licenseNumber: '',
-     npiNumber: '',
-     contactPerson: '',
-     deliveryAvailable: false,
-   });
+const EditPharmacyModal: React.FC<EditPharmacyModalProps> = ({ pharmacy, opened, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    phone: '',
+    email: '',
+    website: '',
+    type: 'retail',
+    licenseNumber: '',
+    npiNumber: '',
+    contactPerson: '',
+    deliveryAvailable: false,
+  });
 
-   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-   // Update form data when pharmacy changes
-   React.useEffect(() => {
-     if (pharmacy) {
-       setFormData({
-         name: pharmacy.name,
-         address: pharmacy.address,
-         city: pharmacy.city,
-         state: pharmacy.state,
-         zipCode: pharmacy.zipCode,
-         phone: pharmacy.phone,
-         email: pharmacy.email,
-         website: pharmacy.website || '',
-         type: pharmacy.type,
-         licenseNumber: pharmacy.licenseNumber,
-         npiNumber: pharmacy.npiNumber,
-         contactPerson: pharmacy.contactPerson,
-         deliveryAvailable: pharmacy.deliveryAvailable,
-       });
-     }
-   }, [pharmacy]);
+  // Update form data when pharmacy changes
+  React.useEffect(() => {
+    if (pharmacy) {
+      setFormData({
+        name: pharmacy.name,
+        address: pharmacy.address,
+        city: pharmacy.city,
+        state: pharmacy.state,
+        zipCode: pharmacy.zipCode,
+        phone: pharmacy.phone,
+        email: pharmacy.email,
+        website: pharmacy.website || '',
+        type: pharmacy.type,
+        licenseNumber: pharmacy.licenseNumber,
+        npiNumber: pharmacy.npiNumber,
+        contactPerson: pharmacy.contactPerson,
+        deliveryAvailable: pharmacy.deliveryAvailable,
+      });
+    }
+  }, [pharmacy]);
 
-   const validateForm = () => {
-     const newErrors: Record<string, string> = {};
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
 
-     if (!formData.name.trim()) newErrors.name = 'Pharmacy name is required';
-     if (!formData.address.trim()) newErrors.address = 'Address is required';
-     if (!formData.city.trim()) newErrors.city = 'City is required';
-     if (!formData.state.trim()) newErrors.state = 'State is required';
-     if (!formData.zipCode.trim()) newErrors.zipCode = 'ZIP code is required';
-     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-     if (!formData.email.trim()) newErrors.email = 'Email is required';
-     if (!formData.licenseNumber.trim()) newErrors.licenseNumber = 'License number is required';
-     if (!formData.npiNumber.trim()) newErrors.npiNumber = 'NPI number is required';
-     if (!formData.contactPerson.trim()) newErrors.contactPerson = 'Contact person is required';
+    if (!formData.name.trim()) newErrors.name = 'Pharmacy name is required';
+    if (!formData.address.trim()) newErrors.address = 'Address is required';
+    if (!formData.city.trim()) newErrors.city = 'City is required';
+    if (!formData.state.trim()) newErrors.state = 'State is required';
+    if (!formData.zipCode.trim()) newErrors.zipCode = 'ZIP code is required';
+    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    if (!formData.licenseNumber.trim()) newErrors.licenseNumber = 'License number is required';
+    if (!formData.npiNumber.trim()) newErrors.npiNumber = 'NPI number is required';
+    if (!formData.contactPerson.trim()) newErrors.contactPerson = 'Contact person is required';
 
-     // Email validation
-     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-       newErrors.email = 'Please enter a valid email address';
-     }
+    // Email validation
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
 
-     setErrors(newErrors);
-     return Object.keys(newErrors).length === 0;
-   };
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-   const handleSubmit = () => {
-     if (!validateForm()) {
-       notifications.show({
-         title: 'Validation Error',
-         message: 'Please fix the errors in the form',
-         color: 'red',
-       });
-       return;
-     }
+  const handleSubmit = () => {
+    if (!validateForm()) {
+      notifications.show({
+        title: 'Validation Error',
+        message: 'Please fix the errors in the form',
+        color: 'red',
+      });
+      return;
+    }
 
-     if (!pharmacy) return;
+    if (!pharmacy) return;
 
-     try {
-       const updatedPharmacy: Pharmacy = {
-         ...pharmacy,
-         ...formData,
-         type: formData.type as 'retail' | 'hospital' | 'mail_order' | 'specialty',
-       };
+    try {
+      const updatedPharmacy: Pharmacy = {
+        ...pharmacy,
+        ...formData,
+        type: formData.type as 'retail' | 'hospital' | 'mail_order' | 'specialty',
+      };
 
-       onSave(updatedPharmacy);
-       
-       notifications.show({
-         title: 'Success',
-         message: 'Pharmacy updated successfully',
-         color: 'green',
-       });
+      onSave(updatedPharmacy);
 
-       setErrors({});
-       onClose();
-     } catch (error) {
-       notifications.show({
-         title: 'Error',
-         message: 'Failed to update pharmacy',
-         color: 'red',
-       });
-     }
-   };
+      notifications.show({
+        title: 'Success',
+        message: 'Pharmacy updated successfully',
+        color: 'green',
+      });
 
-   if (!pharmacy) return null;
+      setErrors({});
+      onClose();
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to update pharmacy',
+        color: 'red',
+      });
+    }
+  };
 
-   return (
-     <Modal
-       opened={opened}
-       onClose={onClose}
-       title="Edit Pharmacy"
-       size="lg"
-     >
-       <Stack gap="md">
-         <TextInput
-           label="Pharmacy Name"
-           placeholder="Enter pharmacy name"
-           value={formData.name}
-           onChange={(event) => setFormData({ ...formData, name: event.currentTarget.value })}
-           error={errors.name}
-           required
-         />
+  if (!pharmacy) return null;
 
-         <Grid>
-           <Grid.Col span={8}>
-             <TextInput
-               label="Address"
-               placeholder="Enter street address"
-               value={formData.address}
-               onChange={(event) => setFormData({ ...formData, address: event.currentTarget.value })}
-               error={errors.address}
-               required
-             />
-           </Grid.Col>
-           <Grid.Col span={4}>
-             <Select
-               label="Type"
-               data={[
-                 { value: 'retail', label: 'Retail Pharmacy' },
-                 { value: 'hospital', label: 'Hospital Pharmacy' },
-                 { value: 'mail_order', label: 'Mail Order' },
-                 { value: 'specialty', label: 'Specialty Pharmacy' },
-               ]}
-               value={formData.type}
-               onChange={(value) => setFormData({ ...formData, type: value || 'retail' })}
-               required
-             />
-           </Grid.Col>
-         </Grid>
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Edit Pharmacy"
+      size="lg"
+    >
+      <Stack gap="md">
+        <TextInput
+          label="Pharmacy Name"
+          placeholder="Enter pharmacy name"
+          value={formData.name}
+          onChange={(event) => setFormData({ ...formData, name: event.currentTarget.value })}
+          error={errors.name}
+          required
+        />
 
-         <Grid>
-           <Grid.Col span={6}>
-             <TextInput
-               label="City"
-               placeholder="Enter city"
-               value={formData.city}
-               onChange={(event) => setFormData({ ...formData, city: event.currentTarget.value })}
-               error={errors.city}
-               required
-             />
-           </Grid.Col>
-           <Grid.Col span={3}>
-             <TextInput
-               label="State"
-               placeholder="State"
-               value={formData.state}
-               onChange={(event) => setFormData({ ...formData, state: event.currentTarget.value })}
-               error={errors.state}
-               required
-             />
-           </Grid.Col>
-           <Grid.Col span={3}>
-             <TextInput
-               label="ZIP Code"
-               placeholder="ZIP"
-               value={formData.zipCode}
-               onChange={(event) => setFormData({ ...formData, zipCode: event.currentTarget.value })}
-               error={errors.zipCode}
-               required
-             />
-           </Grid.Col>
-         </Grid>
+        <Grid>
+          <Grid.Col span={8}>
+            <TextInput
+              label="Address"
+              placeholder="Enter street address"
+              value={formData.address}
+              onChange={(event) => setFormData({ ...formData, address: event.currentTarget.value })}
+              error={errors.address}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={4}>
+            <Select
+              label="Type"
+              data={[
+                { value: 'retail', label: 'Retail Pharmacy' },
+                { value: 'hospital', label: 'Hospital Pharmacy' },
+                { value: 'mail_order', label: 'Mail Order' },
+                { value: 'specialty', label: 'Specialty Pharmacy' },
+              ]}
+              value={formData.type}
+              onChange={(value) => setFormData({ ...formData, type: value || 'retail' })}
+              required
+            />
+          </Grid.Col>
+        </Grid>
 
-         <Grid>
-           <Grid.Col span={6}>
-             <TextInput
-               label="Phone"
-               placeholder="Enter phone number"
-               value={formData.phone}
-               onChange={(event) => setFormData({ ...formData, phone: event.currentTarget.value })}
-               error={errors.phone}
-               required
-             />
-           </Grid.Col>
-           <Grid.Col span={6}>
-             <TextInput
-               label="Email"
-               placeholder="Enter email address"
-               value={formData.email}
-               onChange={(event) => setFormData({ ...formData, email: event.currentTarget.value })}
-               error={errors.email}
-               required
-             />
-           </Grid.Col>
-         </Grid>
+        <Grid>
+          <Grid.Col span={6}>
+            <TextInput
+              label="City"
+              placeholder="Enter city"
+              value={formData.city}
+              onChange={(event) => setFormData({ ...formData, city: event.currentTarget.value })}
+              error={errors.city}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={3}>
+            <TextInput
+              label="State"
+              placeholder="State"
+              value={formData.state}
+              onChange={(event) => setFormData({ ...formData, state: event.currentTarget.value })}
+              error={errors.state}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={3}>
+            <TextInput
+              label="ZIP Code"
+              placeholder="ZIP"
+              value={formData.zipCode}
+              onChange={(event) => setFormData({ ...formData, zipCode: event.currentTarget.value })}
+              error={errors.zipCode}
+              required
+            />
+          </Grid.Col>
+        </Grid>
 
-         <TextInput
-           label="Website (Optional)"
-           placeholder="Enter website URL"
-           value={formData.website}
-           onChange={(event) => setFormData({ ...formData, website: event.currentTarget.value })}
-         />
+        <Grid>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Phone"
+              placeholder="Enter phone number"
+              value={formData.phone}
+              onChange={(event) => setFormData({ ...formData, phone: event.currentTarget.value })}
+              error={errors.phone}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="Email"
+              placeholder="Enter email address"
+              value={formData.email}
+              onChange={(event) => setFormData({ ...formData, email: event.currentTarget.value })}
+              error={errors.email}
+              required
+            />
+          </Grid.Col>
+        </Grid>
 
-         <Grid>
-           <Grid.Col span={6}>
-             <TextInput
-               label="License Number"
-               placeholder="Enter license number"
-               value={formData.licenseNumber}
-               onChange={(event) => setFormData({ ...formData, licenseNumber: event.currentTarget.value })}
-               error={errors.licenseNumber}
-               required
-             />
-           </Grid.Col>
-           <Grid.Col span={6}>
-             <TextInput
-               label="NPI Number"
-               placeholder="Enter NPI number"
-               value={formData.npiNumber}
-               onChange={(event) => setFormData({ ...formData, npiNumber: event.currentTarget.value })}
-               error={errors.npiNumber}
-               required
-             />
-           </Grid.Col>
-         </Grid>
+        <TextInput
+          label="Website (Optional)"
+          placeholder="Enter website URL"
+          value={formData.website}
+          onChange={(event) => setFormData({ ...formData, website: event.currentTarget.value })}
+        />
 
-         <Grid>
-           <Grid.Col span={8}>
-             <TextInput
-               label="Contact Person"
-               placeholder="Enter primary contact person"
-               value={formData.contactPerson}
-               onChange={(event) => setFormData({ ...formData, contactPerson: event.currentTarget.value })}
-               error={errors.contactPerson}
-               required
-             />
-           </Grid.Col>
-           <Grid.Col span={4}>
-             <Stack gap="xs">
-               <Text size="sm" fw={500}>Delivery Available</Text>
-               <Switch
-                 checked={formData.deliveryAvailable}
-                 onChange={(event) => setFormData({ ...formData, deliveryAvailable: event.currentTarget.checked })}
-               />
-             </Stack>
-           </Grid.Col>
-         </Grid>
+        <Grid>
+          <Grid.Col span={6}>
+            <TextInput
+              label="License Number"
+              placeholder="Enter license number"
+              value={formData.licenseNumber}
+              onChange={(event) => setFormData({ ...formData, licenseNumber: event.currentTarget.value })}
+              error={errors.licenseNumber}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label="NPI Number"
+              placeholder="Enter NPI number"
+              value={formData.npiNumber}
+              onChange={(event) => setFormData({ ...formData, npiNumber: event.currentTarget.value })}
+              error={errors.npiNumber}
+              required
+            />
+          </Grid.Col>
+        </Grid>
 
-         <Group justify="flex-end" mt="md">
-           <Button variant="light" onClick={onClose}>
-             Cancel
-           </Button>
-           <Button onClick={handleSubmit}>
-             Update Pharmacy
-           </Button>
-         </Group>
-       </Stack>
-     </Modal>
-   );
- };
+        <Grid>
+          <Grid.Col span={8}>
+            <TextInput
+              label="Contact Person"
+              placeholder="Enter primary contact person"
+              value={formData.contactPerson}
+              onChange={(event) => setFormData({ ...formData, contactPerson: event.currentTarget.value })}
+              error={errors.contactPerson}
+              required
+            />
+          </Grid.Col>
+          <Grid.Col span={4}>
+            <Stack gap="xs">
+              <Text size="sm" fw={500}>Delivery Available</Text>
+              <Switch
+                checked={formData.deliveryAvailable}
+                onChange={(event) => setFormData({ ...formData, deliveryAvailable: event.currentTarget.checked })}
+              />
+            </Stack>
+          </Grid.Col>
+        </Grid>
 
- /**
-  * Main Pharmacies Page Component
-  */
+        <Group justify="flex-end" mt="md">
+          <Button variant="light" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit}>
+            Update Pharmacy
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+  );
+};
+
+/**
+ * Main Pharmacies Page Component
+ */
 export const PharmaciesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string | null>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -1136,7 +1136,7 @@ export const PharmaciesPage: React.FC = () => {
   const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
 
   // Using stateful data for real-time updates
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>(mockPharmacies);
@@ -1406,19 +1406,19 @@ export const PharmaciesPage: React.FC = () => {
       />
 
       {/* Create Pharmacy Modal */}
-       <CreatePharmacyModal
-         opened={createOpened}
-         onClose={closeCreate}
-         onSave={handleSavePharmacy}
-       />
+      <CreatePharmacyModal
+        opened={createOpened}
+        onClose={closeCreate}
+        onSave={handleSavePharmacy}
+      />
 
-       {/* Edit Pharmacy Modal */}
-       <EditPharmacyModal
-         pharmacy={selectedPharmacy}
-         opened={editOpened}
-         onClose={closeEdit}
-         onSave={handleUpdatePharmacy}
-       />
+      {/* Edit Pharmacy Modal */}
+      <EditPharmacyModal
+        pharmacy={selectedPharmacy}
+        opened={editOpened}
+        onClose={closeEdit}
+        onSave={handleUpdatePharmacy}
+      />
     </Container>
   );
 };

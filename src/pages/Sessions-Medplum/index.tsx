@@ -285,7 +285,7 @@ const SessionsMedplumPage: React.FC = () => {
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createModalOpened, { open: openCreateModal, close: closeCreateModal }] = useDisclosure(false);
   const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
 
   const { data: appointments, isLoading, error } = useAppointments();
 
@@ -330,24 +330,24 @@ const SessionsMedplumPage: React.FC = () => {
    */
   const filteredAppointments = useMemo(() => {
     if (!appointments) return [];
-    
+
     let filtered = [...appointments];
-    
+
     // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(apt => 
+      filtered = filtered.filter(apt =>
         apt.patientName?.toLowerCase().includes(query) ||
         apt.providerName?.toLowerCase().includes(query) ||
         apt.type?.toLowerCase().includes(query)
       );
     }
-    
+
     // Apply status filter
     if (statusFilter) {
       filtered = filtered.filter(apt => apt.status === statusFilter);
     }
-    
+
     return filtered;
   }, [appointments, searchQuery, statusFilter]);
 
@@ -363,7 +363,7 @@ const SessionsMedplumPage: React.FC = () => {
 
     switch (tab) {
       case 'upcoming':
-        return appointments.filter(apt => 
+        return appointments.filter(apt =>
           apt?.date && apt.date > now && apt.status !== 'cancelled'
         );
       case 'today':
@@ -372,7 +372,7 @@ const SessionsMedplumPage: React.FC = () => {
           return apt?.date && aptDateString === today;
         });
       case 'past':
-        return appointments.filter(apt => 
+        return appointments.filter(apt =>
           apt?.date && (apt.date < now || apt.status === 'completed')
         );
       case 'cancelled':
@@ -954,23 +954,23 @@ const SessionsMedplumPage: React.FC = () => {
           (activeTab === 'past' && pastAppointments.length === 0) ||
           (activeTab === 'cancelled' && cancelledAppointments.length === 0)
         ) && (
-          <Center py="xl">
-            <Stack align="center" gap="md">
-              <CalendarIcon size={48} color="gray" />
-              <Text size="lg" c="dimmed">
-                No appointments found
-              </Text>
-              <Text size="sm" c="dimmed" ta="center">
-                {searchQuery || statusFilter
-                  ? 'Try adjusting your search criteria'
-                  : 'Get started by scheduling your first appointment'}
-              </Text>
-              <Button leftSection={<Plus size={16} />} onClick={openCreateModal}>
-                Schedule Appointment
-              </Button>
-            </Stack>
-          </Center>
-        )}
+            <Center py="xl">
+              <Stack align="center" gap="md">
+                <CalendarIcon size={48} color="gray" />
+                <Text size="lg" c="dimmed">
+                  No appointments found
+                </Text>
+                <Text size="sm" c="dimmed" ta="center">
+                  {searchQuery || statusFilter
+                    ? 'Try adjusting your search criteria'
+                    : 'Get started by scheduling your first appointment'}
+                </Text>
+                <Button leftSection={<Plus size={16} />} onClick={openCreateModal}>
+                  Schedule Appointment
+                </Button>
+              </Stack>
+            </Center>
+          )}
       </Stack>
 
       {/* Appointment Details Modal */}

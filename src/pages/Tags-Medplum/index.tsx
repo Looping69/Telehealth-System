@@ -74,13 +74,13 @@ interface FHIRTagCardProps {
   onViewUsage: (codeSystem: CodeSystem) => void;
 }
 
-const FHIRTagCard: React.FC<FHIRTagCardProps> = ({ 
-  codeSystem, 
-  onEdit, 
-  onDelete, 
-  onToggleStatus, 
-  onDuplicate, 
-  onViewUsage 
+const FHIRTagCard: React.FC<FHIRTagCardProps> = ({
+  codeSystem,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+  onDuplicate,
+  onViewUsage
 }) => {
   const getStatusColor = (status?: string) => {
     switch (status) {
@@ -132,10 +132,10 @@ const FHIRTagCard: React.FC<FHIRTagCardProps> = ({
               </Text>
               <Badge
                 size="xs"
-                color={category === 'patient' ? 'blue' : 
-                       category === 'appointment' ? 'green' :
-                       category === 'resource' ? 'orange' :
-                       category === 'billing' ? 'purple' : 'gray'}
+                color={category === 'patient' ? 'blue' :
+                  category === 'appointment' ? 'green' :
+                    category === 'resource' ? 'orange' :
+                      category === 'billing' ? 'purple' : 'gray'}
               >
                 {category}
               </Badge>
@@ -158,15 +158,15 @@ const FHIRTagCard: React.FC<FHIRTagCardProps> = ({
                 View Usage
               </Menu.Item>
               <Menu.Divider />
-              <Menu.Item 
-                leftSection={<Settings style={{ width: rem(14), height: rem(14) }} />} 
+              <Menu.Item
+                leftSection={<Settings style={{ width: rem(14), height: rem(14) }} />}
                 onClick={() => onToggleStatus(codeSystem)}
                 color={codeSystem.status === 'active' ? 'red' : 'green'}
               >
                 {codeSystem.status === 'active' ? 'Retire' : 'Activate'}
               </Menu.Item>
-              <Menu.Item 
-                leftSection={<Trash2 style={{ width: rem(14), height: rem(14) }} />} 
+              <Menu.Item
+                leftSection={<Trash2 style={{ width: rem(14), height: rem(14) }} />}
                 onClick={() => onDelete(codeSystem)}
                 color="red"
               >
@@ -402,7 +402,7 @@ const FHIRTagUsageModal: React.FC<FHIRTagUsageModalProps> = ({ codeSystem, opene
         </Group>
 
         <Text size="sm" fw={500} mb="xs">Usage Breakdown</Text>
-        
+
         {usageData.map((item) => {
           const Icon = item.icon;
           return (
@@ -458,9 +458,9 @@ const TagsMedplumPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
-  
+
   // Modal states
   const [formModalOpened, setFormModalOpened] = useState(false);
   const [usageModalOpened, setUsageModalOpened] = useState(false);
@@ -513,15 +513,15 @@ const TagsMedplumPage: React.FC = () => {
   // Filter code systems based on search term, category, and status
   const filteredCodeSystems = useMemo(() => {
     return codeSystems.filter(codeSystem => {
-      const matchesSearch = searchTerm === '' || 
+      const matchesSearch = searchTerm === '' ||
         (codeSystem.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         codeSystem.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         codeSystem.description?.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesCategory = categoryFilter === 'all' || 
+          codeSystem.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          codeSystem.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      const matchesCategory = categoryFilter === 'all' ||
         getCategoryFromUrl(codeSystem.url) === categoryFilter;
-      
-      const matchesStatus = statusFilter === 'all' || 
+
+      const matchesStatus = statusFilter === 'all' ||
         codeSystem.status === statusFilter;
 
       return matchesSearch && matchesCategory && matchesStatus;
@@ -568,25 +568,25 @@ const TagsMedplumPage: React.FC = () => {
       labels: { confirm: 'Delete', cancel: 'Cancel' },
       confirmProps: { color: 'red' },
       onConfirm: async () => {
-         try {
-           if (codeSystem.id) {
-               await backendFHIRService.deleteResource('Basic', codeSystem.id);
-             setCodeSystems(prev => prev.filter(cs => cs.id !== codeSystem.id));
-             notifications.show({
-               title: 'Success',
-               message: 'CodeSystem deleted successfully',
-               color: 'green',
-             });
-           }
-         } catch (err) {
-           console.error('Error deleting CodeSystem:', err);
-           notifications.show({
-             title: 'Error',
-             message: 'Failed to delete CodeSystem',
-             color: 'red',
-           });
-         }
-       },
+        try {
+          if (codeSystem.id) {
+            await backendFHIRService.deleteResource('Basic', codeSystem.id);
+            setCodeSystems(prev => prev.filter(cs => cs.id !== codeSystem.id));
+            notifications.show({
+              title: 'Success',
+              message: 'CodeSystem deleted successfully',
+              color: 'green',
+            });
+          }
+        } catch (err) {
+          console.error('Error deleting CodeSystem:', err);
+          notifications.show({
+            title: 'Error',
+            message: 'Failed to delete CodeSystem',
+            color: 'red',
+          });
+        }
+      },
     });
   };
 
@@ -594,18 +594,18 @@ const TagsMedplumPage: React.FC = () => {
     try {
       const newStatus: 'active' | 'retired' = codeSystem.status === 'active' ? 'retired' : 'active';
       const updatedCodeSystem = { ...codeSystem, status: newStatus };
-      
+
       if (codeSystem.id) {
-         await backendFHIRService.updateResource('Basic', codeSystem.id, updatedCodeSystem as CodeSystem);
-         setCodeSystems(prev => prev.map(cs => 
-           cs.id === codeSystem.id ? updatedCodeSystem as CodeSystem : cs
-         ));
-         notifications.show({
-           title: 'Success',
-           message: `CodeSystem ${newStatus === 'active' ? 'activated' : 'retired'} successfully`,
-           color: 'green',
-         });
-       }
+        await backendFHIRService.updateResource('Basic', codeSystem.id, updatedCodeSystem as CodeSystem);
+        setCodeSystems(prev => prev.map(cs =>
+          cs.id === codeSystem.id ? updatedCodeSystem as CodeSystem : cs
+        ));
+        notifications.show({
+          title: 'Success',
+          message: `CodeSystem ${newStatus === 'active' ? 'activated' : 'retired'} successfully`,
+          color: 'green',
+        });
+      }
     } catch (err) {
       console.error('Error updating CodeSystem status:', err);
       notifications.show({
@@ -639,34 +639,34 @@ const TagsMedplumPage: React.FC = () => {
   const handleSave = async (codeSystemData: Partial<CodeSystem>) => {
     try {
       setSaveLoading(true);
-      
+
       if (isCreating) {
-         const newCodeSystem = await backendFHIRService.createResource('Basic', {
-           resourceType: 'Basic',
-           code: { coding: [{ system: 'http://medplum.com/tag-system', code: 'tag-system' }] },
-           ...codeSystemData,
-         });
-         setCodeSystems(prev => [...prev, newCodeSystem]);
-         notifications.show({
-           title: 'Success',
-           message: 'CodeSystem created successfully',
-           color: 'green',
-         });
-       } else if (selectedCodeSystem?.id) {
-         const updatedCodeSystem = await backendFHIRService.updateResource('Basic', selectedCodeSystem.id!, {
-           ...selectedCodeSystem,
-           ...codeSystemData,
-         });
-         setCodeSystems(prev => prev.map(cs => 
-           cs.id === selectedCodeSystem.id ? updatedCodeSystem : cs
-         ));
-         notifications.show({
-           title: 'Success',
-           message: 'CodeSystem updated successfully',
-           color: 'green',
-         });
-       }
-      
+        const newCodeSystem = await backendFHIRService.createResource('Basic', {
+          resourceType: 'Basic',
+          code: { coding: [{ system: 'http://medplum.com/tag-system', code: 'tag-system' }] },
+          ...codeSystemData,
+        });
+        setCodeSystems(prev => [...prev, newCodeSystem]);
+        notifications.show({
+          title: 'Success',
+          message: 'CodeSystem created successfully',
+          color: 'green',
+        });
+      } else if (selectedCodeSystem?.id) {
+        const updatedCodeSystem = await backendFHIRService.updateResource('Basic', selectedCodeSystem.id!, {
+          ...selectedCodeSystem,
+          ...codeSystemData,
+        });
+        setCodeSystems(prev => prev.map(cs =>
+          cs.id === selectedCodeSystem.id ? updatedCodeSystem : cs
+        ));
+        notifications.show({
+          title: 'Success',
+          message: 'CodeSystem updated successfully',
+          color: 'green',
+        });
+      }
+
       setFormModalOpened(false);
       setSelectedCodeSystem(null);
     } catch (err) {
@@ -695,27 +695,27 @@ const TagsMedplumPage: React.FC = () => {
       confirmProps: { color: 'red' },
       onConfirm: async () => {
         try {
-           const deletePromises = Array.from(selectedTags).map(id => 
-             backendFHIRService.deleteResource('Basic', id)
-           );
-           await Promise.all(deletePromises);
-           
-           setCodeSystems(prev => prev.filter(cs => !selectedTags.has(cs.id!)));
-           setSelectedTags(new Set());
-           
-           notifications.show({
-             title: 'Success',
-             message: `${selectedTags.size} CodeSystem(s) deleted successfully`,
-             color: 'green',
-           });
-         } catch (err) {
-           console.error('Error deleting CodeSystems:', err);
-           notifications.show({
-             title: 'Error',
-             message: 'Failed to delete some CodeSystems',
-             color: 'red',
-           });
-         }
+          const deletePromises = Array.from(selectedTags).map(id =>
+            backendFHIRService.deleteResource('Basic', id)
+          );
+          await Promise.all(deletePromises);
+
+          setCodeSystems(prev => prev.filter(cs => !selectedTags.has(cs.id!)));
+          setSelectedTags(new Set());
+
+          notifications.show({
+            title: 'Success',
+            message: `${selectedTags.size} CodeSystem(s) deleted successfully`,
+            color: 'green',
+          });
+        } catch (err) {
+          console.error('Error deleting CodeSystems:', err);
+          notifications.show({
+            title: 'Error',
+            message: 'Failed to delete some CodeSystems',
+            color: 'red',
+          });
+        }
       },
     });
   };
@@ -1013,9 +1013,9 @@ const TagsMedplumPage: React.FC = () => {
                     <Table.Td>
                       <Badge size="sm" color={
                         getCategoryFromUrl(codeSystem.url) === 'patient' ? 'blue' :
-                        getCategoryFromUrl(codeSystem.url) === 'appointment' ? 'green' :
-                        getCategoryFromUrl(codeSystem.url) === 'resource' ? 'orange' :
-                        getCategoryFromUrl(codeSystem.url) === 'billing' ? 'purple' : 'gray'
+                          getCategoryFromUrl(codeSystem.url) === 'appointment' ? 'green' :
+                            getCategoryFromUrl(codeSystem.url) === 'resource' ? 'orange' :
+                              getCategoryFromUrl(codeSystem.url) === 'billing' ? 'purple' : 'gray'
                       }>
                         {getCategoryFromUrl(codeSystem.url)}
                       </Badge>
@@ -1023,7 +1023,7 @@ const TagsMedplumPage: React.FC = () => {
                     <Table.Td>
                       <Badge color={
                         codeSystem.status === 'active' ? 'green' :
-                        codeSystem.status === 'retired' ? 'red' : 'yellow'
+                          codeSystem.status === 'retired' ? 'red' : 'yellow'
                       }>
                         {codeSystem.status || 'Unknown'}
                       </Badge>
@@ -1064,16 +1064,16 @@ const TagsMedplumPage: React.FC = () => {
                             <Menu.Item leftSection={<Copy style={{ width: rem(14), height: rem(14) }} />} onClick={() => handleDuplicate(codeSystem)}>
                               Duplicate
                             </Menu.Item>
-                            <Menu.Item 
-                              leftSection={<Settings style={{ width: rem(14), height: rem(14) }} />} 
+                            <Menu.Item
+                              leftSection={<Settings style={{ width: rem(14), height: rem(14) }} />}
                               onClick={() => handleToggleStatus(codeSystem)}
                               color={codeSystem.status === 'active' ? 'red' : 'green'}
                             >
                               {codeSystem.status === 'active' ? 'Retire' : 'Activate'}
                             </Menu.Item>
                             <Menu.Divider />
-                            <Menu.Item 
-                              leftSection={<Trash2 style={{ width: rem(14), height: rem(14) }} />} 
+                            <Menu.Item
+                              leftSection={<Trash2 style={{ width: rem(14), height: rem(14) }} />}
                               onClick={() => handleDelete(codeSystem)}
                               color="red"
                             >

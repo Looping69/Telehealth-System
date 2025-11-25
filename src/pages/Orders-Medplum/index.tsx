@@ -125,14 +125,14 @@ const FHIROrderCard: React.FC<FHIROrderCardProps> = ({ order, onView, onEdit }) 
   const getOrderDescription = () => {
     if (order.resourceType === 'MedicationRequest') {
       const medRequest = order as MedicationRequest;
-      return medRequest.medicationCodeableConcept?.text || 
-             medRequest.medicationReference?.display || 
-             'Medication Request';
+      return medRequest.medicationCodeableConcept?.text ||
+        medRequest.medicationReference?.display ||
+        'Medication Request';
     } else {
       const serviceRequest = order as ServiceRequest;
-      return serviceRequest.code?.text || 
-             serviceRequest.code?.coding?.[0]?.display || 
-             'Service Request';
+      return serviceRequest.code?.text ||
+        serviceRequest.code?.coding?.[0]?.display ||
+        'Service Request';
     }
   };
 
@@ -257,14 +257,14 @@ const FHIROrderDetailsModal: React.FC<FHIROrderDetailsModalProps> = ({
   const getOrderDescription = () => {
     if (order.resourceType === 'MedicationRequest') {
       const medRequest = order as MedicationRequest;
-      return medRequest.medicationCodeableConcept?.text || 
-             medRequest.medicationReference?.display || 
-             'Medication Request';
+      return medRequest.medicationCodeableConcept?.text ||
+        medRequest.medicationReference?.display ||
+        'Medication Request';
     } else {
       const serviceRequest = order as ServiceRequest;
-      return serviceRequest.code?.text || 
-             serviceRequest.code?.coding?.[0]?.display || 
-             'Service Request';
+      return serviceRequest.code?.text ||
+        serviceRequest.code?.coding?.[0]?.display ||
+        'Service Request';
     }
   };
 
@@ -315,7 +315,7 @@ const FHIROrderDetailsModal: React.FC<FHIROrderDetailsModalProps> = ({
             <Stack gap="xs">
               <Text size="sm" fw={500}>Authored On</Text>
               <Text size="sm" c="dimmed">
-                {order.resourceType === 'MedicationRequest' 
+                {order.resourceType === 'MedicationRequest'
                   ? ((order as MedicationRequest).authoredOn ? new Date((order as MedicationRequest).authoredOn!).toLocaleString() : 'Not set')
                   : ((order as ServiceRequest).authoredOn ? new Date((order as ServiceRequest).authoredOn!).toLocaleString() : 'Not set')
                 }
@@ -391,7 +391,7 @@ const OrdersMedplumPage: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<FHIROrder | null>(null);
   // Controls list/cards rendering of orders
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
 
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
@@ -409,16 +409,16 @@ const OrdersMedplumPage: React.FC = () => {
       const getOrderDescription = () => {
         if (order.resourceType === 'MedicationRequest') {
           const medRequest = order as MedicationRequest;
-          return medRequest.medicationCodeableConcept?.text || 
-                 medRequest.medicationReference?.display || '';
+          return medRequest.medicationCodeableConcept?.text ||
+            medRequest.medicationReference?.display || '';
         } else {
           const serviceRequest = order as ServiceRequest;
-          return serviceRequest.code?.text || 
-                 serviceRequest.code?.coding?.[0]?.display || '';
+          return serviceRequest.code?.text ||
+            serviceRequest.code?.coding?.[0]?.display || '';
         }
       };
 
-      const matchesSearch = !searchTerm || 
+      const matchesSearch = !searchTerm ||
         getOrderDescription().toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.subject?.display?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (order.id && order.id.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -651,10 +651,10 @@ const OrdersMedplumPage: React.FC = () => {
                   <Table.Td>
                     <Badge color={
                       order.status === 'active' ? 'green' :
-                      order.status === 'completed' ? 'blue' :
-                      order.status === 'draft' ? 'yellow' :
-                      order.status === 'cancelled' ? 'red' :
-                      order.status === 'on-hold' ? 'orange' : 'gray'
+                        order.status === 'completed' ? 'blue' :
+                          order.status === 'draft' ? 'yellow' :
+                            order.status === 'cancelled' ? 'red' :
+                              order.status === 'on-hold' ? 'orange' : 'gray'
                     }>
                       {order.status}
                     </Badge>
@@ -662,8 +662,8 @@ const OrdersMedplumPage: React.FC = () => {
                   <Table.Td>
                     <Badge size="sm" color={
                       order.priority === 'urgent' || order.priority === 'stat' ? 'red' :
-                      order.priority === 'asap' ? 'orange' :
-                      order.priority === 'routine' ? 'blue' : 'blue'
+                        order.priority === 'asap' ? 'orange' :
+                          order.priority === 'routine' ? 'blue' : 'blue'
                     }>
                       {order.priority || 'routine'}
                     </Badge>

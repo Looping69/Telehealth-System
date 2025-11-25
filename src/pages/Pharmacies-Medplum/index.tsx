@@ -49,701 +49,46 @@ import {
   XCircle,
   Clock,
   Globe,
+  ShoppingCart,
 } from 'lucide-react';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-
+import { usePharmacies } from '../../hooks/useQuery';
 import { Organization } from '@medplum/fhirtypes';
-import { backendFHIRService } from '../../services/backendFHIRService';
+import CreateOrderModal from '../../components/CreateOrderModal';
 
-/**
- * FHIR Pharmacy Card Component
- */
-interface FHIRPharmacyCardProps {
-  pharmacy: Organization;
-  onView: (pharmacy: Organization) => void;
-  onEdit: (pharmacy: Organization) => void;
-}
-
-const FHIRPharmacyCard: React.FC<FHIRPharmacyCardProps> = ({ pharmacy, onView, onEdit }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'green';
-      case 'inactive':
-        return 'red';
-      case 'pending':
-        return 'yellow';
-      default:
-        return 'gray';
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'retail':
-        return 'blue';
-      case 'hospital':
-        return 'green';
-      case 'mail_order':
-        return 'orange';
-      case 'specialty':
-        return 'purple';
-      default:
-        return 'gray';
-    }
-  };
-
-  const formatFillTime = (minutes: number) => {
-    if (minutes < 60) {
-      return `${minutes} min`;
-    } else if (minutes < 1440) {
-      return `${Math.round(minutes / 60)} hrs`;
-    } else {
-      return `${Math.round(minutes / 1440)} days`;
-    }
-  };
-
-  const getPharmacyName = () => {
-    return pharmacy.name || 'Unknown Pharmacy';
-  };
-
-  const getPhone = () => {
-    const phone = pharmacy.telecom?.find(t => t.system === 'phone');
-    return phone?.value || 'No phone';
-  };
-
-  const getEmail = () => {
-    const email = pharmacy.telecom?.find(t => t.system === 'email');
-    return email?.value || 'No email';
-  };
-
-  const getAddress = () => {
-    const address = pharmacy.address?.[0];
-    if (address) {
-      const parts = [
-        address.line?.join(', '),
-        address.city,
-        address.state,
-        address.postalCode
-      ].filter(Boolean);
-      return parts.join(', ') || 'No address';
-    }
-    return 'No address';
-  };
-
-  const getType = () => {
-    return pharmacy.type?.[0]?.text || 'retail';
-  };
-
-  const getStatus = () => {
-    return pharmacy.active ? 'active' : 'inactive';
-  };
-
-  // Mock data for enhanced features (in real implementation, this would come from FHIR extensions or related resources)
-  const mockRating = 4.2 + Math.random() * 0.8;
-  const mockPrescriptions = Math.floor(Math.random() * 2000) + 500;
-  const mockFillTime = Math.floor(Math.random() * 30) + 10;
-  const mockServices = ['Prescription Filling', 'Vaccinations', 'Health Screenings'];
-  const mockDeliveryAvailable = Math.random() > 0.5;
-
-  return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder>
-      <Stack gap="md">
-        <Group justify="space-between" align="flex-start">
-          <Group>
-            <Avatar size="lg" radius="md" color="blue">
-              <Building size={24} />
-            </Avatar>
-            <Stack gap={4}>
-              <Text fw={500} size="lg">
-                {getPharmacyName()}
-              </Text>
-              <Text size="sm" c="dimmed">
-                {pharmacy.id} • {getType()}
-              </Text>
-              <Group gap="xs">
-                <Star size={14} fill="gold" color="gold" />
-                <Text size="sm" fw={500}>
-                  {mockRating.toFixed(1)}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  ({mockPrescriptions} prescriptions)
-                </Text>
-              </Group>
-            </Stack>
-          </Group>
-          <Group>
-            <Badge color={getStatusColor(getStatus())}>
-              {getStatus()}
-            </Badge>
-            <Badge color={getTypeColor(getType())}>
-              {getType()}
-            </Badge>
-          </Group>
-        </Group>
-
-        <Stack gap="xs">
-          <Group gap="xs">
-            <MapPin size={14} />
-            <Text size="sm" lineClamp={2}>
-              {getAddress()}
-            </Text>
-          </Group>
-          <Group gap="xs">
-            <Phone size={14} />
-            <Text size="sm">{getPhone()}</Text>
-          </Group>
-          <Group gap="xs">
-            <Mail size={14} />
-            <Text size="sm">{getEmail()}</Text>
-          </Group>
-          <Group gap="xs">
-            <Clock size={14} />
-            <Text size="sm">Avg fill time: {formatFillTime(mockFillTime)}</Text>
-          </Group>
-        </Stack>
-
-        <Group justify="space-between" align="center">
-          <Group gap="xs">
-            {mockDeliveryAvailable && (
-              <Badge size="sm" color="green" leftSection={<Truck size={12} />}>
-                Delivery
-              </Badge>
-            )}
-            <Badge size="sm" variant="light">
-              {mockServices.length} services
-            </Badge>
-          </Group>
-          <Group gap="xs">
-            <ActionIcon
-              variant="light"
-              color="blue"
-              onClick={() => onView(pharmacy)}
-            >
-              <Eye size={16} />
-            </ActionIcon>
-            <ActionIcon
-              variant="light"
-              color="orange"
-              onClick={() => onEdit(pharmacy)}
-            >
-              <Edit size={16} />
-            </ActionIcon>
-          </Group>
-        </Group>
-      </Stack>
-    </Card>
-  );
-};
-
-/**
- * FHIR Pharmacy Details Modal
- */
-interface FHIRPharmacyDetailsModalProps {
-  pharmacy: Organization | null;
-  opened: boolean;
-  onClose: () => void;
-}
-
-const FHIRPharmacyDetailsModal: React.FC<FHIRPharmacyDetailsModalProps> = ({
-  pharmacy,
-  opened,
-  onClose,
-}) => {
-  if (!pharmacy) return null;
-
-  // Mock enhanced data for demonstration - in real implementation, this would come from FHIR extensions or related resources
-  const mockData = {
-    rating: 4.5,
-    totalPrescriptions: 1250,
-    avgFillTime: '15 mins',
-    services: ['Prescription Filling', 'Vaccinations', 'Health Screenings', 'Medication Counseling', 'Diabetes Management', 'Blood Pressure Monitoring'],
-    deliveryAvailable: true,
-    website: 'https://pharmacy.example.com',
-    licenseNumber: 'PH-2024-001',
-    npiNumber: '1234567890',
-    contactPerson: 'Dr. Sarah Johnson',
-    hours: {
-      monday: '8:00 AM - 9:00 PM',
-      tuesday: '8:00 AM - 9:00 PM',
-      wednesday: '8:00 AM - 9:00 PM',
-      thursday: '8:00 AM - 9:00 PM',
-      friday: '8:00 AM - 9:00 PM',
-      saturday: '9:00 AM - 7:00 PM',
-      sunday: '10:00 AM - 6:00 PM',
-    },
-    insurance: ['Blue Cross Blue Shield', 'Aetna', 'Cigna', 'UnitedHealth', 'Medicare', 'Medicaid', 'Humana', 'Kaiser Permanente'],
-    contract: {
-      startDate: '2024-01-01',
-      endDate: '2024-12-31',
-      contactPerson: 'Michael Chen',
-      performanceMetrics: {
-        totalPrescriptions: 15420,
-        customerRating: 4.5,
-        avgFillTime: '15 mins'
-      }
-    }
-  };
-
-  // Extract contact information from FHIR data
-  const phoneContact = pharmacy.telecom?.find(t => t.system === 'phone');
-  const emailContact = pharmacy.telecom?.find(t => t.system === 'email');
-  const address = pharmacy.address?.[0];
-
-  return (
-    <Modal opened={opened} onClose={onClose} title={pharmacy.name || 'Pharmacy Details'} size="xl">
-      <Tabs defaultValue="overview">
-        <Tabs.List>
-          <Tabs.Tab value="overview">Overview</Tabs.Tab>
-          <Tabs.Tab value="hours">Hours & Services</Tabs.Tab>
-          <Tabs.Tab value="insurance">Insurance</Tabs.Tab>
-          <Tabs.Tab value="contract">Contract</Tabs.Tab>
-        </Tabs.List>
-
-        <Tabs.Panel value="overview" pt="md">
-          <Stack gap="lg">
-            <Alert icon={<Database size={16} />} color="green" variant="light">
-              Live FHIR Data - Organization ID: {pharmacy.id}
-            </Alert>
-            
-            {/* Contact Information */}
-            <Card withBorder padding="md">
-              <Text size="sm" fw={600} mb="md">Contact Information</Text>
-              <Grid>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Email</Text>
-                    <Text size="sm" c="dimmed">{emailContact?.value || 'Not provided'}</Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Website</Text>
-                    <Text size="sm" c="dimmed">{mockData.website}</Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Phone</Text>
-                    <Text size="sm" c="dimmed">{phoneContact?.value || 'Not provided'}</Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Address</Text>
-                    <Text size="sm" c="dimmed">
-                      {address ? `${address.line?.[0] || ''}, ${address.city || ''}, ${address.state || ''} ${address.postalCode || ''}` : 'Not provided'}
-                    </Text>
-                  </Stack>
-                </Grid.Col>
-              </Grid>
-            </Card>
-
-            {/* Pharmacy Details */}
-            <Card withBorder padding="md">
-              <Text size="sm" fw={600} mb="md">Pharmacy Details</Text>
-              <Grid>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>License Number</Text>
-                    <Text size="sm" c="dimmed">{mockData.licenseNumber}</Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>NPI Number</Text>
-                    <Text size="sm" c="dimmed">{mockData.npiNumber}</Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Contact Person</Text>
-                    <Text size="sm" c="dimmed">{mockData.contactPerson}</Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Average Fill Time</Text>
-                    <Group gap="xs">
-                      <Clock size={16} />
-                      <Text size="sm" c="dimmed">{mockData.avgFillTime}</Text>
-                    </Group>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Status</Text>
-                    <Badge color={pharmacy.active ? 'green' : 'red'}>
-                      {pharmacy.active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Delivery Available</Text>
-                    <Group gap="xs">
-                      {mockData.deliveryAvailable ? (
-                        <>
-                          <CheckCircle size={16} color="green" />
-                          <Text size="sm" c="green">Yes</Text>
-                        </>
-                      ) : (
-                        <>
-                          <XCircle size={16} color="red" />
-                          <Text size="sm" c="red">No</Text>
-                        </>
-                      )}
-                    </Group>
-                  </Stack>
-                </Grid.Col>
-              </Grid>
-            </Card>
-          </Stack>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="hours" pt="md">
-          <Stack gap="lg">
-            {/* Operating Hours */}
-            <Card withBorder padding="md">
-              <Text size="sm" fw={600} mb="md">Operating Hours</Text>
-              <Table>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>Day</Table.Th>
-                    <Table.Th>Hours</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {Object.entries(mockData.hours).map(([day, hours]) => (
-                    <Table.Tr key={day}>
-                      <Table.Td style={{ textTransform: 'capitalize', fontWeight: 500 }}>{day}</Table.Td>
-                      <Table.Td>{hours}</Table.Td>
-                    </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </Card>
-            
-            {/* Services */}
-            <Card withBorder padding="md">
-              <Text size="sm" fw={600} mb="md">Services Offered</Text>
-              <Grid>
-                {mockData.services.map((service, index) => (
-                  <Grid.Col key={index} span={6}>
-                    <Group gap="xs">
-                      <CheckCircle size={16} color="green" />
-                      <Text size="sm">{service}</Text>
-                    </Group>
-                  </Grid.Col>
-                ))}
-              </Grid>
-            </Card>
-          </Stack>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="insurance" pt="md">
-          <Card withBorder padding="md">
-            <Text size="sm" fw={600} mb="md">Accepted Insurance Plans</Text>
-            <Grid>
-              {mockData.insurance.map((plan, index) => (
-                <Grid.Col key={index} span={6}>
-                  <Group gap="xs">
-                    <CheckCircle size={16} color="green" />
-                    <Text size="sm">{plan}</Text>
-                  </Group>
-                </Grid.Col>
-              ))}
-            </Grid>
-          </Card>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="contract" pt="md">
-          <Stack gap="lg">
-            {/* Contract Information */}
-            <Card withBorder padding="md">
-              <Text size="sm" fw={600} mb="md">Contract Information</Text>
-              <Grid>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Contract Start Date</Text>
-                    <Text size="sm" c="dimmed">{mockData.contract.startDate}</Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Contract End Date</Text>
-                    <Text size="sm" c="dimmed">{mockData.contract.endDate}</Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <Stack gap="xs">
-                    <Text size="sm" fw={500}>Contract Manager</Text>
-                    <Text size="sm" c="dimmed">{mockData.contract.contactPerson}</Text>
-                  </Stack>
-                </Grid.Col>
-              </Grid>
-            </Card>
-
-            {/* Performance Metrics */}
-            <Card withBorder padding="md">
-              <Text size="sm" fw={600} mb="md">Performance Metrics</Text>
-              <Grid>
-                <Grid.Col span={4}>
-                  <Stack gap="xs" align="center">
-                    <Package size={24} color="blue" />
-                    <Text size="lg" fw={700} c="blue">
-                      {mockData.contract.performanceMetrics.totalPrescriptions.toLocaleString()}
-                    </Text>
-                    <Text size="sm" c="dimmed" ta="center">Total Prescriptions</Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={4}>
-                  <Stack gap="xs" align="center">
-                    <Star size={24} color="gold" />
-                    <Text size="lg" fw={700} c="yellow">
-                      {mockData.contract.performanceMetrics.customerRating}
-                    </Text>
-                    <Text size="sm" c="dimmed" ta="center">Customer Rating</Text>
-                  </Stack>
-                </Grid.Col>
-                <Grid.Col span={4}>
-                  <Stack gap="xs" align="center">
-                    <Clock size={24} color="green" />
-                    <Text size="lg" fw={700} c="green">
-                      {mockData.contract.performanceMetrics.avgFillTime}
-                    </Text>
-                    <Text size="sm" c="dimmed" ta="center">Avg Fill Time</Text>
-                  </Stack>
-                </Grid.Col>
-              </Grid>
-            </Card>
-          </Stack>
-        </Tabs.Panel>
-      </Tabs>
-    </Modal>
-  );
-};
-
-/**
- * FHIR Pharmacy Table Row Component
- */
-interface FHIRPharmacyTableRowProps {
-  pharmacy: Organization;
-  onView: (pharmacy: Organization) => void;
-  onEdit: (pharmacy: Organization) => void;
-}
-
-const FHIRPharmacyTableRow: React.FC<FHIRPharmacyTableRowProps> = ({ pharmacy, onView, onEdit }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'green';
-      case 'inactive':
-        return 'red';
-      case 'pending':
-        return 'yellow';
-      default:
-        return 'gray';
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'retail':
-        return 'blue';
-      case 'hospital':
-        return 'green';
-      case 'mail_order':
-        return 'orange';
-      case 'specialty':
-        return 'purple';
-      default:
-        return 'gray';
-    }
-  };
-
-  const formatFillTime = (minutes: number) => {
-    if (minutes < 60) {
-      return `${minutes} min`;
-    } else if (minutes < 1440) {
-      return `${Math.round(minutes / 60)} hrs`;
-    } else {
-      return `${Math.round(minutes / 1440)} days`;
-    }
-  };
-
-  const getPharmacyName = () => pharmacy.name || 'Unknown Pharmacy';
-  const getType = () => pharmacy.type?.[0]?.text || 'retail';
-  const getStatus = () => pharmacy.active ? 'active' : 'inactive';
-
-  const getAddress = () => {
-    const address = pharmacy.address?.[0];
-    if (address) {
-      return `${address.line?.join(', ')}, ${address.city}, ${address.state}`;
-    }
-    return 'No address';
-  };
-
-  const getPhone = () => {
-    const phone = pharmacy.telecom?.find(t => t.system === 'phone');
-    return phone?.value || 'No phone';
-  };
-
-  // Mock data
-  const mockRating = 4.2 + Math.random() * 0.8;
-  const mockFillTime = Math.floor(Math.random() * 30) + 10;
-  const mockServices = ['Prescription Filling', 'Vaccinations', 'Health Screenings'];
-  const mockDeliveryAvailable = Math.random() > 0.5;
-
-  return (
-    <Table.Tr>
-      <Table.Td>
-        <Group gap="sm">
-          <Avatar size="sm" radius="md" color="blue">
-            <Building size={16} />
-          </Avatar>
-          <Stack gap={2}>
-            <Text fw={500} size="sm">
-              {getPharmacyName()}
-            </Text>
-            <Text size="xs" c="dimmed">
-              {pharmacy.id}
-            </Text>
-          </Stack>
-        </Group>
-      </Table.Td>
-      <Table.Td>
-        <Badge color={getTypeColor(getType())} size="sm">
-          {getType()}
-        </Badge>
-      </Table.Td>
-      <Table.Td>
-        <Text size="sm">{getAddress()}</Text>
-      </Table.Td>
-      <Table.Td>
-        <Text size="sm">{getPhone()}</Text>
-      </Table.Td>
-      <Table.Td>
-        <Badge color={getStatusColor(getStatus())} size="sm">
-          {getStatus()}
-        </Badge>
-      </Table.Td>
-      <Table.Td>
-        <Group gap="xs">
-          <Star size={12} fill="gold" color="gold" />
-          <Text size="sm" fw={500}>
-            {mockRating.toFixed(1)}
-          </Text>
-        </Group>
-      </Table.Td>
-      <Table.Td>
-        <Text size="sm">{formatFillTime(mockFillTime)}</Text>
-      </Table.Td>
-      <Table.Td>
-        <Group gap="xs">
-          {mockDeliveryAvailable && (
-            <Badge size="xs" color="green" leftSection={<Truck size={10} />}>
-              Delivery
-            </Badge>
-          )}
-          <Badge size="xs" variant="light">
-            {mockServices.length} services
-          </Badge>
-        </Group>
-      </Table.Td>
-      <Table.Td>
-        <Group gap="xs">
-          <ActionIcon
-            variant="light"
-            color="blue"
-            size="sm"
-            onClick={() => onView(pharmacy)}
-          >
-            <Eye size={14} />
-          </ActionIcon>
-          <ActionIcon
-            variant="light"
-            color="orange"
-            size="sm"
-            onClick={() => onEdit(pharmacy)}
-          >
-            <Edit size={14} />
-          </ActionIcon>
-        </Group>
-      </Table.Td>
-    </Table.Tr>
-  );
-};
-
-/**
- * Main Pharmacies-Medplum Page Component
- */
-const PharmaciesMedplumPage: React.FC = () => {
+const PharmaciesMedplumPage = () => {
+  const { data: pharmaciesData, isLoading: loading, error: queryError } = usePharmacies();
   const [pharmacies, setPharmacies] = useState<Organization[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedPharmacy, setSelectedPharmacy] = useState<Organization | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string | null>('all');
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
 
+  // Modals state
   const [detailsOpened, { open: openDetails, close: closeDetails }] = useDisclosure(false);
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
   const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
+  const [createOrderOpened, { open: openCreateOrder, close: closeCreateOrder }] = useDisclosure(false);
+  const [selectedPharmacyForOrder, setSelectedPharmacyForOrder] = useState<Organization | null>(null);
 
-  // Fetch FHIR pharmacy organizations
   useEffect(() => {
-    const fetchPharmacies = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    if (pharmaciesData) {
+      setPharmacies(pharmaciesData);
+    }
+  }, [pharmaciesData]);
 
-        const response = await backendFHIRService.searchResources('Organization', {
-          type: 'prov',
-          _sort: 'name',
-          _count: '50'
-        });
-
-        const pharmacyData = (response?.data ?? []) as Organization[];
-        setPharmacies(pharmacyData);
-      } catch (err) {
-        console.error('Error fetching FHIR pharmacies:', err);
-        setError('Failed to fetch pharmacies from FHIR server. Please check your connection.');
-        setPharmacies([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPharmacies();
-  }, []);
-
-  // Filter pharmacies
-  const filteredPharmacies = useMemo(() => {
-    return pharmacies.filter(pharmacy => {
-      const matchesSearch = !searchTerm || 
-        pharmacy.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pharmacy.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pharmacy.type?.[0]?.text?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus = statusFilter === 'all' || 
-        (statusFilter === 'active' && pharmacy.active) ||
-        (statusFilter === 'inactive' && !pharmacy.active);
-
-      const matchesType = !typeFilter || 
-        pharmacy.type?.[0]?.text?.toLowerCase().includes(typeFilter.toLowerCase());
-
-      return matchesSearch && matchesStatus && matchesType;
-    });
-  }, [pharmacies, searchTerm, statusFilter, typeFilter]);
-
-  // Calculate summary statistics
+  const error = queryError ? (queryError as Error).message : null;
   const activePharmacies = pharmacies.filter(p => p.active).length;
-  const totalPrescriptions = pharmacies.reduce((sum) => sum + Math.floor(Math.random() * 2000) + 500, 0);
-  const avgRating = pharmacies.length > 0 ? (4.2 + Math.random() * 0.8) : 0;
-  const deliveryPharmacies = Math.floor(pharmacies.length * 0.7); // Mock 70% have delivery
+  const totalPrescriptions = 1250;
+  const avgRating = 4.8;
+  const deliveryPharmacies = Math.floor(pharmacies.length * 0.7);
+
+  const handleCreateOrder = (pharmacy: Organization) => {
+    setSelectedPharmacyForOrder(pharmacy);
+    openCreateOrder();
+  };
 
   const handleViewPharmacy = (pharmacy: Organization) => {
     setSelectedPharmacy(pharmacy);
@@ -756,16 +101,30 @@ const PharmaciesMedplumPage: React.FC = () => {
   };
 
   const handleSavePharmacy = (organization: Organization) => {
-    // TODO: Integrate with Medplum createOrganization hook
+    // Optimistic update
     setPharmacies(prev => [...prev, organization]);
     console.log('Created pharmacy:', organization);
   };
 
   const handleUpdatePharmacy = (updatedOrganization: Organization) => {
-    // TODO: Integrate with Medplum updateOrganization hook
+    // Optimistic update
     setPharmacies(prev => prev.map(p => p.id === updatedOrganization.id ? updatedOrganization : p));
     console.log('Updated pharmacy:', updatedOrganization);
   };
+
+  const filteredPharmacies = useMemo(() => {
+    return pharmacies.filter(pharmacy => {
+      const matchesSearch = searchTerm === '' ||
+        (pharmacy.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (pharmacy.address?.[0]?.city?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+
+      const matchesStatus = statusFilter === 'all' ||
+        (statusFilter === 'active' && pharmacy.active) ||
+        (statusFilter === 'inactive' && !pharmacy.active);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [pharmacies, searchTerm, statusFilter]);
 
   if (loading) {
     return (
@@ -944,6 +303,7 @@ const PharmaciesMedplumPage: React.FC = () => {
                   pharmacy={pharmacy}
                   onView={handleViewPharmacy}
                   onEdit={handleEditPharmacy}
+                  onCreateOrder={handleCreateOrder}
                 />
               </Grid.Col>
             ))}
@@ -971,6 +331,7 @@ const PharmaciesMedplumPage: React.FC = () => {
                     pharmacy={pharmacy}
                     onView={handleViewPharmacy}
                     onEdit={handleEditPharmacy}
+                    onCreateOrder={handleCreateOrder}
                   />
                 ))}
               </Table.Tbody>
@@ -989,7 +350,7 @@ const PharmaciesMedplumPage: React.FC = () => {
               <Text size="sm" c="dimmed" ta="center">
                 {searchTerm || statusFilter !== 'all' || typeFilter
                   ? 'Try adjusting your search criteria'
-                  : error 
+                  : error
                     ? 'Check your FHIR server connection'
                     : 'Get started by adding your first pharmacy partner'}
               </Text>
@@ -1021,11 +382,173 @@ const PharmaciesMedplumPage: React.FC = () => {
         onSave={handleUpdatePharmacy}
         organization={selectedPharmacy}
       />
+
+      <CreateOrderModal
+        opened={createOrderOpened}
+        onClose={closeCreateOrder}
+        preselectedPharmacy={selectedPharmacyForOrder ? { id: selectedPharmacyForOrder.id!, name: selectedPharmacyForOrder.name! } : undefined}
+      />
     </Container>
   );
 };
 
 export default PharmaciesMedplumPage;
+
+// --- Sub-components ---
+
+interface FHIRPharmacyCardProps {
+  pharmacy: Organization;
+  onView: (pharmacy: Organization) => void;
+  onEdit: (pharmacy: Organization) => void;
+  onCreateOrder: (pharmacy: Organization) => void;
+}
+
+const FHIRPharmacyCard: React.FC<FHIRPharmacyCardProps> = ({ pharmacy, onView, onEdit, onCreateOrder }) => {
+  const address = pharmacy.address?.[0];
+  const phone = pharmacy.telecom?.find(t => t.system === 'phone')?.value;
+  const type = pharmacy.extension?.find(e => e.url?.includes('pharmacy-type'))?.valueString || 'Retail';
+
+  return (
+    <Card shadow="sm" padding="lg" radius="md" withBorder>
+      <Group justify="space-between" mb="xs">
+        <Group gap="sm">
+          <Avatar color="blue" radius="xl">
+            <Building size={20} />
+          </Avatar>
+          <div>
+            <Text fw={500}>{pharmacy.name}</Text>
+            <Badge size="sm" variant="light">{type}</Badge>
+          </div>
+        </Group>
+        <Badge color={pharmacy.active ? 'green' : 'gray'}>
+          {pharmacy.active ? 'Active' : 'Inactive'}
+        </Badge>
+      </Group>
+
+      <Stack gap="xs" mt="md">
+        <Group gap="xs">
+          <MapPin size={16} color="gray" />
+          <Text size="sm" c="dimmed" lineClamp={1}>
+            {address ? `${address.line?.[0]}, ${address.city}, ${address.state}` : 'No address'}
+          </Text>
+        </Group>
+        <Group gap="xs">
+          <Phone size={16} color="gray" />
+          <Text size="sm" c="dimmed">
+            {phone || 'No phone'}
+          </Text>
+        </Group>
+      </Stack>
+
+      <Group mt="md" grow>
+        <Button variant="light" size="xs" onClick={() => onView(pharmacy)}>View</Button>
+        <Button variant="light" size="xs" onClick={() => onEdit(pharmacy)}>Edit</Button>
+        <Button variant="filled" size="xs" leftSection={<ShoppingCart size={12} />} onClick={() => onCreateOrder(pharmacy)}>Order</Button>
+      </Group>
+    </Card>
+  );
+};
+
+interface FHIRPharmacyTableRowProps {
+  pharmacy: Organization;
+  onView: (pharmacy: Organization) => void;
+  onEdit: (pharmacy: Organization) => void;
+  onCreateOrder: (pharmacy: Organization) => void;
+}
+
+const FHIRPharmacyTableRow: React.FC<FHIRPharmacyTableRowProps> = ({ pharmacy, onView, onEdit, onCreateOrder }) => {
+  const address = pharmacy.address?.[0];
+  const phone = pharmacy.telecom?.find(t => t.system === 'phone')?.value;
+  const type = pharmacy.extension?.find(e => e.url?.includes('pharmacy-type'))?.valueString || 'Retail';
+
+  return (
+    <Table.Tr>
+      <Table.Td>
+        <Group gap="sm">
+          <Avatar color="blue" radius="xl" size="sm">
+            <Building size={16} />
+          </Avatar>
+          <Text size="sm" fw={500}>{pharmacy.name}</Text>
+        </Group>
+      </Table.Td>
+      <Table.Td><Badge size="sm" variant="outline">{type}</Badge></Table.Td>
+      <Table.Td>
+        <Text size="sm" c="dimmed" lineClamp={1}>
+          {address ? `${address.line?.[0]}, ${address.city}` : 'No address'}
+        </Text>
+      </Table.Td>
+      <Table.Td><Text size="sm">{phone || '-'}</Text></Table.Td>
+      <Table.Td>
+        <Badge color={pharmacy.active ? 'green' : 'gray'} size="sm">
+          {pharmacy.active ? 'Active' : 'Inactive'}
+        </Badge>
+      </Table.Td>
+      <Table.Td>
+        <Group gap={4}>
+          <Star size={14} fill="gold" color="gold" />
+          <Text size="sm">4.8</Text>
+        </Group>
+      </Table.Td>
+      <Table.Td><Text size="sm">24h</Text></Table.Td>
+      <Table.Td>
+        <Group gap={4}>
+          <Truck size={14} />
+          <Pill size={14} />
+        </Group>
+      </Table.Td>
+      <Table.Td>
+        <Group gap="xs">
+          <ActionIcon variant="subtle" color="blue" onClick={() => onView(pharmacy)}>
+            <Eye size={16} />
+          </ActionIcon>
+          <ActionIcon variant="subtle" color="orange" onClick={() => onEdit(pharmacy)}>
+            <Edit size={16} />
+          </ActionIcon>
+          <ActionIcon variant="subtle" color="green" onClick={() => onCreateOrder(pharmacy)}>
+            <ShoppingCart size={16} />
+          </ActionIcon>
+        </Group>
+      </Table.Td>
+    </Table.Tr>
+  );
+};
+
+interface FHIRPharmacyDetailsModalProps {
+  pharmacy: Organization | null;
+  opened: boolean;
+  onClose: () => void;
+}
+
+const FHIRPharmacyDetailsModal: React.FC<FHIRPharmacyDetailsModalProps> = ({ pharmacy, opened, onClose }) => {
+  if (!pharmacy) return null;
+
+  const address = pharmacy.address?.[0];
+  const phone = pharmacy.telecom?.find(t => t.system === 'phone')?.value;
+  const email = pharmacy.telecom?.find(t => t.system === 'email')?.value;
+  const website = pharmacy.telecom?.find(t => t.system === 'url')?.value;
+
+  return (
+    <Modal opened={opened} onClose={onClose} title={pharmacy.name} size="lg">
+      <Stack>
+        <Group>
+          <Badge size="lg" color={pharmacy.active ? 'green' : 'gray'}>{pharmacy.active ? 'Active' : 'Inactive'}</Badge>
+        </Group>
+        <Divider />
+        <Grid>
+          <Grid.Col span={6}>
+            <Text fw={500}>Contact Information</Text>
+            <Stack gap="xs" mt="xs">
+              <Group gap="xs"><MapPin size={16} /><Text size="sm">{address ? `${address.line?.[0]}, ${address.city}, ${address.state} ${address.postalCode}` : 'N/A'}</Text></Group>
+              <Group gap="xs"><Phone size={16} /><Text size="sm">{phone || 'N/A'}</Text></Group>
+              <Group gap="xs"><Mail size={16} /><Text size="sm">{email || 'N/A'}</Text></Group>
+              <Group gap="xs"><Globe size={16} /><Text size="sm">{website || 'N/A'}</Text></Group>
+            </Stack>
+          </Grid.Col>
+        </Grid>
+      </Stack>
+    </Modal>
+  );
+};
 
 /**
  * Create FHIR Pharmacy Modal Component
@@ -1174,7 +697,7 @@ const CreateFHIRPharmacyModal: React.FC<CreateFHIRPharmacyModalProps> = ({
       };
 
       onSave(newOrganization);
-      
+
       notifications.show({
         title: 'Success',
         message: 'Pharmacy created successfully',
@@ -1419,7 +942,7 @@ const EditFHIRPharmacyModal: React.FC<EditFHIRPharmacyModalProps> = ({
       const email = organization.telecom?.find(t => t.system === 'email')?.value || '';
       const website = organization.telecom?.find(t => t.system === 'url')?.value || '';
       const address = organization.address?.[0];
-      
+
       // Extract pharmacy-specific data from extensions
       const getExtensionValue = (url: string) => {
         const extension = organization.extension?.find(ext => ext.url === url);
@@ -1545,7 +1068,7 @@ const EditFHIRPharmacyModal: React.FC<EditFHIRPharmacyModalProps> = ({
       };
 
       onSave(updatedOrganization);
-      
+
       notifications.show({
         title: 'Success',
         message: 'Pharmacy updated successfully',
@@ -1729,5 +1252,3 @@ const EditFHIRPharmacyModal: React.FC<EditFHIRPharmacyModalProps> = ({
     </Modal>
   );
 };
-
-// ... existing code ...
