@@ -15,20 +15,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      output: {
-        manualChunks: {
-          // Vendor chunks
-          'react-vendor': ['react', 'react-dom'],
-          'mantine-core': ['@mantine/core'],
-          'mantine-hooks': ['@mantine/hooks'],
-          'mantine-notifications': ['@mantine/notifications'],
-          'mantine-modals': ['@mantine/modals'],
-          'mantine-dates': ['@mantine/dates'],
-          'medplum': ['@medplum/core'],
-          'icons': ['lucide-react', '@tabler/icons-react'],
-          'routing': ['react-router-dom'],
-        }
-      }
+      // Let Rollup decide optimal chunking to avoid circular chunk imports
     },
     chunkSizeWarningLimit: 1000,
     target: 'esnext',
