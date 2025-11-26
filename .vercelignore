@@ -4,18 +4,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Development files
-src/
-public/
+# Development files (do NOT ignore source or config needed for build)
 *.md
-README.md
 CHANGELOG.md
 
-# Build tools and config
-vite.config.ts
-tsconfig.json
-tsconfig.node.json
-.eslintrc.cjs
+# Build tools and config (keep these so Vercel can build)
 .gitignore
 
 # IDE and editor files
